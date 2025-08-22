@@ -54,7 +54,28 @@ class EnvironmentLoader {
             FIREBASE_APP_ID: 'NETLIFY_ENV_AVAILABLE'
         };
         
+        // Set up Firebase configuration for Netlify
+        this.setupFirebaseConfig();
+        
         console.log('✅ EnvironmentLoader: Netlify environment loaded');
+    }
+
+    // Set up Firebase configuration
+    setupFirebaseConfig() {
+        console.log('🔥 EnvironmentLoader: Setting up Firebase configuration...');
+        
+        // Create Firebase config object
+        window.firebaseConfig = {
+            apiKey: "AIzaSyDY8IEnfnM-WQFK4NSKFeWN_9k8F_lNuVA",
+            authDomain: "los-v2-1af09.firebaseapp.com",
+            projectId: "los-v2-1af09",
+            storageBucket: "los-v2-1af09.firebasestorage.app",
+            messagingSenderId: "483748995629",
+            appId: "1:483748995629:web:df5ca2ff9715658f678ea4",
+            measurementId: "G-FFR18MKG3K"
+        };
+        
+        console.log('✅ EnvironmentLoader: Firebase configuration set up');
     }
 
     // Parse .env file content
@@ -94,6 +115,9 @@ class EnvironmentLoader {
         if (window.FOOTBALL_WEBPAGES_CONFIG && window.FOOTBALL_WEBPAGES_CONFIG.RAPIDAPI_KEY) {
             this.envVars.RAPIDAPI_KEY = window.FOOTBALL_WEBPAGES_CONFIG.RAPIDAPI_KEY;
         }
+        
+        // Set up Firebase configuration for local development
+        this.setupFirebaseConfig();
     }
 
     // Setup global configuration
@@ -116,8 +140,41 @@ class EnvironmentLoader {
             }
         };
         
+        // Set up API configuration for compatibility
+        this.setupAPIConfig();
+        
         console.log('🌍 EnvironmentLoader: Global configuration setup complete');
         console.log('🔑 Available API keys:', Object.keys(this.envVars).filter(key => key.includes('API_KEY')));
+    }
+
+    // Set up API configuration for compatibility
+    setupAPIConfig() {
+        console.log('🔧 EnvironmentLoader: Setting up API configuration...');
+        
+        // Create APIConfig object that the app expects
+        window.APIConfig = {
+            rapidAPI: {
+                key: '2e08ed83camsh44dc27a6c439f8dp1c388ajsn65cd74585fef',
+                host: 'football-web-pages1.p.rapidapi.com',
+                baseUrl: 'https://football-web-pages1.p.rapidapi.com'
+            }
+        };
+        
+        // Create FOOTBALL_WEBPAGES_CONFIG object
+        window.FOOTBALL_WEBPAGES_CONFIG = {
+            BASE_URL: 'https://football-web-pages1.p.rapidapi.com',
+            RAPIDAPI_HOST: 'football-web-pages1.p.rapidapi.com',
+            RAPIDAPI_KEY: '2e08ed83camsh44dc27a6c439f8dp1c388ajsn65cd74585fef',
+            LEAGUES: {
+                'national-league': { id: '5', name: 'National League' },
+                'premier-league': { id: '1', name: 'Premier League' },
+                'championship': { id: '2', name: 'EFL Championship' },
+                'league-one': { id: '3', name: 'EFL League One' },
+                'league-two': { id: '4', name: 'EFL League Two' }
+            }
+        };
+        
+        console.log('✅ EnvironmentLoader: API configuration set up');
     }
 
     // Get environment variable
