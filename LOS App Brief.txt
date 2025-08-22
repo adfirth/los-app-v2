@@ -1,0 +1,264 @@
+# Detailed Brief: LOS App - Last One Standing Football Game
+
+## **Project Overview**
+
+The LOS App is a web-based football prediction game where players pick one team per gameweek for 10 Game Weeks. If their team wins, they survive; if they lose or draw, they lose a life. The last player standing wins. The app supports multiple editions (competitions) and has both player and admin interfaces.
+
+## **Core Game Mechanics**
+
+### **Basic Rules**
+- Players start with 2 lives
+- Each gameweek, players pick ONE team from available fixtures
+- If picked team **wins**: Player survives to next gameweek
+- If picked team **loses or draws**: Player loses 1 life
+- When lives reach 0: Player is eliminated
+- Last player standing wins the edition
+- Players cannot pick the same team twice in the same edition
+
+### **Key Features**
+- **Multiple Editions**: Support for different competitions (e.g., Championship, Premier League)
+- **Auto-Pick System**: Automatically assigns picks for players who miss deadlines
+- **Deadline Management**: Game weeks lock at the kick-off time of the first game in a given gameweek
+- **Real-time Updates**: Live score integration and standings updates
+- **Mobile Responsive**: Works on desktop and mobile devices
+
+## **Technical Architecture**
+
+### **Frontend Stack**
+- **HTML5/CSS3/JavaScript** (Vanilla JS, no frameworks)
+- **Responsive Design** with mobile-first approach
+- **Modular Architecture** with separate managers for different functionalities
+- **Firebase Integration** for real-time data
+
+### **Backend/Database**
+- **Firebase Firestore** for data storage
+- **Firebase Authentication** for user management
+- **Real-time listeners** for live updates
+
+### **Key Modules/Managers**
+1. **AuthManager** - User authentication and session management
+2. **EditionService** - Manages multiple competition editions
+3. **FixturesManager** - Handles fixture loading and display
+4. **ScoresManager** - Manages live scores and results
+5. **GameLogicManager** - Core game mechanics and pick management
+6. **PickStatusService** - Player status and lives tracking
+7. **DeadlineService** - Deadline checking and auto-pick assignment
+8. **AdminManager** - Administrative functions and user management
+
+## **Database Structure**
+
+### **Collections**
+1. **`users`** - Player profiles and picks
+   ```javascript
+   {
+     uid: "user123",
+     displayName: "John Doe",
+     email: "john@example.com",
+     lives: 2,
+     picks: {
+       gw1: "Arsenal",
+       gw2: "Chelsea",
+       gw3: "Liverpool"
+     },
+     registeredEditions: ["1", "2"],
+     edition: "1" // current active edition
+   }
+   ```
+
+2. **`fixtures`** - Game fixtures by edition and gameweek
+   ```javascript
+   {
+     edition1_gw1: {
+       fixtures: [
+         {
+           homeTeam: "Arsenal",
+           awayTeam: "Chelsea",
+           date: "2024-01-15",
+           kickOffTime: "15:00:00",
+           homeScore: 2,
+           awayScore: 1,
+           status: "completed"
+         }
+       ]
+     }
+   }
+   ```
+
+3. **`picks`** - Individual pick records (for analytics)
+   ```javascript
+   {
+     userId: "user123",
+     teamPicked: "Arsenal",
+     edition: "1",
+     gameweek: "1",
+     isAutopick: false,
+     savedAt: timestamp
+   }
+   ```
+
+4. **`settings`** - App configuration
+   ```javascript
+   {
+     currentCompetition: {
+       active_gameweek: "3",
+       tiebreak_enabled: true,
+       registration_open: true
+     }
+   }
+   ```
+
+## **Core User Flows**
+
+### **Player Registration Flow**
+1. User visits registration page
+2. Selects available edition(s)
+3. Provides name and email
+4. System creates user profile with default lives
+5. Redirects to dashboard
+
+### **Pick Selection Flow**
+1. Player navigates to Fixtures tab
+2. Views available teams for current gameweek
+3. Clicks on team to select (with validation)
+4. System checks:
+   - Has player already picked this team?
+   - Is deadline passed?
+   - Does player have lives remaining?
+5. Pick is saved to database
+6. UI updates to show selection
+
+### **Auto-Pick System**
+1. System checks deadlines every minute
+2. When deadline passes for a gameweek:
+   - Identifies players without picks
+   - Assigns auto-picks based on algorithm:
+     - GW1: Random allocation from teams available in game week
+     - GW2+: Next team alphabetically after previous pick
+   - Saves auto-picks to database
+   - Updates player status
+
+### **Results Processing**
+1. Admin imports scores for completed fixtures
+2. System calculates results for all picks
+3. Updates player lives based on outcomes
+4. Refreshes standings and player status
+5. Identifies eliminated players
+
+## **Admin Functions**
+
+### **User Management**
+- View all players and their status
+- Reset lives for testing
+- Archive/delete players
+- Manage player registrations
+
+### **Fixture Management**
+- Add/edit fixtures for each gameweek
+- Import fixtures from external APIs
+- Set kick-off times and dates
+- Manage multiple editions
+
+### **Score Management**
+- Import live scores from APIs
+- Manual score entry
+- Process results and update standings
+- Real-time score updates
+
+### **Edition Management**
+- Create new editions
+- Configure lives per edition
+- Set registration windows
+- Manage active gameweeks
+
+## **Key Technical Challenges**
+
+### **Data Synchronization**
+- Ensuring picks are saved to both `users` collection and `picks` collection
+- Real-time updates across multiple tabs
+- Handling edition switching without data loss
+
+### **Deadline Management**
+- Accurate deadline calculation from fixture times
+- Timezone handling
+- Auto-pick assignment without conflicts
+
+### **Pick Validation**
+- Preventing duplicate team selections
+- Handling pick changes before deadlines
+- Managing pick releases and reassignments
+
+### **Real-time Updates**
+- Live score integration
+- Standings updates without page refresh
+- Mobile/desktop synchronization
+
+## **UI/UX Considerations**
+
+### **Player Dashboard**
+- **Fixtures Tab**: Shows available teams with pick status
+- **My Picks Tab**: Displays pick history and current status
+- **As It Stands Tab**: Live standings with lives remaining
+- **Scores Tab**: Live scores and results
+
+### **Mobile Experience**
+- Touch-friendly interface
+- Swipe navigation between tabs
+- Optimized for small screens
+- Quick pick selection
+
+### **Visual Feedback**
+- Color-coded team status (available, picked, unavailable)
+- Lives indicator with warning states
+- Pick confirmation dialogs
+- Loading states and error handling
+
+## **Development Phases**
+
+### **Phase 1: Core Infrastructure**
+1. Firebase setup and authentication
+2. Basic user management
+3. Database schema design
+4. Core game logic implementation
+
+### **Phase 2: Player Interface**
+1. Dashboard layout and navigation
+2. Fixture display and pick selection
+3. Pick history and status display
+4. Mobile responsiveness
+
+### **Phase 3: Admin Interface**
+1. User management tools
+2. Fixture management
+3. Score import and processing
+4. Edition management
+
+### **Phase 4: Advanced Features**
+1. Auto-pick system
+2. Real-time updates
+3. Live score integration
+4. Analytics and reporting
+
+### **Phase 5: Polish & Testing**
+1. Error handling and validation
+2. Performance optimization
+3. Cross-browser testing
+4. User acceptance testing
+
+## **Key Success Factors**
+
+1. **Robust Data Model**: Well-designed database schema is crucial
+2. **Real-time Updates**: Firebase integration for live data
+3. **Mobile-First Design**: Majority of users will be mobile
+4. **Comprehensive Testing**: Game logic must be bulletproof
+5. **Admin Tools**: Essential for managing the competition
+6. **Scalability**: Design for multiple editions and large user bases
+
+## **Recommended Technologies**
+
+- **Frontend**: Vanilla JavaScript (or React/Vue for more complex features)
+- **Backend**: Firebase (Firestore + Auth + Functions)
+- **Hosting**: Netlify, Vercel, or Firebase Hosting
+- **APIs**: Football data APIs for fixtures and scores
+- **Testing**: Jest for unit tests, Cypress for E2E
+
+This brief provides a comprehensive overview of the LOS App architecture.

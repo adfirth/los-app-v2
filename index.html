@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Development cache-busting -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <title>LOS App - Last One Standing</title>
+    
+    <!-- CSS with cache-busting for development -->
+    <link rel="stylesheet" href="css/styles.css?v=1.0.0">
+    <link rel="stylesheet" href="css/components.css?v=1.0.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Loading LOS App...</h2>
+        </div>
+    </div>
+
+    <!-- Auth Container -->
+    <div id="authContainer" class="auth-container hidden">
+        <div class="auth-card">
+            <div class="auth-header">
+                <img src="images/Logo Round1.png" alt="LOS App Logo" class="auth-logo">
+                <h1>Last One Standing</h1>
+                <p>Football Prediction Game</p>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form hidden">
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <input type="text" id="regName" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="clubSelect">Select Club</label>
+                    <select id="clubSelect" required>
+                        <option value="">Choose a club...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editionSelect">Select Edition</label>
+                    <select id="editionSelect" required>
+                        <option value="">Choose an edition...</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+
+            <div class="auth-switch">
+                <span id="switchToRegister">Don't have an account? Register</span>
+                <span id="switchToLogin" class="hidden">Already have an account? Sign In</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" class="app-container hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <img src="images/Logo Round1.png" alt="LOS App" class="header-logo">
+                    <h1>LOS App</h1>
+                </div>
+                <div class="header-right">
+                    <div class="club-selector">
+                        <select id="headerClubSelect" class="club-select">
+                            <option value="">Select Club...</option>
+                        </select>
+                        <select id="headerEditionSelect" class="edition-select">
+                            <option value="">Select Edition...</option>
+                        </select>
+                    </div>
+                    <div class="user-info">
+                        <span id="userName">Player</span>
+                        <span id="userLives" class="lives-indicator">
+                            <i class="fas fa-heart"></i>
+                            <span id="livesCount">2</span>
+                        </span>
+                    </div>
+                    <!-- Connection Status Indicator -->
+                    <div id="connectionStatus" class="connection-status">
+                        <i class="fas fa-circle"></i>
+                        <span id="connectionText">Connecting...</span>
+                    </div>
+                    <button id="resetConnectionBtn" class="btn btn-warning btn-sm" title="Reset Firebase Connection" style="margin-right: 10px;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="app-nav">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="fixtures">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Fixtures</span>
+                </button>
+                <button class="nav-tab" data-tab="picks">
+                    <i class="fas fa-list-check"></i>
+                    <span>My Picks</span>
+                </button>
+                <button class="nav-tab" data-tab="standings">
+                    <i class="fas fa-trophy"></i>
+                    <span>As It Stands</span>
+                </button>
+                <button class="nav-tab" data-tab="scores">
+                    <i class="fas fa-futbol"></i>
+                    <span>Scores</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Fixtures Tab -->
+            <div id="fixturesTab" class="tab-content active">
+                <div class="tab-header">
+                    <div class="tab-header-left">
+                        <h2>Gameweek <span id="currentGameweek">1</span> Fixtures</h2>
+                        <div class="deadline-info">
+                            <i class="fas fa-clock"></i>
+                            <span id="deadlineText">Deadline: Loading...</span>
+                        </div>
+                    </div>
+                    <div class="tab-header-right">
+                        <div class="gameweek-navigation">
+                            <button id="prevGameweek" class="btn btn-secondary btn-sm" title="Previous Gameweek">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <select id="gameweekSelect" class="gameweek-select">
+                                <option value="1">Gameweek 1</option>
+                                <option value="2">Gameweek 2</option>
+                                <option value="3">Gameweek 3</option>
+                                <option value="4">Gameweek 4</option>
+                                <option value="5">Gameweek 5</option>
+                                <option value="6">Gameweek 6</option>
+                                <option value="7">Gameweek 7</option>
+                                <option value="8">Gameweek 8</option>
+                                <option value="9">Gameweek 9</option>
+                                <option value="10">Gameweek 10</option>
+                            </select>
+                            <button id="nextGameweek" class="btn btn-secondary btn-sm" title="Next Gameweek">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="fixturesList" class="fixtures-list">
+                    <!-- Loading state for fixtures -->
+                    <div id="fixturesLoading" class="loading-state">
+                        <div class="loading-spinner-small"></div>
+                        <p>Loading fixtures...</p>
+                    </div>
+                    <!-- Fixtures will be loaded here -->
+                </div>
+            </div>
+
+            <!-- My Picks Tab -->
+            <div id="picksTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>My Pick History</h2>
+                </div>
+                <div id="picksList" class="picks-list">
+                    <!-- Loading state for picks -->
+                    <div id="picksLoading" class="loading-state">
+                        <div class="loading-spinner-small"></div>
+                        <p>Loading pick history...</p>
+                    </div>
+                    <!-- Pick history will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Standings Tab -->
+            <div id="standingsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Current Standings</h2>
+                </div>
+                <div id="standingsList" class="standings-list">
+                    <!-- Loading state for standings -->
+                    <div id="standingsLoading" class="loading-state">
+                        <div class="loading-spinner-small"></div>
+                        <p>Loading standings...</p>
+                    </div>
+                    <!-- Standings will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Scores Tab -->
+            <div id="scoresTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Live Scores</h2>
+                </div>
+                <div id="scoresList" class="scores-list">
+                    <!-- Loading state for scores -->
+                    <div id="scoresLoading" class="loading-state">
+                        <div class="loading-spinner-small"></div>
+                        <p>Loading scores...</p>
+                    </div>
+                    <!-- Live scores will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Admin Panel (Hidden by default) -->
+    <div id="adminPanel" class="admin-panel hidden">
+        <div class="admin-header">
+            <h2>Admin Panel</h2>
+            <button id="closeAdmin" class="btn btn-secondary">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="admin-content">
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-admin-tab="users">Users</button>
+                <button class="admin-tab" data-admin-tab="fixtures">Fixtures</button>
+                <button class="admin-tab" data-admin-tab="scores">Scores</button>
+                <button class="admin-tab" data-admin-tab="settings">Settings</button>
+            </div>
+            <div id="adminContent" class="admin-content-area">
+                <!-- Admin content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="pickModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Your Pick</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to pick <strong id="pickTeamName"></strong>?</p>
+                <p class="warning">This pick cannot be changed after the deadline!</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmPick" class="btn btn-primary">Confirm Pick</button>
+                <button id="cancelPick" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Toast Notification -->
+    <div id="errorToast" class="toast toast-error hidden">
+        <div class="toast-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="errorMessage">An error occurred</span>
+        </div>
+        <button class="toast-close">&times;</button>
+    </div>
+
+    <!-- Success Toast Notification -->
+    <div id="successToast" class="toast toast-success hidden">
+        <div class="toast-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="successMessage">Operation completed successfully</span>
+        </div>
+        <button class="toast-close">&times;</button>
+    </div>
+
+    <!-- Info Toast Notification -->
+    <div id="infoToast" class="toast toast-info hidden">
+        <div class="toast-content">
+            <i class="fas fa-info-circle"></i>
+            <span id="infoMessage">Information message</span>
+        </div>
+        <button class="toast-close">&times;</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
+    <!-- App Scripts with cache-busting for development -->
+    <script src="js/config/firebase-config.js?v=1.0.0"></script>
+    <script src="js/services/UIService.js?v=1.0.0"></script>
+    <script src="js/services/TeamBadgeService.js?v=1.0.0"></script>
+    <script src="js/services/PerformanceService.js?v=1.0.0"></script>
+    <script src="js/managers/AuthManager.js?v=1.0.0"></script>
+    <script src="js/managers/EditionService.js?v=1.0.0"></script>
+    <script src="js/managers/FixturesManager.js?v=1.0.0"></script>
+    <script src="js/managers/ScoresManager.js?v=1.0.0"></script>
+    <script src="js/managers/GameLogicManager.js?v=1.0.0"></script>
+    <script src="js/managers/PickStatusService.js?v=1.0.0"></script>
+    <script src="js/managers/DeadlineService.js?v=1.0.0"></script>
+    <script src="js/managers/AdminManager.js?v=1.0.0"></script>
+    <script src="js/managers/ClubService.js?v=1.0.0"></script>
+    <script src="js/managers/SuperAdminManager.js?v=1.0.0"></script>
+    <script src="js/managers/FixtureManagementManager.js?v=1.0.0"></script>
+    <script src="js/config/api-config.js?v=1.0.0"></script>
+    <script src="js/config/football-webpages-config.js?v=1.0.0"></script>
+    <script src="js/config/development-config.js?v=1.0.0"></script>
+    <script src="js/modules/api/developmentHelper.js?v=1.0.0"></script>
+    <script src="js/modules/api/footballWebPages.js?v=1.0.0"></script>
+    <script src="js/init-database.js?v=1.0.0"></script>
+    <script src="js/migration/migrate-to-multiclub.js?v=1.0.0"></script>
+    <script src="js/setup/sample-clubs.js?v=1.0.0"></script>
+    <script src="js/setup/add-sample-fixtures.js?v=1.0.0"></script>
+    <script src="js/setup/download-team-badges.js?v=1.0.0"></script>
+    <script src="js/app.js?v=1.0.0"></script>
+    
+    <!-- Development helper script -->
+    <script>
+        // Auto-update cache-busting versions in development
+        if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+            const timestamp = Date.now();
+            document.querySelectorAll('script[src*=".js"], link[href*=".css"]').forEach(element => {
+                if (element.src || element.href) {
+                    const url = element.src || element.href;
+                    if (url.includes('?v=')) {
+                        const newUrl = url.replace(/\?v=[^&]+/, `?v=${timestamp}`);
+                        if (element.src) element.src = newUrl;
+                        if (element.href) element.href = newUrl;
+                    }
+                }
+            });
+            console.log('🔄 Development mode: Cache-busting enabled with timestamp:', timestamp);
+        }
+    </script>
+</body>
+</html>
