@@ -1,274 +1,237 @@
-# LOS App - Last One Standing Football Game
+# 🏆 LOS App v2 - Last One Standing Football Fundraiser
 
-A web-based football prediction game where players pick one team per gameweek for 10 Game Weeks. If their team wins, they survive; if they lose or draw, they lose a life. The last player standing wins.
+A modern, feature-rich web application for managing Last One Standing football fundraisers with real-time updates, multi-club support, and comprehensive admin tools.
 
-## 🚀 Features
+## ✨ **Features**
 
-- **User Authentication**: Secure login/registration with Firebase Auth
-- **Multiple Editions**: Support for different competitions
-- **Real-time Updates**: Live standings and score updates
-- **Auto-pick System**: Automatic team assignment for missed deadlines
-- **Mobile Responsive**: Works perfectly on desktop and mobile devices
-- **Admin Panel**: Comprehensive admin tools for managing the competition
-- **Deadline Management**: Automatic deadline checking and enforcement
-- **Pick History**: Track all player picks and results
-- **Live Scores**: Real-time score updates and results processing
+### **🎯 Core Functionality**
+- **Multi-Club Support**: Manage multiple football clubs independently
+- **Real-Time Updates**: Live score updates and fixture management
+- **User Management**: Player registration, authentication, and progress tracking
+- **Admin Panel**: Comprehensive administrative tools and oversight
+- **Responsive Design**: Mobile-first design for all devices
 
-## 🏗️ Architecture
+### **⚽ Football Integration**
+- **Live Scores**: Real-time score updates via football APIs
+- **Fixture Management**: Automated fixture creation and management
+- **Team Badges**: Dynamic team badge loading and caching
+- **Vidiprinter**: Live match updates and notifications
 
-### Frontend Stack
-- **HTML5/CSS3/JavaScript** (Vanilla JS, no frameworks)
-- **Responsive Design** with mobile-first approach
-- **Modular Architecture** with separate managers for different functionalities
-- **Firebase Integration** for real-time data
+### **🔧 Technical Features**
+- **CORS-Free API**: Netlify functions for seamless API integration
+- **Offline Support**: Service worker for offline functionality
+- **Real-Time Database**: Firebase Firestore with live listeners
+- **Progressive Web App**: Installable and offline-capable
 
-### Backend/Database
-- **Firebase Firestore** for data storage
-- **Firebase Authentication** for user management
-- **Real-time listeners** for live updates
+## 🚀 **Quick Start**
 
-### Key Modules/Managers
-1. **AuthManager** - User authentication and session management
-2. **EditionService** - Manages multiple competition editions
-3. **FixturesManager** - Handles fixture loading and display
-4. **ScoresManager** - Manages live scores and results
-5. **GameLogicManager** - Core game mechanics and pick management
-6. **PickStatusService** - Player status and lives tracking
-7. **DeadlineService** - Deadline checking and auto-pick assignment
-8. **AdminManager** - Administrative functions and user management
+### **Prerequisites**
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- Firebase project (for database and authentication)
+- RapidAPI account (for football data)
+- Netlify account (for deployment)
 
-## 📁 Project Structure
-
-```
-LOS App v2/
-├── index.html                 # Main HTML file
-├── css/
-│   ├── styles.css            # Main stylesheet
-│   └── components.css        # Component-specific styles
-├── js/
-│   ├── config/
-│   │   └── firebase-config.js # Firebase configuration
-│   ├── managers/
-│   │   ├── AuthManager.js     # Authentication management
-│   │   ├── EditionService.js  # Edition management
-│   │   ├── FixturesManager.js # Fixture handling
-│   │   ├── ScoresManager.js   # Score management
-│   │   ├── GameLogicManager.js # Core game logic
-│   │   ├── PickStatusService.js # Pick tracking
-│   │   ├── DeadlineService.js # Deadline management
-│   │   └── AdminManager.js    # Admin functions
-│   └── app.js                # Main application file
-├── images/                   # App images and assets
-└── README.md                # This file
-```
-
-## 🛠️ Setup Instructions
-
-### Prerequisites
-- A Firebase project with Firestore and Authentication enabled
-- A web server (local or hosted)
-
-### 1. Firebase Setup
-
-1. **Create a Firebase Project**:
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Create a new project
-   - Enable Firestore Database
-   - Enable Authentication (Email/Password)
-
-2. **Configure Firestore Rules**:
-   ```javascript
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       // Users can read/write their own data
-       match /users/{userId} {
-         allow read, write: if request.auth != null && request.auth.uid == userId;
-       }
-       
-       // Users can read fixtures and settings
-       match /fixtures/{document} {
-         allow read: if request.auth != null;
-       }
-       
-       match /settings/{document} {
-         allow read: if request.auth != null;
-       }
-       
-       // Users can read/write their own picks
-       match /picks/{pickId} {
-         allow read, write: if request.auth != null && 
-           resource.data.userId == request.auth.uid;
-       }
-       
-       // Admin access (you'll need to set up admin users)
-       match /{document=**} {
-         allow read, write: if request.auth != null && 
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
-       }
-     }
-   }
+### **Local Development**
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/los-app-v2.git
+   cd los-app-v2
    ```
 
-3. **Update Firebase Configuration**:
-   - Open `js/config/firebase-config.js`
-   - Replace the placeholder values with your actual Firebase project credentials:
-   ```javascript
-   const firebaseConfig = {
-       apiKey: "YOUR_ACTUAL_API_KEY",
-       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-       projectId: "YOUR_ACTUAL_PROJECT_ID",
-       storageBucket: "YOUR_PROJECT_ID.appspot.com",
-       messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-       appId: "YOUR_ACTUAL_APP_ID"
-   };
+2. **Set up configuration files**
+   ```bash
+   # Copy template files
+   cp js/config/firebase-config.template.js js/config/firebase-config.js
+   cp js/config/football-webpages-config.template.js js/config/football-webpages-config.js
+   
+   # Edit with your actual API keys and Firebase config
    ```
 
-### 2. Local Development
+3. **Open in browser**
+   - Use Live Server extension in VS Code, or
+   - Open `index.html` directly in browser
 
-1. **Clone or download the project files**
+### **Production Deployment**
+1. **Connect to Netlify**
+   - Link your GitHub repository
+   - Set build settings (no build command needed)
+   - Deploy
 
-2. **Set up a local web server**:
-   - **Using Python**:
-     ```bash
-     # Python 3
-     python -m http.server 8000
-     
-     # Python 2
-     python -m SimpleHTTPServer 8000
-     ```
+2. **Configure environment variables**
+   ```bash
+   # Firebase Configuration
+   FIREBASE_API_KEY=your_firebase_api_key
+   FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   FIREBASE_PROJECT_ID=your_project_id
+   FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+   FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+   FIREBASE_APP_ID=your_app_id
+   FIREBASE_MEASUREMENT_ID=your_measurement_id
    
-   - **Using Node.js**:
-     ```bash
-     npx http-server
-     ```
-   
-   - **Using PHP**:
-     ```bash
-     php -S localhost:8000
-     ```
+   # API Keys
+   RAPIDAPI_KEY=your_rapidapi_key
+   FOOTBALL_DATA_API_KEY=your_football_data_api_key
+   ```
 
-3. **Open the application**:
-   - Navigate to `http://localhost:8000` in your browser
-   - The app should load and show the authentication screen
+## 🏗️ **Architecture**
 
-### 3. Initial Setup
+### **Frontend Structure**
+```
+js/
+├── managers/          # Core business logic managers
+├── services/          # Utility services
+├── modules/           # Feature modules
+├── config/            # Configuration files
+└── setup/             # Setup and initialization scripts
+```
 
-1. **First Login**: Register as the first user
-2. **Set Admin Status**: In Firebase Console, manually set `isAdmin: true` for your user document
-3. **Configure Settings**: Use the admin panel to set up competition settings
+### **Backend Services**
+- **Firebase Firestore**: Real-time database
+- **Firebase Auth**: User authentication
+- **Netlify Functions**: API proxy and CORS handling
+- **Service Worker**: Offline functionality
 
-## 🎮 How to Play
+### **Key Components**
+- **AdminManager**: Administrative operations
+- **ScoresManager**: Score updates and API integration
+- **FixtureManagementManager**: Fixture creation and management
+- **TeamBadgeService**: Team badge management
+- **AuthManager**: User authentication and authorization
 
-### For Players
-1. **Register/Login**: Create an account or sign in
-2. **Make Picks**: Select one team per gameweek from available fixtures
-3. **Track Progress**: Monitor your lives and standings
-4. **Stay Alive**: Don't pick the same team twice and avoid losses/draws
+## 🔌 **API Integration**
 
-### For Admins
-1. **Manage Users**: View all players, reset lives, delete users
-2. **Manage Fixtures**: Add, edit, or remove fixtures for each gameweek
-3. **Update Scores**: Enter match results and process gameweek outcomes
-4. **Configure Settings**: Set current gameweek, registration status, etc.
+### **Football Data Sources**
+- **RapidAPI (Football Web Pages)**: Live scores and fixtures
+- **Football-Data.org**: Match data and statistics
+- **Netlify Functions**: CORS-free API access
 
-## 🔧 Configuration
+### **Data Flow**
+1. **Client Request** → Netlify Function
+2. **Function** → External API (with API key)
+3. **Response** → Client (CORS-free)
+4. **Data Processing** → Firebase Database
+5. **Real-Time Updates** → All connected clients
 
-### Game Settings
-- **Lives per Player**: Default is 2 (configurable per edition)
-- **Total Gameweeks**: Default is 10 (configurable per edition)
-- **Auto-pick Rules**: 
-  - GW1: Random allocation
-  - GW2+: Next team alphabetically after previous pick
+## 🎨 **UI/UX Features**
 
-### Database Collections
-- `users`: Player profiles and picks
-- `fixtures`: Game fixtures by edition and gameweek
-- `picks`: Individual pick records for analytics
-- `settings`: App configuration and competition settings
+### **Design Principles**
+- **Mobile-First**: Responsive design for all screen sizes
+- **Accessibility**: WCAG compliant interface
+- **Modern Aesthetics**: Clean, professional appearance
+- **Intuitive Navigation**: User-friendly interface design
 
-## 🚀 Deployment
+### **Key UI Components**
+- **Admin Panel**: Comprehensive management interface
+- **Score Display**: Real-time score updates
+- **User Dashboard**: Player progress tracking
+- **Responsive Tables**: Mobile-optimized data display
 
-### Option 1: Firebase Hosting (Recommended)
-1. Install Firebase CLI: `npm install -g firebase-tools`
-2. Login: `firebase login`
-3. Initialize: `firebase init hosting`
-4. Deploy: `firebase deploy`
+## 🔒 **Security Features**
 
-### Option 2: Netlify
-1. Connect your repository to Netlify
-2. Set build command to none (static site)
-3. Deploy automatically
+### **Authentication & Authorization**
+- **Firebase Auth**: Secure user authentication
+- **Role-Based Access**: Admin, club admin, and user roles
+- **Secure Rules**: Firestore security rules
+- **API Key Protection**: Environment variable configuration
 
-### Option 3: Vercel
-1. Connect your repository to Vercel
-2. Deploy as a static site
-3. Configure environment variables if needed
+### **Data Protection**
+- **Input Validation**: Client and server-side validation
+- **XSS Prevention**: Secure data handling
+- **CORS Protection**: Controlled cross-origin access
 
-## 🔒 Security Considerations
+## 📱 **Progressive Web App**
 
-- All Firebase rules are configured for security
-- User data is isolated by user ID
-- Admin functions require proper authentication
-- Input validation is implemented throughout the app
+### **PWA Features**
+- **Offline Support**: Service worker caching
+- **Installable**: Add to home screen
+- **Push Notifications**: Real-time updates
+- **Background Sync**: Data synchronization
 
-## 🐛 Troubleshooting
+## 🚀 **Deployment**
 
-### Common Issues
+### **Netlify Configuration**
+```toml
+# netlify.toml
+[build]
+  publish = "."
+  functions = "netlify/functions"
 
-1. **Firebase Connection Errors**:
-   - Check your Firebase configuration in `firebase-config.js`
-   - Ensure your Firebase project has the correct services enabled
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
 
-2. **Authentication Issues**:
-   - Verify Email/Password authentication is enabled in Firebase
-   - Check Firestore rules for authentication requirements
+### **Environment Setup**
+- **Development**: Local config files with API keys
+- **Production**: Environment variables in Netlify
+- **Staging**: Separate Netlify site for testing
 
-3. **Real-time Updates Not Working**:
-   - Ensure Firestore is properly configured
-   - Check browser console for connection errors
+## 🧪 **Testing**
 
-4. **Admin Panel Not Showing**:
-   - Verify your user has `isAdmin: true` in the database
-   - Check browser console for errors
+### **Local Testing**
+- **Console Testing**: Built-in test functions
+- **Sample Data**: Development fallbacks
+- **Error Handling**: Comprehensive error logging
 
-### Debug Mode
-Open browser console (F12) to see detailed logs and error messages.
+### **Production Testing**
+- **Real API Integration**: Live football data
+- **User Acceptance**: Multi-user testing
+- **Performance Monitoring**: Netlify analytics
 
-## 📱 Mobile Support
+## 📚 **Documentation**
 
-The app is fully responsive and works on:
-- iOS Safari
-- Android Chrome
-- All modern mobile browsers
+### **Available Guides**
+- [Configuration Setup](CONFIGURATION_SETUP.md)
+- [Fixture Management](FIXTURE_MANAGEMENT_README.md)
+- [Score Management](SCORE_MANAGEMENT_README.md)
+- [Team Badges](TEAM_BADGES_README.md)
+- [Local Development](LOCAL_DEVELOPMENT_SETUP.md)
 
-## 🔄 Updates and Maintenance
+### **API Documentation**
+- **Netlify Functions**: API proxy endpoints
+- **Firebase Integration**: Database and auth setup
+- **Football APIs**: Data source configuration
 
-### Regular Tasks
-- Monitor Firebase usage and costs
-- Update fixtures and scores regularly
-- Process gameweek results after matches
-- Backup important data
+## 🤝 **Contributing**
 
-### Adding New Features
-The modular architecture makes it easy to add new features:
-1. Create new manager classes in `js/managers/`
-2. Add corresponding UI elements in `index.html`
-3. Update styles in `css/` files
-4. Integrate with existing managers
+### **Development Workflow**
+1. **Fork** the repository
+2. **Create** a feature branch
+3. **Make** your changes
+4. **Test** thoroughly
+5. **Submit** a pull request
 
-## 📞 Support
+### **Code Standards**
+- **ES6+**: Modern JavaScript features
+- **Modular Design**: Clean separation of concerns
+- **Error Handling**: Comprehensive error management
+- **Documentation**: Clear code comments
 
-For issues or questions:
-1. Check the troubleshooting section above
-2. Review Firebase documentation
-3. Check browser console for error messages
-4. Verify all configuration steps are completed
+## 📄 **License**
 
-## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-This project is open source and available under the MIT License.
+## 🙏 **Acknowledgments**
+
+- **Firebase**: Backend services and real-time database
+- **Netlify**: Hosting and serverless functions
+- **RapidAPI**: Football data integration
+- **Football-Data.org**: Match statistics and data
+
+## 📞 **Support**
+
+### **Getting Help**
+- **Documentation**: Check the README files
+- **Issues**: Report bugs on GitHub
+- **Discussions**: Use GitHub Discussions for questions
+
+### **Contact**
+- **GitHub Issues**: [Report Issues](https://github.com/yourusername/los-app-v2/issues)
+- **Documentation**: [Full Documentation](https://github.com/yourusername/los-app-v2/wiki)
 
 ---
 
-**Happy Gaming! 🏆**
+**Built with ❤️ for football communities everywhere**
+
+*Last One Standing - The ultimate football fundraiser experience*
