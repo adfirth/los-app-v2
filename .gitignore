@@ -10,6 +10,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+env-template.txt
 
 # Sensitive configuration files (contain API keys and secrets)
 js/config/firebase-config.js

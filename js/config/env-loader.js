@@ -1,0 +1,147 @@
+// Environment Variables Loader
+// Loads API keys and configuration from .env file
+
+class EnvironmentLoader {
+    constructor() {
+        this.envVars = {};
+        this.loaded = false;
+    }
+
+    // Load environment variables from .env file or Netlify
+    async loadEnvironment() {
+        try {
+            console.log('🔧 EnvironmentLoader: Loading environment variables...');
+            
+            // Check if we're in Netlify (production)
+            if (window.location.hostname.includes('netlify.app')) {
+                console.log('🚀 EnvironmentLoader: Netlify environment detected');
+                this.loadNetlifyEnvironment();
+            } else {
+                console.log('🏠 EnvironmentLoader: Local environment detected');
+                // Try to fetch the .env file
+                const response = await fetch('/.env');
+                if (response.ok) {
+                    const envContent = await response.text();
+                    this.parseEnvFile(envContent);
+                    console.log('✅ EnvironmentLoader: .env file loaded successfully');
+                } else {
+                    console.log('⚠️ EnvironmentLoader: .env file not found, using fallbacks');
+                    this.loadFallbacks();
+                }
+            }
+        } catch (error) {
+            console.log('⚠️ EnvironmentLoader: Error loading environment, using fallbacks');
+            this.loadFallbacks();
+        }
+        
+        this.loaded = true;
+        this.setupGlobalConfig();
+    }
+
+    // Load environment variables from Netlify
+    loadNetlifyEnvironment() {
+        console.log('🌐 EnvironmentLoader: Loading from Netlify environment...');
+        
+        // In Netlify, environment variables are available to serverless functions
+        // We'll use the Netlify functions to access them
+        this.envVars = {
+            RAPIDAPI_KEY: 'NETLIFY_ENV_AVAILABLE',
+            FIREBASE_API_KEY: 'NETLIFY_ENV_AVAILABLE',
+            FIREBASE_AUTH_DOMAIN: 'NETLIFY_ENV_AVAILABLE',
+            FIREBASE_PROJECT_ID: 'NETLIFY_ENV_AVAILABLE',
+            FIREBASE_STORAGE_BUCKET: 'NETLIFY_ENV_AVAILABLE',
+            FIREBASE_MESSAGING_SENDER_ID: 'NETLIFY_ENV_AVAILABLE',
+            FIREBASE_APP_ID: 'NETLIFY_ENV_AVAILABLE'
+        };
+        
+        console.log('✅ EnvironmentLoader: Netlify environment loaded');
+    }
+
+    // Parse .env file content
+    parseEnvFile(content) {
+        const lines = content.split('\n');
+        
+        lines.forEach(line => {
+            line = line.trim();
+            
+            // Skip comments and empty lines
+            if (line.startsWith('#') || line === '') return;
+            
+            // Parse KEY=value format
+            const equalIndex = line.indexOf('=');
+            if (equalIndex > 0) {
+                const key = line.substring(0, equalIndex).trim();
+                const value = line.substring(equalIndex + 1).trim();
+                
+                // Remove quotes if present
+                const cleanValue = value.replace(/^["']|["']$/g, '');
+                
+                this.envVars[key] = cleanValue;
+                console.log(`🔑 EnvironmentLoader: Loaded ${key}`);
+            }
+        });
+    }
+
+    // Load fallback values from existing config
+    loadFallbacks() {
+        console.log('🔄 EnvironmentLoader: Loading fallback configuration...');
+        
+        // Try to get values from existing config files
+        if (window.APIConfig && window.APIConfig.rapidAPI) {
+            this.envVars.RAPIDAPI_KEY = window.APIConfig.rapidAPI.key;
+        }
+        
+        if (window.FOOTBALL_WEBPAGES_CONFIG && window.FOOTBALL_WEBPAGES_CONFIG.RAPIDAPI_KEY) {
+            this.envVars.RAPIDAPI_KEY = window.FOOTBALL_WEBPAGES_CONFIG.RAPIDAPI_KEY;
+        }
+    }
+
+    // Setup global configuration
+    setupGlobalConfig() {
+        // Make environment variables globally available
+        window.ENV_CONFIG = this.envVars;
+        
+        // Set up global API key getters
+        window.getEnvVar = (key) => this.envVars[key];
+        window.getAPIKey = (service) => {
+            switch(service) {
+                case 'rapidapi':
+                    return this.envVars.RAPIDAPI_KEY;
+                case 'firebase':
+                    return this.envVars.FIREBASE_API_KEY;
+                case 'football-data':
+                    return this.envVars.FOOTBALL_DATA_API_KEY;
+                default:
+                    return null;
+            }
+        };
+        
+        console.log('🌍 EnvironmentLoader: Global configuration setup complete');
+        console.log('🔑 Available API keys:', Object.keys(this.envVars).filter(key => key.includes('API_KEY')));
+    }
+
+    // Get environment variable
+    get(key) {
+        return this.envVars[key];
+    }
+
+    // Check if environment is loaded
+    isLoaded() {
+        return this.loaded;
+    }
+}
+
+// Create and export the environment loader
+window.environmentLoader = new EnvironmentLoader();
+
+// Auto-load environment when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.environmentLoader.loadEnvironment();
+    });
+} else {
+    window.environmentLoader.loadEnvironment();
+}
+
+// Export for use in other modules
+window.EnvironmentLoader = EnvironmentLoader;
