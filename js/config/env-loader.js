@@ -217,6 +217,10 @@ class EnvironmentLoader {
             window.firebaseDB = window.firebase.firestore();
             console.log('✅ EnvironmentLoader: Firebase database reference set up');
             
+            // Set up Firebase Auth reference
+            window.firebaseAuth = window.firebase.auth();
+            console.log('✅ EnvironmentLoader: Firebase auth reference set up');
+            
             // Also set the legacy flag for compatibility
             window.firebaseReady = true;
             
