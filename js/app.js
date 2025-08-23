@@ -191,19 +191,21 @@ class LOSApp {
             // Set up connection status monitoring
             this.monitorConnectionStatus();
             
-            // Set up real-time listeners for all managers
-            for (const [key, manager] of Object.entries(this.managers)) {
-                if (manager && typeof manager.setupRealtimeListeners === 'function') {
-                    try {
-                        manager.setupRealtimeListeners();
-                    } catch (error) {
-                        console.error(`Error setting up real-time listeners for ${key}:`, error);
+            // Initialize managers with data loading first
+            this.initializeManagersWithData();
+            
+            // Then set up real-time listeners after managers are initialized
+            setTimeout(() => {
+                for (const [key, manager] of Object.entries(this.managers)) {
+                    if (manager && typeof manager.setupRealtimeListeners === 'function') {
+                        try {
+                            manager.setupRealtimeListeners();
+                        } catch (error) {
+                            console.error(`Error setting up real-time listeners for ${key}:`, error);
+                        }
                     }
                 }
-            }
-
-            // Initialize managers with data loading
-            this.initializeManagersWithData();
+            }, 500);
             
             // Add a small delay to prevent listener conflicts
             setTimeout(() => {

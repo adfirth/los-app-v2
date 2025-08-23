@@ -42,6 +42,13 @@ class ClubService {
         if (this.isInitialized) return;
         
         console.log('🏟️ ClubService: Full initialization...');
+        
+        // Ensure Firebase connection is available before setting up listeners
+        if (!this.db && window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
+            console.log('🔧 ClubService: Setting database reference during init');
+            this.db = window.firebaseDB;
+        }
+        
         this.setupRealtimeListeners();
         this.isInitialized = true;
         console.log('✅ ClubService: Full initialization complete');
@@ -77,6 +84,12 @@ class ClubService {
     }
 
     setupRealtimeListeners() {
+        // Try to get database reference if not available
+        if (!this.db && window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
+            console.log('🔧 ClubService: Setting database reference in setupRealtimeListeners');
+            this.db = window.firebaseDB;
+        }
+        
         if (!this.db || typeof this.db.collection !== 'function') {
             console.log('ClubService: Firebase not ready, retrying in 2 seconds...');
             setTimeout(() => this.setupRealtimeListeners(), 2000);
