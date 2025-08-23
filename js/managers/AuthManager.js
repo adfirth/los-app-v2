@@ -217,11 +217,12 @@ class AuthManager {
             }
 
             // Check if ClubService is ready
-            if (!window.losApp || !window.losApp.managers.club || 
+            if (!window.losApp || !window.losApp.managers || !window.losApp.managers.club || 
                 typeof window.losApp.managers.club.setCurrentClubAndEdition !== 'function' ||
                 !window.losApp.managers.club.isReady) {
                 console.log(`AuthManager: ClubService not ready, retry ${retryCount + 1}/10, retrying in 2 seconds...`);
                 console.log(`🔍 AuthManager: ClubService status - exists: ${!!window.losApp?.managers?.club}, has method: ${!!window.losApp?.managers?.club?.setCurrentClubAndEdition}, isReady: ${window.losApp?.managers?.club?.isReady}`);
+                console.log(`🔍 AuthManager: App status - losApp: ${!!window.losApp}, managers: ${!!window.losApp?.managers}`);
                 setTimeout(() => this.loadUserData(retryCount + 1), 2000);
                 return;
             }

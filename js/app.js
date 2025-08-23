@@ -1241,7 +1241,22 @@ const globalFirebaseCheck = () => {
         // Force AuthManager directly (critical for loading screen)
         if (window.authManager && window.authManager.loadUserData) {
             console.log('Global Firebase: Forcing AuthManager retry...');
-            window.authManager.loadUserData();
+            // Check if the app is fully initialized before calling AuthManager
+            if (window.losApp && window.losApp.managers && window.losApp.managers.club) {
+                console.log('Global Firebase: App is ready, calling AuthManager...');
+                window.authManager.loadUserData();
+            } else {
+                console.log('Global Firebase: App not ready yet, waiting for initialization...');
+                // Wait for app to be ready
+                setTimeout(() => {
+                    if (window.losApp && window.losApp.managers && window.losApp.managers.club) {
+                        console.log('Global Firebase: App now ready, calling AuthManager...');
+                        window.authManager.loadUserData();
+                    } else {
+                        console.log('Global Firebase: App still not ready after delay');
+                    }
+                }, 2000);
+            }
         }
     } else if (!globalFirebaseHandled) {
         setTimeout(globalFirebaseCheck, 500); // Check more frequently
