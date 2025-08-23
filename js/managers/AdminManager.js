@@ -567,29 +567,9 @@ class AdminManager {
                 }
             }
             
-            // Fallback to old structure if new structure fails or no club/edition
+            // Only use new multi-club structure
             if (users.length === 0) {
-                console.log('🔧 AdminManager: Falling back to old structure for users');
-                
-                try {
-                    const fallbackEdition = window.editionService?.getCurrentEdition();
-                    if (fallbackEdition) {
-                        const usersSnapshot = await this.db.collection('users')
-                            .where('edition', '==', fallbackEdition)
-                            .get();
-                        
-                        console.log('🔧 AdminManager: Found users in old structure:', usersSnapshot.size);
-                        
-                        usersSnapshot.forEach(doc => {
-                            users.push({
-                                id: doc.id,
-                                ...doc.data()
-                            });
-                        });
-                    }
-                } catch (error) {
-                    console.error('🔧 AdminManager: Error loading users from old structure:', error);
-                }
+                console.log('🔧 AdminManager: No users found in new structure');
             }
             
             console.log('🔧 AdminManager: Total users loaded:', users.length);

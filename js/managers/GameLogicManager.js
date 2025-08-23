@@ -79,77 +79,28 @@ class GameLogicManager {
             console.log('🔍 GameLogicManager: Current club:', currentClub, 'Current edition:', currentEdition);
             
             if (!currentClub || !currentEdition) {
-                console.log('⚠️ GameLogicManager: No club or edition available, falling back to old structure...');
+                console.log('⚠️ GameLogicManager: No club or edition available');
+                console.log('🔍 GameLogicManager: Current club:', currentClub, 'Current edition:', currentEdition);
+                return;
+            }
+            
+            console.log('🔍 GameLogicManager: Using multi-club structure...');
+            
+            try {
+                const usersSnapshot = await this.db.collection('clubs')
+                    .doc(currentClub)
+                    .collection('editions')
+                    .doc(currentEdition)
+                    .collection('users')
+                    .get();
                 
-                // Fallback to old structure for backward compatibility
-                const fallbackEdition = window.editionService?.getCurrentEdition();
-                console.log('🔍 GameLogicManager: Using fallback edition:', fallbackEdition);
+                console.log('🔍 GameLogicManager: Found users:', usersSnapshot.size);
+                await this.processUsers(usersSnapshot, currentClub, currentEdition);
                 
-                if (fallbackEdition) {
-                    // Get the edition ID from the editions collection
-                    let editionId = fallbackEdition;
-                    try {
-                        const editionsSnapshot = await this.db.collection('editions')
-                            .where('name', '==', fallbackEdition)
-                            .limit(1)
-                            .get();
-                        
-                        if (!editionsSnapshot.empty) {
-                            editionId = editionsSnapshot.docs[0].id;
-                            console.log('🔍 GameLogicManager: Found edition ID:', editionId, 'for name:', fallbackEdition);
-                        } else {
-                            console.log('⚠️ GameLogicManager: No edition found with name:', fallbackEdition);
-                        }
-                    } catch (error) {
-                        console.error('Error finding edition ID:', error);
-                    }
-                    
-                    // Get all users for current edition (using edition ID) - OLD STRUCTURE
-                    const usersSnapshot = await this.db.collection('users')
-                        .where('edition', '==', editionId)
-                        .get();
-                    
-                    console.log('🔍 GameLogicManager: Found users (old structure):', usersSnapshot.size);
-                    await this.processUsersOldStructure(usersSnapshot);
-                }
-                
-            } else {
-                console.log('🔍 GameLogicManager: Using new multi-club structure...');
-                
-                // NEW MULTI-CLUB STRUCTURE
-                try {
-                    const usersSnapshot = await this.db.collection('clubs')
-                        .doc(currentClub)
-                        .collection('editions')
-                        .doc(currentEdition)
-                        .collection('users')
-                        .get();
-                    
-                    console.log('🔍 GameLogicManager: Found users (new structure):', usersSnapshot.size);
-                    await this.processUsersNewStructure(usersSnapshot, currentClub, currentEdition);
-                    
-                } catch (error) {
-                    console.error('Error loading users from new structure:', error);
-                    console.log('🔄 GameLogicManager: Falling back to old structure...');
-                    
-                    // Fallback to old structure if new structure fails
-                    const fallbackEdition = window.editionService?.getCurrentEdition();
-                    if (fallbackEdition) {
-                        const editionsSnapshot = await this.db.collection('editions')
-                            .where('name', '==', fallbackEdition)
-                            .limit(1)
-                            .get();
-                        
-                        if (!editionsSnapshot.empty) {
-                            const editionId = editionsSnapshot.docs[0].id;
-                            const usersSnapshot = await this.db.collection('users')
-                                .where('edition', '==', editionId)
-                                .get();
-                            
-                            console.log('🔍 GameLogicManager: Found users (fallback):', usersSnapshot.size);
-                            await this.processUsersOldStructure(usersSnapshot);
-                        }
-                    }
+            } catch (error) {
+                console.error('❌ GameLogicManager: Error loading users:', error);
+                if (window.authManager && window.authManager.showError) {
+                    window.authManager.showError('Failed to load standings');
                 }
             }
             
@@ -338,61 +289,8 @@ class GameLogicManager {
         return [...this.standings];
     }
 
-    // Helper methods for processing users from different database structures
-    async processUsersOldStructure(usersSnapshot) {
-        console.log('🔍 GameLogicManager: Processing users from old structure...');
-        this.standings = [];
-        
-        for (const doc of usersSnapshot.docs) {
-            const userData = doc.data();
-            console.log('🔍 GameLogicManager: Processing user (old):', doc.id, userData);
-            
-            // Load picks from old structure
-            let userPicks = {};
-            try {
-                const picksSnapshot = await this.db.collection('picks')
-                    .where('userId', '==', doc.id)
-                    .where('edition', '==', userData.edition)
-                    .get();
-                
-                console.log('🔍 GameLogicManager: Found picks for user (old):', doc.id, picksSnapshot.size);
-                
-                picksSnapshot.forEach(pickDoc => {
-                    const pickData = pickDoc.data();
-                    console.log(`🔍 GameLogicManager: Raw pick data for GW${pickData.gameweek}:`, pickData);
-                    
-                    userPicks[pickData.gameweek] = {
-                        teamPicked: pickData.teamPicked,
-                        result: pickData.result,
-                        fixtureId: pickData.fixtureId,
-                        isAutopick: pickData.isAutopick || false
-                    };
-                    
-                    console.log(`🔍 GameLogicManager: Processed pick for GW${pickData.gameweek}:`, userPicks[pickData.gameweek]);
-                });
-            } catch (error) {
-                console.error('Error loading picks for user (old):', doc.id, error);
-            }
-            
-            const calculatedLives = this.calculateLivesFromPicks(userPicks);
-            const playerData = {
-                uid: doc.id,
-                displayName: userData.displayName,
-                lives: calculatedLives,
-                picks: userPicks,
-                eliminated: calculatedLives <= 0,
-                lastPick: this.getLastPick(userPicks),
-                currentGameweekPick: this.getCurrentGameweekPick(userPicks),
-                cardStatus: this.getCardStatus(calculatedLives),
-                isCurrentUser: doc.id === window.losApp?.managers?.auth?.currentUser?.uid
-            };
-            
-            console.log('🔍 GameLogicManager: Adding player to standings (old):', playerData);
-            this.standings.push(playerData);
-        }
-    }
-    
-    async processUsersNewStructure(usersSnapshot, currentClub, currentEdition) {
+    // Process users from multi-club structure
+    async processUsers(usersSnapshot, currentClub, currentEdition) {
         console.log('🔍 GameLogicManager: Processing users from new multi-club structure...');
         this.standings = [];
         
