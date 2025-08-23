@@ -733,5 +733,100 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings(), checkUsersInDatabase(), checkDatabaseStructure()');
+    window.fixLoginLoop = async () => {
+        console.log('🔧 Attempting to fix login loop...');
+        
+        // Check if ClubService exists
+        if (window.clubService) {
+            console.log('🔧 ClubService found, checking status...');
+            
+            // Force ClubService to load clubs
+            if (window.clubService.loadClubs) {
+                console.log('🔧 Forcing ClubService to load clubs...');
+                await window.clubService.loadClubs();
+            }
+            
+            // Check if clubs are now loaded
+            if (window.clubService.getAvailableClubs) {
+                const clubs = window.clubService.getAvailableClubs();
+                console.log('🔧 Available clubs after force load:', clubs);
+            }
+        } else {
+            console.log('❌ ClubService not found');
+        }
+        
+        // Check if AuthManager exists
+        if (window.authManager) {
+            console.log('🔧 AuthManager found, checking status...');
+            
+            // Force AuthManager to retry
+            if (window.authManager.loadUserData) {
+                console.log('🔧 Forcing AuthManager to retry user data load...');
+                await window.authManager.loadUserData();
+            }
+        } else {
+            console.log('❌ AuthManager not found');
+        }
+        
+        // Check global managers
+        console.log('🔧 Global managers status:');
+        console.log('- ClubService:', !!window.clubService);
+        console.log('- AuthManager:', !!window.authManager);
+        console.log('- GameLogicManager:', !!window.gameLogicManager);
+        console.log('- EditionService:', !!window.editionService);
+    };
+    
+    window.checkClubServiceStatus = async () => {
+        console.log('🔍 Checking ClubService status...');
+        
+        if (window.clubService) {
+            console.log('✅ ClubService found');
+            console.log('🔍 ClubService methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.clubService)));
+            
+            // Check if clubs are loaded
+            if (window.clubService.getAvailableClubs) {
+                try {
+                    const clubs = window.clubService.getAvailableClubs();
+                    console.log('🔍 Available clubs:', clubs);
+                } catch (error) {
+                    console.error('❌ Error getting available clubs:', error);
+                }
+            }
+            
+            // Check current club
+            if (window.clubService.getCurrentClub) {
+                try {
+                    const currentClub = window.clubService.getCurrentClub();
+                    console.log('🔍 Current club:', currentClub);
+                } catch (error) {
+                    console.error('❌ Error getting current club:', error);
+                }
+            }
+            
+            // Check current edition
+            if (window.clubService.getCurrentEdition) {
+                try {
+                    const currentEdition = window.clubService.getCurrentEdition();
+                    console.log('🔍 Current edition:', currentEdition);
+                } catch (error) {
+                    console.error('❌ Error getting current edition:', error);
+                }
+            }
+            
+        } else {
+            console.log('❌ ClubService not found');
+            
+            // Check if it's available globally
+            console.log('🔍 Checking global scope for ClubService...');
+            console.log('- window.clubService:', !!window.clubService);
+            console.log('- window.ClubService:', !!window.ClubService);
+            
+            // Check if it's in the managers
+            if (window.gameLogicManager) {
+                console.log('🔍 GameLogicManager has ClubService:', !!window.gameLogicManager.clubService);
+            }
+        }
+    };
+    
+    console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings(), checkUsersInDatabase(), checkDatabaseStructure(), fixLoginLoop(), checkClubServiceStatus()');
 });
