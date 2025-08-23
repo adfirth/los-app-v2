@@ -6,8 +6,14 @@ class GameLogicManager {
         this.standings = [];
         this.db = null;
         this.isInitialized = false;
+    }
+
+    initBasic() {
+        if (this.isInitialized) return;
         
-        this.init();
+        console.log('🎮 GameLogicManager: Basic initialization...');
+        // Basic initialization - just mark as ready for the app initialization flow
+        console.log('✅ GameLogicManager: Basic initialization complete');
     }
 
     async init() {
