@@ -124,80 +124,84 @@ class GameLogicManager {
                 return;
             }
 
-            const currentEdition = window.editionService.getCurrentEdition();
-            console.log('🔍 GameLogicManager: Current edition:', currentEdition);
+            // Get current club and edition from ClubService
+            const currentClub = window.clubService?.getCurrentClub();
+            const currentEdition = window.clubService?.getCurrentEdition();
             
-            // Get the edition ID from the editions collection
-            let editionId = currentEdition;
-            try {
-                const editionsSnapshot = await this.db.collection('editions')
-                    .where('name', '==', currentEdition)
-                    .limit(1)
-                    .get();
+            console.log('🔍 GameLogicManager: Current club:', currentClub, 'Current edition:', currentEdition);
+            
+            if (!currentClub || !currentEdition) {
+                console.log('⚠️ GameLogicManager: No club or edition available, falling back to old structure...');
                 
-                if (!editionsSnapshot.empty) {
-                    editionId = editionsSnapshot.docs[0].id;
-                    console.log('🔍 GameLogicManager: Found edition ID:', editionId, 'for name:', currentEdition);
-                } else {
-                    console.log('⚠️ GameLogicManager: No edition found with name:', currentEdition);
-                }
-            } catch (error) {
-                console.error('Error finding edition ID:', error);
-            }
-            
-            // Get all users for current edition (using edition ID)
-            const usersSnapshot = await this.db.collection('users')
-                .where('edition', '==', editionId)
-                .get();
-            
-            console.log('🔍 GameLogicManager: Found users:', usersSnapshot.size);
-            
-            this.standings = [];
-            
-            // Use for...of loop to properly handle async operations
-            for (const doc of usersSnapshot.docs) {
-                const userData = doc.data();
-                console.log('🔍 GameLogicManager: Processing user:', doc.id, userData);
+                // Fallback to old structure for backward compatibility
+                const fallbackEdition = window.editionService.getCurrentEdition();
+                console.log('🔍 GameLogicManager: Using fallback edition:', fallbackEdition);
                 
-                // Load picks for this user from multi-club structure
-                let userPicks = {};
+                // Get the edition ID from the editions collection
+                let editionId = fallbackEdition;
                 try {
-                    // Get current club and edition from ClubService
-                    const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
-                    const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
+                    const editionsSnapshot = await this.db.collection('editions')
+                        .where('name', '==', fallbackEdition)
+                        .limit(1)
+                        .get();
                     
-                    console.log('🔍 GameLogicManager: Current club:', currentClubId, 'Current edition:', currentEdition);
-                    
-                    if (currentClubId && currentEdition) {
-                        const picksSnapshot = await this.db.collection('clubs').doc(currentClubId)
-                            .collection('editions').doc(currentEdition)
-                            .collection('picks')
-                            .where('userId', '==', doc.id)
-                            .get();
-                        
-                        console.log('🔍 GameLogicManager: Found picks for user:', doc.id, picksSnapshot.size);
-                        
-                        picksSnapshot.forEach(pickDoc => {
-                            const pickData = pickDoc.data();
-                            userPicks[pickData.gameweek] = pickData.teamPicked;
-                        });
+                    if (!editionsSnapshot.empty) {
+                        editionId = editionsSnapshot.docs[0].id;
+                        console.log('🔍 GameLogicManager: Found edition ID:', editionId, 'for name:', fallbackEdition);
+                    } else {
+                        console.log('⚠️ GameLogicManager: No edition found with name:', fallbackEdition);
                     }
                 } catch (error) {
-                    console.error('Error loading picks for user:', doc.id, error);
+                    console.error('Error finding edition ID:', error);
                 }
                 
-                const playerData = {
-                    uid: doc.id,
-                    displayName: userData.displayName,
-                    lives: userData.lives || 0,
-                    picks: userPicks,
-                    eliminated: userData.lives <= 0,
-                    lastPick: this.getLastPick(userPicks)
-                };
+                // Get all users for current edition (using edition ID) - OLD STRUCTURE
+                const usersSnapshot = await this.db.collection('users')
+                    .where('edition', '==', editionId)
+                    .get();
                 
-                console.log('🔍 GameLogicManager: Adding player to standings:', playerData);
-                this.standings.push(playerData);
+                console.log('🔍 GameLogicManager: Found users (old structure):', usersSnapshot.size);
+                await this.processUsersOldStructure(usersSnapshot);
+                
+            } else {
+                console.log('🔍 GameLogicManager: Using new multi-club structure...');
+                
+                // NEW MULTI-CLUB STRUCTURE
+                try {
+                    const usersSnapshot = await this.db.collection('clubs')
+                        .doc(currentClub)
+                        .collection('editions')
+                        .doc(currentEdition)
+                        .collection('users')
+                        .get();
+                    
+                    console.log('🔍 GameLogicManager: Found users (new structure):', usersSnapshot.size);
+                    await this.processUsersNewStructure(usersSnapshot, currentClub, currentEdition);
+                    
+                } catch (error) {
+                    console.error('Error loading users from new structure:', error);
+                    console.log('🔄 GameLogicManager: Falling back to old structure...');
+                    
+                    // Fallback to old structure if new structure fails
+                    const fallbackEdition = window.editionService.getCurrentEdition();
+                    const editionsSnapshot = await this.db.collection('editions')
+                        .where('name', '==', fallbackEdition)
+                        .limit(1)
+                        .get();
+                    
+                    if (!editionsSnapshot.empty) {
+                        const editionId = editionsSnapshot.docs[0].id;
+                        const usersSnapshot = await this.db.collection('users')
+                            .where('edition', '==', editionId)
+                            .get();
+                        
+                        console.log('🔍 GameLogicManager: Found users (fallback):', usersSnapshot.size);
+                        await this.processUsersOldStructure(usersSnapshot);
+                    }
+                }
             }
+            
+            // Remove the old processing code since we're now using separate methods
             
             // Sort standings by lives (descending), then by last pick time
             this.standings.sort((a, b) => {
@@ -645,6 +649,90 @@ class GameLogicManager {
             throw error;
         }
     }
+
+    // Helper methods for processing users from different database structures
+    async processUsersOldStructure(usersSnapshot) {
+        console.log('🔍 GameLogicManager: Processing users from old structure...');
+        this.standings = [];
+        
+        for (const doc of usersSnapshot.docs) {
+            const userData = doc.data();
+            console.log('🔍 GameLogicManager: Processing user (old):', doc.id, userData);
+            
+            // Load picks from old structure
+            let userPicks = {};
+            try {
+                const picksSnapshot = await this.db.collection('picks')
+                    .where('userId', '==', doc.id)
+                    .where('edition', '==', userData.edition)
+                    .get();
+                
+                console.log('🔍 GameLogicManager: Found picks for user (old):', doc.id, picksSnapshot.size);
+                
+                picksSnapshot.forEach(pickDoc => {
+                    const pickData = pickDoc.data();
+                    userPicks[pickData.gameweek] = pickData.teamPicked;
+                });
+            } catch (error) {
+                console.error('Error loading picks for user (old):', doc.id, error);
+            }
+            
+            const playerData = {
+                uid: doc.id,
+                displayName: userData.displayName,
+                lives: userData.lives || 0,
+                picks: userPicks,
+                eliminated: userData.lives <= 0,
+                lastPick: this.getLastPick(userPicks)
+            };
+            
+            console.log('🔍 GameLogicManager: Adding player to standings (old):', playerData);
+            this.standings.push(playerData);
+        }
+    }
+    
+    async processUsersNewStructure(usersSnapshot, currentClub, currentEdition) {
+        console.log('🔍 GameLogicManager: Processing users from new multi-club structure...');
+        this.standings = [];
+        
+        for (const doc of usersSnapshot.docs) {
+            const userData = doc.data();
+            console.log('🔍 GameLogicManager: Processing user (new):', doc.id, userData);
+            
+            // Load picks from new multi-club structure
+            let userPicks = {};
+            try {
+                const picksSnapshot = await this.db.collection('clubs')
+                    .doc(currentClub)
+                    .collection('editions')
+                    .doc(currentEdition)
+                    .collection('picks')
+                    .where('userId', '==', doc.id)
+                    .get();
+                
+                console.log('🔍 GameLogicManager: Found picks for user (new):', doc.id, picksSnapshot.size);
+                
+                picksSnapshot.forEach(pickDoc => {
+                    const pickData = pickDoc.data();
+                    userPicks[pickData.gameweek] = pickData.teamPicked;
+                });
+            } catch (error) {
+                console.error('Error loading picks for user (new):', doc.id, error);
+            }
+            
+            const playerData = {
+                uid: doc.id,
+                displayName: userData.displayName,
+                lives: userData.lives || 0,
+                picks: userPicks,
+                eliminated: userData.lives <= 0,
+                lastPick: this.getLastPick(userPicks)
+            };
+            
+            console.log('🔍 GameLogicManager: Adding player to standings (new):', playerData);
+            this.standings.push(playerData);
+        }
+    }
 }
 
 // Initialize GameLogicManager when DOM is loaded
@@ -845,6 +933,90 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+    
+    // Helper methods for processing users from different database structures
+    async processUsersOldStructure(usersSnapshot) {
+        console.log('🔍 GameLogicManager: Processing users from old structure...');
+        this.standings = [];
+        
+        for (const doc of usersSnapshot.docs) {
+            const userData = doc.data();
+            console.log('🔍 GameLogicManager: Processing user (old):', doc.id, userData);
+            
+            // Load picks from old structure
+            let userPicks = {};
+            try {
+                const picksSnapshot = await this.db.collection('picks')
+                    .where('userId', '==', doc.id)
+                    .where('edition', '==', userData.edition)
+                    .get();
+                
+                console.log('🔍 GameLogicManager: Found picks for user (old):', doc.id, picksSnapshot.size);
+                
+                picksSnapshot.forEach(pickDoc => {
+                    const pickData = pickDoc.data();
+                    userPicks[pickData.gameweek] = pickData.teamPicked;
+                });
+            } catch (error) {
+                console.error('Error loading picks for user (old):', doc.id, error);
+            }
+            
+            const playerData = {
+                uid: doc.id,
+                displayName: userData.displayName,
+                lives: userData.lives || 0,
+                picks: userPicks,
+                eliminated: userData.lives <= 0,
+                lastPick: this.getLastPick(userPicks)
+            };
+            
+            console.log('🔍 GameLogicManager: Adding player to standings (old):', playerData);
+            this.standings.push(playerData);
+        }
+    }
+    
+    async processUsersNewStructure(usersSnapshot, currentClub, currentEdition) {
+        console.log('🔍 GameLogicManager: Processing users from new multi-club structure...');
+        this.standings = [];
+        
+        for (const doc of usersSnapshot.docs) {
+            const userData = doc.data();
+            console.log('🔍 GameLogicManager: Processing user (new):', doc.id, userData);
+            
+            // Load picks from new multi-club structure
+            let userPicks = {};
+            try {
+                const picksSnapshot = await this.db.collection('clubs')
+                    .doc(currentClub)
+                    .collection('editions')
+                    .doc(currentEdition)
+                    .collection('picks')
+                    .where('userId', '==', doc.id)
+                    .get();
+                
+                console.log('🔍 GameLogicManager: Found picks for user (new):', doc.id, picksSnapshot.size);
+                
+                picksSnapshot.forEach(pickDoc => {
+                    const pickData = pickDoc.data();
+                    userPicks[pickData.gameweek] = pickData.teamPicked;
+                });
+            } catch (error) {
+                console.error('Error loading picks for user (new):', doc.id, error);
+            }
+            
+            const playerData = {
+                uid: doc.id,
+                displayName: userData.displayName,
+                lives: userData.lives || 0,
+                picks: userPicks,
+                eliminated: userData.lives <= 0,
+                lastPick: this.getLastPick(userPicks)
+            };
+            
+            console.log('🔍 GameLogicManager: Adding player to standings (new):', playerData);
+            this.standings.push(playerData);
+        }
+    }
     
     console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings(), checkUsersInDatabase(), checkDatabaseStructure(), fixLoginLoop(), checkClubServiceStatus()');
 });
