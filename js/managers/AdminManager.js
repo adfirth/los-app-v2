@@ -546,6 +546,24 @@ class AdminManager {
                 // Use new multi-club structure
                 console.log('🔧 AdminManager: Using new multi-club structure for users');
                 
+                // Check database reference and try to restore if needed
+                if (!this.db) {
+                    console.log('🔧 AdminManager: Database reference not available in loadUsersContent, attempting to restore...');
+                    this.restoreFirebaseConnection();
+                    
+                    // If still not available, try manual refresh
+                    if (!this.db) {
+                        this.refreshDatabaseReference();
+                    }
+                    
+                    // Final check
+                    if (!this.db) {
+                        console.error('❌ AdminManager: Database reference still not available after restore attempts in loadUsersContent');
+                        adminContent.innerHTML = '<p>Error: Database not available. Please refresh the page.</p>';
+                        return;
+                    }
+                }
+                
                 try {
                     const usersSnapshot = await this.db.collection('clubs')
                         .doc(currentClub)
@@ -1468,11 +1486,22 @@ class AdminManager {
 
             console.log('🔧 AdminManager: Loading fixtures for:', { selectedClub, selectedEdition, selectedGameweek });
 
-            // Check database reference
+            // Check database reference and try to restore if needed
             if (!this.db) {
-                console.error('❌ AdminManager: Database reference not available');
-                fixturesList.innerHTML = '<p>Error: Database not available</p>';
-                return;
+                console.log('🔧 AdminManager: Database reference not available, attempting to restore...');
+                this.restoreFirebaseConnection();
+                
+                // If still not available, try manual refresh
+                if (!this.db) {
+                    this.refreshDatabaseReference();
+                }
+                
+                // Final check
+                if (!this.db) {
+                    console.error('❌ AdminManager: Database reference still not available after restore attempts');
+                    fixturesList.innerHTML = '<p>Error: Database not available. Please refresh the page.</p>';
+                    return;
+                }
             }
             
             console.log('🔧 AdminManager: Database reference available:', !!this.db);
@@ -2446,6 +2475,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('- testAdminButton() - Test admin button functionality');
         console.log('- testScoreImport() - Test score import process');
         console.log('- refreshAdminDB() - Refresh admin database reference');
+        console.log('- fixAdminDB() - Fix admin database reference issues');
         
         // Add global helper function to refresh admin database
         window.refreshAdminDB = () => {
@@ -2454,6 +2484,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const success = window.adminManager.refreshDatabaseReference();
                 console.log('🔧 AdminManager database refresh result:', success);
                 return success;
+            } else {
+                console.error('❌ AdminManager not available');
+                return false;
+            }
+        };
+
+        // Add global helper function to fix admin database issues
+        window.fixAdminDB = () => {
+            console.log('🔧 Fixing AdminManager database reference...');
+            if (window.adminManager) {
+                window.adminManager.restoreFirebaseConnection();
+                if (!window.adminManager.db) {
+                    window.adminManager.refreshDatabaseReference();
+                }
+                console.log('🔧 AdminManager database reference fixed:', !!window.adminManager.db);
+                return !!window.adminManager.db;
             } else {
                 console.error('❌ AdminManager not available');
                 return false;
