@@ -1213,7 +1213,7 @@ class LOSApp {
 }
 
 // Initialize the app
-new LOSApp();
+window.losApp = new LOSApp();
 
 // Global Firebase ready check - runs independently of app initialization
 let globalFirebaseHandled = false;
