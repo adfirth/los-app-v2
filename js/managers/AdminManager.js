@@ -1614,7 +1614,7 @@ class AdminManager {
             <div class="fixtures-header">
                 <h4>Found ${fixtures.length} Fixtures</h4>
                 <div class="fixtures-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="window.adminManager.exportFixtures()">
+                    <button class="btn btn-sm btn-secondary" onclick="console.log('Export fixtures:', ${fixtures.length}, 'fixtures')">
                         <i class="fas fa-download"></i> Export
                     </button>
                 </div>
@@ -1658,7 +1658,7 @@ class AdminManager {
                                 <span class="fixture-status status-${status}">${status}</span>
                             </div>
                             <div class="fixture-teams">
-                                ${this.createTeamWithBadgeHTML(fixture.homeTeam, 'small', '')} vs ${this.createTeamWithBadgeHTML(fixture.awayTeam, 'small', '')}
+                                <span class="team-name">${fixture.homeTeam || 'TBD'}</span> vs <span class="team-name">${fixture.awayTeam || 'TBD'}</span>
                             </div>
                             <div class="fixture-details">
                                 <div class="fixture-date">
@@ -1674,10 +1674,10 @@ class AdminManager {
                                 </div>
                             </div>
                             <div class="fixture-actions">
-                                <button class="btn btn-sm btn-secondary" onclick="window.adminManager.editFixture('${fixture.id}')">
+                                <button class="btn btn-sm btn-secondary" onclick="console.log('Edit fixture:', '${fixture.fixtureId || fixture.id || 'unknown'}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button class="btn btn-sm btn-danger" onclick="window.adminManager.deleteFixture('${fixture.id}')">
+                                <button class="btn btn-sm btn-danger" onclick="console.log('Delete fixture:', '${fixture.fixtureId || fixture.id || 'unknown'}')">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
                             </div>

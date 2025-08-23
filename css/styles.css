@@ -1937,6 +1937,156 @@ body {
     background: white;
 }
 
+/* Admin Fixture Cards */
+.fixtures-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.fixtures-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.fixtures-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.fixtures-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.fixture-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease;
+}
+
+.fixture-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fixture-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.fixture-gameweek {
+    background: #007bff;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.fixture-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.fixture-status.status-scheduled {
+    background: #28a745;
+    color: white;
+}
+
+.fixture-status.status-live {
+    background: #ffc107;
+    color: #212529;
+}
+
+.fixture-status.status-finished {
+    background: #6c757d;
+    color: white;
+}
+
+.fixture-teams {
+    margin: 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.team-name {
+    color: #333;
+}
+
+.fixture-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.fixture-date,
+.fixture-time,
+.fixture-score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fixture-date i,
+.fixture-time i,
+.fixture-score i {
+    width: 16px;
+    color: #999;
+}
+
+.fixture-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.fixture-actions .btn {
+    flex: 1;
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 48px;
+    color: #ccc;
+    margin-bottom: 16px;
+}
+
+.empty-state h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.empty-state p {
+    margin: 0;
+    color: #999;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .auth-card {
