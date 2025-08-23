@@ -1269,27 +1269,35 @@ window.addEventListener('firebaseReady', () => {
 
 // Handle app visibility changes
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        window.losApp.pause();
-    } else {
-        window.losApp.resume();
+    if (window.losApp && typeof window.losApp.pause === 'function' && typeof window.losApp.resume === 'function') {
+        if (document.hidden) {
+            window.losApp.pause();
+        } else {
+            window.losApp.resume();
+        }
     }
 });
 
 // Handle online/offline status
 window.addEventListener('online', () => {
     console.log('App is online');
-    window.losApp.updateConnectionStatus(true);
+    if (window.losApp && typeof window.losApp.updateConnectionStatus === 'function') {
+        window.losApp.updateConnectionStatus(true);
+    }
 });
 
 window.addEventListener('offline', () => {
     console.log('App is offline');
-    window.losApp.updateConnectionStatus(false);
+    if (window.losApp && typeof window.losApp.updateConnectionStatus === 'function') {
+        window.losApp.updateConnectionStatus(false);
+    }
 });
 
 // Handle beforeunload
 window.addEventListener('beforeunload', () => {
-    window.losApp.destroy();
+    if (window.losApp && typeof window.losApp.destroy === 'function') {
+        window.losApp.destroy();
+    }
 });
 
 // Export for global access

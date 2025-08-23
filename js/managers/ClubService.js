@@ -84,6 +84,10 @@ class ClubService {
     }
 
     setupRealtimeListeners() {
+        console.log('🔧 ClubService: setupRealtimeListeners called');
+        console.log('🔧 ClubService: Current db reference:', !!this.db);
+        console.log('🔧 ClubService: window.firebaseDB available:', !!window.firebaseDB);
+        
         // Try to get database reference if not available
         if (!this.db && window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
             console.log('🔧 ClubService: Setting database reference in setupRealtimeListeners');
@@ -92,13 +96,18 @@ class ClubService {
         
         if (!this.db || typeof this.db.collection !== 'function') {
             console.log('ClubService: Firebase not ready, retrying in 2 seconds...');
+            console.log('🔧 ClubService: db type:', typeof this.db);
+            console.log('🔧 ClubService: db.collection type:', this.db ? typeof this.db.collection : 'undefined');
             setTimeout(() => this.setupRealtimeListeners(), 2000);
             return;
         }
 
+        console.log('🔧 ClubService: Setting up global settings listener...');
+        
         // Listen for global settings changes
         this.globalSettingsListener = this.db.collection('global-settings').doc('system')
             .onSnapshot((doc) => {
+                console.log('🔧 ClubService: Global settings snapshot received:', doc.exists);
                 if (doc.exists) {
                     const data = doc.data();
                     this.availableClubs = data.activeClubs || [];
