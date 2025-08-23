@@ -733,15 +733,6 @@ class AdminManager {
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Debug section -->
-                    <div style="margin-top: 20px; padding: 10px; background: #f0f0f0; border: 1px solid #ccc;">
-                        <h4>Debug Info:</h4>
-                        <p>fixtureClubSelect exists: <span id="debugClubSelect">Checking...</span></p>
-                        <p>fixtureEditionSelect exists: <span id="debugEditionSelect">Checking...</span></p>
-                        <p>fixtureGameweekSelect exists: <span id="debugGameweekSelect">Checking...</span></p>
-                        <button onclick="window.adminManager.debugElements()" class="btn btn-sm btn-secondary">Check Elements</button>
-                    </div>
                 </div>
             `;
 
@@ -1623,8 +1614,11 @@ class AdminManager {
             <div class="fixtures-header">
                 <h4>Found ${fixtures.length} Fixtures</h4>
                 <div class="fixtures-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="console.log('Export fixtures:', ${fixtures.length}, 'fixtures')">
-                        <i class="fas fa-download"></i> Export
+                    <button class="btn btn-sm btn-secondary" onclick="window.adminManager.exportFixtures()">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="window.adminManager.exportFixturesJSON()">
+                        <i class="fas fa-code"></i> Export JSON
                     </button>
                 </div>
             </div>
@@ -2515,6 +2509,96 @@ class AdminManager {
                 <span class="team-name">${teamName}</span>
             </div>
         `;
+    }
+
+    exportFixtures() {
+        if (!this.currentEditingFixtures || this.currentEditingFixtures.length === 0) {
+            window.authManager.showError('No fixtures to export. Please load fixtures first.');
+            return;
+        }
+
+        try {
+            // Create CSV content
+            const headers = ['Gameweek', 'Date', 'Time', 'Home Team', 'Away Team', 'Status', 'Home Score', 'Away Score', 'Venue'];
+            const csvContent = [
+                headers.join(','),
+                ...this.currentEditingFixtures.map(fixture => [
+                    fixture.gameweek || fixture.gameWeek || 'Unknown',
+                    fixture.date || fixture.fixtureDate || 'No date',
+                    fixture.time || fixture.kickOffTime || fixture.kickoffTime || fixture.startTime || 'No time',
+                    fixture.homeTeam || 'TBD',
+                    fixture.awayTeam || 'TBD',
+                    fixture.status || 'scheduled',
+                    fixture.homeScore || 'TBD',
+                    fixture.awayScore || 'TBD',
+                    fixture.venue || 'Unknown'
+                ].map(field => `"${field}"`).join(','))
+            ].join('\n');
+
+            // Create and download CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `fixtures_${this.currentEditingClub}_${this.currentEditingEdition}_GW${this.currentEditingGameweek || 'all'}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            window.authManager.showSuccess(`Exported ${this.currentEditingFixtures.length} fixtures to CSV`);
+        } catch (error) {
+            console.error('❌ AdminManager: Error exporting fixtures to CSV:', error);
+            window.authManager.showError('Failed to export fixtures');
+        }
+    }
+
+    exportFixturesJSON() {
+        if (!this.currentEditingFixtures || this.currentEditingFixtures.length === 0) {
+            window.authManager.showError('No fixtures to export. Please load fixtures first.');
+            return;
+        }
+
+        try {
+            // Create JSON content
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                club: this.currentEditingClub,
+                edition: this.currentEditingEdition,
+                gameweek: this.currentEditingGameweek,
+                fixtureCount: this.currentEditingFixtures.length,
+                fixtures: this.currentEditingFixtures.map(fixture => ({
+                    id: fixture.id || fixture.fixtureId,
+                    gameweek: fixture.gameweek || fixture.gameWeek,
+                    date: fixture.date || fixture.fixtureDate,
+                    time: fixture.time || fixture.kickOffTime || fixture.kickoffTime || fixture.startTime,
+                    homeTeam: fixture.homeTeam,
+                    awayTeam: fixture.awayTeam,
+                    status: fixture.status,
+                    homeScore: fixture.homeScore,
+                    awayScore: fixture.awayScore,
+                    venue: fixture.venue,
+                    lastUpdated: fixture.lastUpdated,
+                    importedAt: fixture.importedAt
+                }))
+            };
+
+            // Create and download JSON file
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `fixtures_${this.currentEditingClub}_${this.currentEditingEdition}_GW${this.currentEditingGameweek || 'all'}_${new Date().toISOString().split('T')[0]}.json`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            window.authManager.showSuccess(`Exported ${this.currentEditingFixtures.length} fixtures to JSON`);
+        } catch (error) {
+            console.error('❌ AdminManager: Error exporting fixtures to JSON:', error);
+            window.authManager.showError('Failed to export fixtures');
+        }
     }
 }
 
