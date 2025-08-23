@@ -309,6 +309,186 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
 
+    <!-- Inline ConsoleLogger Test (temporary) -->
+    <script>
+        console.log('🧪 Inline ConsoleLogger test starting...');
+        
+        // Simple console capture
+        window.simpleLogger = {
+            logs: [],
+            maxLogs: 1000,
+            isCapturing: false,
+            originalConsole: {},
+            
+            init: function() {
+                try {
+                    // Store original console methods
+                    this.originalConsole.log = console.log;
+                    this.originalConsole.error = console.error;
+                    this.originalConsole.warn = console.warn;
+                    this.originalConsole.info = console.info;
+                    this.originalConsole.debug = console.debug;
+                    
+                    // Override console methods
+                    this.overrideMethod('log', 'log');
+                    this.overrideMethod('error', 'error');
+                    this.overrideMethod('warn', 'warn');
+                    this.overrideMethod('info', 'info');
+                    this.overrideMethod('debug', 'debug');
+                    
+                    this.isCapturing = true;
+                    console.log('🔧 Simple ConsoleLogger: Console capture initialized');
+                    
+                    // Start auto-streaming
+                    this.startStreaming();
+                    
+                } catch (error) {
+                    console.error('🔧 Simple ConsoleLogger: Error initializing:', error);
+                }
+            },
+            
+            overrideMethod: function(method, level) {
+                try {
+                    const original = this.originalConsole[method];
+                    
+                    console[method] = (...args) => {
+                        try {
+                            // Call original method
+                            if (original && typeof original === 'function') {
+                                original.apply(console, args);
+                            }
+                            
+                            // Capture the log
+                            this.capture(level, args);
+                        } catch (error) {
+                            // Fallback to original if capture fails
+                            if (original && typeof original === 'function') {
+                                original.apply(console, args);
+                            }
+                        }
+                    };
+                } catch (error) {
+                    console.error('🔧 Simple ConsoleLogger: Error overriding method:', method, error);
+                }
+            },
+            
+            capture: function(level, args) {
+                if (!this.isCapturing) return;
+                
+                try {
+                    const timestamp = new Date().toISOString();
+                    const message = args.map(arg => {
+                        if (typeof arg === 'object') {
+                            try {
+                                return JSON.stringify(arg);
+                            } catch (e) {
+                                return String(arg);
+                            }
+                        }
+                        return String(arg);
+                    }).join(' ');
+                    
+                    const logEntry = {
+                        timestamp,
+                        level,
+                        message,
+                        args: args.length > 1 ? args : undefined
+                    };
+                    
+                    this.logs.push(logEntry);
+                    
+                    // Keep logs under limit
+                    if (this.logs.length > this.maxLogs) {
+                        this.logs.shift();
+                    }
+                    
+                    // Save to localStorage
+                    this.saveToStorage();
+                    
+                } catch (error) {
+                    console.error('🔧 Simple ConsoleLogger: Error capturing log:', error);
+                }
+            },
+            
+            saveToStorage: function() {
+                try {
+                    localStorage.setItem('simpleConsoleLogs', JSON.stringify(this.logs));
+                } catch (e) {
+                    console.warn('🔧 Simple ConsoleLogger: Could not save to localStorage:', e);
+                }
+            },
+            
+            loadFromStorage: function() {
+                try {
+                    const saved = localStorage.getItem('simpleConsoleLogs');
+                    if (saved) {
+                        this.logs = JSON.parse(saved);
+                        console.log(`🔧 Simple ConsoleLogger: Loaded ${this.logs.length} logs from localStorage`);
+                    }
+                } catch (e) {
+                    console.warn('🔧 Simple ConsoleLogger: Could not load from localStorage:', e);
+                }
+            },
+            
+            startStreaming: function() {
+                try {
+                    // Stream logs every 5 seconds
+                    setInterval(() => {
+                        if (this.logs.length > 0) {
+                            this.streamToNetlify();
+                        }
+                    }, 5000);
+                    
+                    console.log('🔧 Simple ConsoleLogger: Auto-streaming started (every 5 seconds)');
+                } catch (error) {
+                    console.error('🔧 Simple ConsoleLogger: Error starting streaming:', error);
+                }
+            },
+            
+            streamToNetlify: async function() {
+                try {
+                    const response = await fetch('/.netlify/functions/console-stream', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            logs: this.logs.slice(-50),
+                            timestamp: new Date().toISOString(),
+                            userAgent: navigator.userAgent,
+                            url: window.location.href
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log('🔧 Simple ConsoleLogger: Logs streamed to Netlify');
+                    }
+                } catch (error) {
+                    // Silently fail - this is expected if Netlify function isn't ready yet
+                }
+            },
+            
+            getSummary: function() {
+                return {
+                    total: this.logs.length,
+                    errors: this.logs.filter(log => log.level === 'error').length,
+                    warnings: this.logs.filter(log => log.level === 'warn').length,
+                    recent: this.logs.slice(-10)
+                };
+            }
+        };
+        
+        // Initialize the simple logger
+        window.simpleLogger.init();
+        window.simpleLogger.loadFromStorage();
+        
+        // Add global helper functions
+        window.getSimpleLogs = () => window.simpleLogger.logs;
+        window.getSimpleSummary = () => window.simpleLogger.getSummary();
+        
+        console.log('🔧 Simple ConsoleLogger: Ready! Use getSimpleLogs() or getSimpleSummary()');
+    </script>
+
     <!-- App Scripts with cache-busting for development -->
     <!-- Environment Loader (load first) -->
     <script src="js/config/env-loader.js?v=1.0.0"></script>

@@ -286,6 +286,11 @@
             // Start auto-streaming to Netlify
             window.consoleLogger.startAutoStreaming();
 
+            // Dispatch ready event for dashboard
+            window.dispatchEvent(new CustomEvent('consoleLoggerReady', { 
+                detail: { consoleLogger: window.consoleLogger } 
+            }));
+
             // Add global helper functions
             window.getConsoleLogs = () => window.consoleLogger.getLogs();
             window.getConsoleSummary = () => window.consoleLogger.getLogsSummary();

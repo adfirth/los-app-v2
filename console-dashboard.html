@@ -187,6 +187,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Wait for ConsoleLogger to be available
             waitForConsoleLogger();
+            
+            // Also listen for the ready event
+            window.addEventListener('consoleLoggerReady', function(e) {
+                console.log('🔧 Console Dashboard: ConsoleLogger ready event received');
+                if (e.detail.consoleLogger) {
+                    window.consoleLogger = e.detail.consoleLogger;
+                    initializeDashboard();
+                }
+            });
         });
 
         // Wait for ConsoleLogger to be available
