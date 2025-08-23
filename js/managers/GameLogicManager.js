@@ -188,14 +188,16 @@ class GameLogicManager {
         if (!picks || Object.keys(picks).length === 0) return null;
         
         const gameweeks = Object.keys(picks).map(Number).sort((a, b) => b - a);
-        return picks[gameweeks[0]];
+        const lastPick = picks[gameweeks[0]];
+        return lastPick ? lastPick.teamPicked : null;
     }
 
     getCurrentGameweekPick(picks) {
         if (!picks || Object.keys(picks).length === 0) return null;
         
         const currentGameweek = window.losApp?.managers?.edition?.getCurrentGameweek() || 1;
-        return picks[currentGameweek] || null;
+        const currentPick = picks[currentGameweek];
+        return currentPick ? currentPick.teamPicked : null;
     }
 
     getCardStatus(lives) {
@@ -214,6 +216,24 @@ class GameLogicManager {
         if (lives === 0) return '🔴';
         if (lives === 1) return '🟡';
         return '🟢';
+    }
+
+    calculateLivesFromPicks(userPicks, startingLives = 2) {
+        if (!userPicks || Object.keys(userPicks).length === 0) {
+            return startingLives;
+        }
+
+        let lives = startingLives;
+        
+        // Count losing picks (cards received)
+        Object.values(userPicks).forEach(pick => {
+            if (pick && pick.result === 'loss') {
+                lives--;
+            }
+        });
+
+        // Ensure lives don't go below 0
+        return Math.max(0, lives);
     }
 
     displayStandings() {
@@ -257,6 +277,17 @@ class GameLogicManager {
             const cardStatusText = this.getCardStatusText(player.lives);
             const currentPick = player.currentGameweekPick || 'No pick made';
             const lastPick = player.lastPick ? `GW${Object.keys(player.picks).sort((a, b) => Number(b) - Number(a))[0]}` : 'No picks yet';
+            
+            // Add debug logging for current user
+            if (player.isCurrentUser) {
+                console.log('🔍 GameLogicManager: Current user pick details:', {
+                    uid: player.uid,
+                    displayName: player.displayName,
+                    calculatedLives: player.lives,
+                    picks: player.picks,
+                    cardStatus: player.cardStatus
+                });
+            }
             
             standingsHTML += `
                 <div class="standings-row ${eliminatedClass} ${currentUserClass}" data-uid="${player.uid}">
@@ -308,21 +339,27 @@ class GameLogicManager {
                 
                 picksSnapshot.forEach(pickDoc => {
                     const pickData = pickDoc.data();
-                    userPicks[pickData.gameweek] = pickData.teamPicked;
+                    userPicks[pickData.gameweek] = {
+                        teamPicked: pickData.teamPicked,
+                        result: pickData.result,
+                        fixtureId: pickData.fixtureId,
+                        isAutopick: pickData.isAutopick || false
+                    };
                 });
             } catch (error) {
                 console.error('Error loading picks for user (old):', doc.id, error);
             }
             
+            const calculatedLives = this.calculateLivesFromPicks(userPicks);
             const playerData = {
                 uid: doc.id,
                 displayName: userData.displayName,
-                lives: userData.lives || 0,
+                lives: calculatedLives,
                 picks: userPicks,
-                eliminated: userData.lives <= 0,
+                eliminated: calculatedLives <= 0,
                 lastPick: this.getLastPick(userPicks),
                 currentGameweekPick: this.getCurrentGameweekPick(userPicks),
-                cardStatus: this.getCardStatus(userData.lives || 0),
+                cardStatus: this.getCardStatus(calculatedLives),
                 isCurrentUser: doc.id === window.losApp?.managers?.auth?.currentUser?.uid
             };
             
@@ -354,21 +391,27 @@ class GameLogicManager {
                 
                 picksSnapshot.forEach(pickDoc => {
                     const pickData = pickDoc.data();
-                    userPicks[pickData.gameweek] = pickData.teamPicked;
+                    userPicks[pickData.gameweek] = {
+                        teamPicked: pickData.teamPicked,
+                        result: pickData.result,
+                        fixtureId: pickData.fixtureId,
+                        isAutopick: pickData.isAutopick || false
+                    };
                 });
             } catch (error) {
                 console.error('Error loading picks for user (new):', doc.id, error);
             }
             
+            const calculatedLives = this.calculateLivesFromPicks(userPicks);
             const playerData = {
                 uid: doc.id,
                 displayName: userData.displayName,
-                lives: userData.lives || 0,
+                lives: calculatedLives,
                 picks: userPicks,
-                eliminated: userData.lives <= 0,
+                eliminated: calculatedLives <= 0,
                 lastPick: this.getLastPick(userPicks),
                 currentGameweekPick: this.getCurrentGameweekPick(userPicks),
-                cardStatus: this.getCardStatus(userData.lives || 0),
+                cardStatus: this.getCardStatus(calculatedLives),
                 isCurrentUser: doc.id === window.losApp?.managers?.auth?.currentUser?.uid
             };
             
