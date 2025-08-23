@@ -166,7 +166,15 @@
         
         <div class="logs-container" id="logsContainer">
             <div style="text-align: center; color: #7f8c8d; padding: 40px;">
-                Loading logs...
+                <div id="loadingIndicator">
+                    <div style="margin-bottom: 10px;">🔄 Loading ConsoleLogger...</div>
+                    <div style="font-size: 12px; color: #95a5a6;">Waiting for ConsoleLogger service to initialize</div>
+                </div>
+                <div id="errorIndicator" style="display: none; color: #e74c3c;">
+                    <div style="margin-bottom: 10px;">❌ ConsoleLogger not available</div>
+                    <div style="font-size: 12px;">Make sure you're on a page with the ConsoleLogger service loaded</div>
+                    <button onclick="retryConnection()" style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Retry</button>
+                </div>
             </div>
         </div>
     </div>
@@ -177,33 +185,82 @@
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            refreshLogs();
-            startAutoRefresh();
+            // Wait for ConsoleLogger to be available
+            waitForConsoleLogger();
         });
 
-        // Refresh logs from Netlify function
-        async function refreshLogs() {
-            try {
-                const response = await fetch('/.netlify/functions/console-stream?limit=200');
-                const data = await response.json();
+        // Wait for ConsoleLogger to be available
+        function waitForConsoleLogger() {
+            if (window.consoleLogger) {
+                initializeDashboard();
+            } else {
+                // Show error after 3 seconds if ConsoleLogger is not available
+                setTimeout(() => {
+                    if (!window.consoleLogger) {
+                        showErrorState();
+                    }
+                }, 3000);
                 
-                updateStats(data);
-                displayLogs(data.logs);
+                // Keep trying
+                setTimeout(waitForConsoleLogger, 100);
+            }
+        }
+
+        // Show error state
+        function showErrorState() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('errorIndicator').style.display = 'block';
+        }
+
+        // Retry connection
+        function retryConnection() {
+            document.getElementById('errorIndicator').style.display = 'none';
+            document.getElementById('loadingIndicator').style.display = 'block';
+            waitForConsoleLogger();
+        }
+
+        // Initialize dashboard with ConsoleLogger
+        function initializeDashboard() {
+            console.log('🔧 Console Dashboard: Initializing with ConsoleLogger');
+            
+            // Hide loading indicator
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('errorIndicator').style.display = 'none';
+            
+            refreshLogs();
+            startAutoRefresh();
+        }
+
+        // Refresh logs from ConsoleLogger
+        function refreshLogs() {
+            try {
+                if (!window.consoleLogger) {
+                    console.error('ConsoleLogger not available');
+                    return;
+                }
+
+                const summary = window.consoleLogger.getLogsSummary();
+                const logs = window.consoleLogger.getLogs();
+                
+                updateStats(summary);
+                displayLogs(logs);
                 
                 // Update last update time
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                
+                console.log('🔧 Console Dashboard: Logs refreshed');
             } catch (error) {
-                console.error('Failed to fetch logs:', error);
+                console.error('Failed to refresh logs:', error);
                 document.getElementById('logsContainer').innerHTML = 
-                    '<div style="text-align: center; color: #e74c3c; padding: 40px;">Failed to load logs</div>';
+                    '<div style="text-align: center; color: #e74c3c; padding: 40px;">Failed to load logs: ' + error.message + '</div>';
             }
         }
 
         // Update statistics
-        function updateStats(data) {
-            document.getElementById('totalLogs').textContent = data.total || 0;
-            document.getElementById('errorLogs').textContent = data.errors || 0;
-            document.getElementById('warningLogs').textContent = data.warnings || 0;
+        function updateStats(summary) {
+            document.getElementById('totalLogs').textContent = summary.total || 0;
+            document.getElementById('errorLogs').textContent = summary.errors || 0;
+            document.getElementById('warningLogs').textContent = summary.warnings || 0;
         }
 
         // Display logs
@@ -215,7 +272,10 @@
                 return;
             }
 
-            const logsHTML = logs.map(log => {
+            // Show most recent logs first
+            const recentLogs = logs.slice().reverse();
+
+            const logsHTML = recentLogs.map(log => {
                 const timestamp = new Date(log.timestamp).toLocaleString();
                 const levelClass = log.level || 'log';
                 const levelText = (log.level || 'log').toUpperCase();
@@ -233,23 +293,39 @@
         }
 
         // Clear all logs
-        async function clearLogs() {
-            if (confirm('Are you sure you want to clear all logs?')) {
+        function clearLogs() {
+            if (confirm('Are you sure you want to clear all logs? This will clear logs from both the dashboard and localStorage.')) {
                 try {
-                    // This would need a DELETE endpoint in the Netlify function
-                    // For now, just refresh to show current state
+                    if (window.consoleLogger) {
+                        window.consoleLogger.clearLogs();
+                        console.log('🔧 Console Dashboard: All logs cleared');
+                    }
+                    
+                    // Refresh display
                     refreshLogs();
+                    
+                    // Show confirmation
+                    showNotification('All logs cleared successfully!', 'success');
                 } catch (error) {
                     console.error('Failed to clear logs:', error);
+                    showNotification('Failed to clear logs: ' + error.message, 'error');
                 }
             }
         }
 
         // Export logs as JSON
         function exportLogs() {
-            // This would download the current logs as JSON
-            // For now, just refresh to get latest data
-            refreshLogs();
+            try {
+                if (window.consoleLogger) {
+                    window.consoleLogger.exportLogs();
+                    showNotification('Logs exported successfully!', 'success');
+                } else {
+                    showNotification('ConsoleLogger not available', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to export logs:', error);
+                showNotification('Failed to export logs: ' + error.message, 'error');
+            }
         }
 
         // Toggle auto-refresh
@@ -271,6 +347,8 @@
             const btn = document.getElementById('autoRefreshBtn');
             btn.textContent = '⏸️ Stop Auto-Refresh';
             btn.classList.add('active');
+            
+            console.log('🔧 Console Dashboard: Auto-refresh started');
         }
 
         // Stop auto-refresh
@@ -284,7 +362,68 @@
             const btn = document.getElementById('autoRefreshBtn');
             btn.textContent = '⏸️ Auto-Refresh';
             btn.classList.remove('active');
+            
+            console.log('🔧 Console Dashboard: Auto-refresh stopped');
         }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 4px;
+                color: white;
+                font-weight: bold;
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            // Set color based on type
+            switch (type) {
+                case 'success':
+                    notification.style.background = '#27ae60';
+                    break;
+                case 'error':
+                    notification.style.background = '#e74c3c';
+                    break;
+                case 'warning':
+                    notification.style.background = '#f39c12';
+                    break;
+                default:
+                    notification.style.background = '#3498db';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
 
         // Cleanup on page unload
         window.addEventListener('beforeunload', function() {
@@ -292,6 +431,33 @@
                 clearInterval(autoRefreshInterval);
             }
         });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        refreshLogs();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        exportLogs();
+                        break;
+                    case 'c':
+                        e.preventDefault();
+                        clearLogs();
+                        break;
+                    case 'a':
+                        e.preventDefault();
+                        toggleAutoRefresh();
+                        break;
+                }
+            }
+        });
+
+        // Add help tooltip
+        console.log('🔧 Console Dashboard: Keyboard shortcuts available: Ctrl+R (refresh), Ctrl+E (export), Ctrl+C (clear), Ctrl+A (auto-refresh)');
     </script>
 </body>
 </html>

@@ -47,294 +47,190 @@ class LOSApp {
     }
 
     initializeApp() {
-        if (this.isInitialized) return;
-        
-        console.log('Initializing LOS App...');
-        
-        // Set window.losApp reference immediately so managers can access it
-        window.losApp = this;
-        
-        // Initialize UI and Performance services
-        this.initializeServices();
-        
-        // Initialize managers
-        this.initializeManagers();
-        
-        // Set up global event listeners
-        this.setupGlobalListeners();
-        
-        // Set up service worker for PWA functionality
-        this.setupServiceWorker();
-        
-        this.isInitialized = true;
-        console.log('LOS App initialized successfully');
-    }
-
-    initializeServices() {
-        // Initialize UI Service for enhanced user experience
-        if (window.UIService) {
-            this.uiService = new window.UIService();
-            window.uiService = this.uiService;
-            console.log('✅ UIService initialized');
-        } else {
-            console.warn('⚠️ UIService not available');
-        }
-
-        // Initialize Performance Service for optimizations
-        if (window.PerformanceService) {
-            this.performanceService = new window.PerformanceService();
-            window.performanceService = this.performanceService;
-            console.log('✅ PerformanceService initialized');
-        } else {
-            console.warn('⚠️ PerformanceService not available');
+        try {
+            // Initialize core services
+            this.uiService = new UIService();
+            this.performanceService = new PerformanceService();
+            
+            // Initialize managers
+            this.initializeManagers();
+            
+            // Set up performance monitoring
+            this.performanceService.startMonitoring();
+            
+        } catch (error) {
+            console.error('Error initializing app:', error);
         }
     }
 
-    initializeManagers() {
-        // Wait for all managers to be available
-        const checkManagers = () => {
-            const requiredManagers = [
-                'authManager',
-                'editionService',
-                'fixturesManager',
-                'scoresManager',
-                'gameLogicManager',
-                'pickStatusService',
-                'deadlineService',
-                'adminManager',
-                'ClubService',
-                'SuperAdminManager',
-                'FixtureManagementManager'
-            ];
+    async initializeManagers() {
+        try {
+            // Initialize all managers
+            this.managers = {
+                auth: new AuthManager(),
+                edition: new EditionService(),
+                fixtures: new FixturesManager(),
+                scores: new ScoresManager(),
+                gameLogic: new GameLogicManager(),
+                pickStatus: new PickStatusService(),
+                deadline: new DeadlineService(),
+                admin: new AdminManager(),
+                club: new ClubService(),
+                superAdmin: new SuperAdminManager(),
+                fixtureManagement: new FixtureManagementManager()
+            };
 
-            const allManagersReady = requiredManagers.every(manager => window[manager]);
+            // Wait for all managers to be ready
+            await this.waitForManagersReady();
+            
+        } catch (error) {
+            console.error('Error initializing managers:', error);
+        }
+    }
 
-            if (allManagersReady) {
-                this.managers = {
-                    auth: window.authManager,
-                    edition: window.editionService,
-                    fixtures: window.fixturesManager,
-                    scores: window.scoresManager,
-                    gameLogic: window.gameLogicManager,
-                    pickStatus: window.pickStatusService,
-                    deadline: window.deadlineService,
-                    admin: window.adminManager,
-                    club: new window.ClubService(),
-                    superAdmin: new window.SuperAdminManager(),
-                    fixtureManagement: new window.FixtureManagementManager()
-                };
-
-                console.log('All managers initialized');
-                this.onManagersReady();
-            } else {
-                // Check again in 100ms
-                setTimeout(checkManagers, 100);
-            }
-        };
-
-        checkManagers();
+    async waitForManagersReady() {
+        return new Promise((resolve) => {
+            const checkManagers = () => {
+                const allReady = Object.values(this.managers).every(manager => 
+                    manager && typeof manager.initBasic === 'function'
+                );
+                
+                if (allReady) {
+                    this.onManagersReady();
+                    resolve();
+                } else {
+                    setTimeout(checkManagers, 100);
+                }
+            };
+            
+            checkManagers();
+        });
     }
 
     onManagersReady() {
-        console.log('🎯 onManagersReady() called');
-        
-        // Initialize managers first (this sets up basic structure but doesn't load data yet)
-        console.log('🔧 About to call initializeManagerConnections()...');
-        this.initializeManagerConnections();
-        
-        // Wait for Firebase to be fully ready before setting up connections
-        console.log('⏳ About to call waitForFirebaseReady()...');
-        this.waitForFirebaseReady();
-        
-        // Don't set up periodic tasks here - they will be set up after Firebase is ready
-        // to prevent timing issues with manager database references
-        console.log('✅ onManagersReady() completed');
+        try {
+            // Initialize manager connections
+            this.initializeManagerConnections();
+            
+            // Wait for Firebase to be ready
+            this.waitForFirebaseReady();
+            
+        } catch (error) {
+            console.error('Error in onManagersReady:', error);
+        }
     }
 
-        async waitForFirebaseReady() {
-        console.log('⏳ waitForFirebaseReady() called');
-        let firebaseReadyHandled = false;
-        
-        const checkFirebase = () => {
-            console.log('🔍 checkFirebase() called - checking Firebase readiness...');
-            if (window.firebaseReady && window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
-                if (!firebaseReadyHandled) {
-                    console.log('✅ Firebase is ready (detected by polling), proceeding with data loading...');
-                    firebaseReadyHandled = true;
-                    // Set up real-time listeners and connections first
-                    this.setupRealtimeConnections();
-                    // Force retry for managers that might be waiting
-                    this.forceManagerRetry();
-                    // Set up periodic tasks now that Firebase is ready
-                    this.setupPeriodicTasks();
+    async initializeManagerConnections() {
+        try {
+            // Initialize basic structure for all managers
+            for (const [key, manager] of Object.entries(this.managers)) {
+                if (manager && typeof manager.initBasic === 'function') {
+                    try {
+                        await manager.initBasic();
+                    } catch (error) {
+                        console.error(`Error initializing ${key}:`, error);
+                    }
                 }
-            } else {
-                console.log('⏳ Waiting for Firebase to be ready...');
-                setTimeout(checkFirebase, 500);
             }
-        };
-        
-        // Listen for the firebaseReady event
-        window.addEventListener('firebaseReady', () => {
-            console.log('🎉 Firebase ready event received - triggering manager retry');
-            if (!firebaseReadyHandled) {
-                firebaseReadyHandled = true;
-                // Add a small delay to ensure Firebase is fully ready
-                setTimeout(() => {
+
+            // Restore Firebase connections
+            this.restoreFirebaseConnections();
+            
+        } catch (error) {
+            console.error('Error initializing manager connections:', error);
+        }
+    }
+
+    restoreFirebaseConnections() {
+        try {
+            for (const [key, manager] of Object.entries(this.managers)) {
+                if (manager && typeof manager.restoreFirebaseConnection === 'function') {
+                    try {
+                        manager.restoreFirebaseConnection();
+                    } catch (error) {
+                        console.error(`Error restoring Firebase connection for ${key}:`, error);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error restoring Firebase connections:', error);
+        }
+    }
+
+    async waitForFirebaseReady() {
+        return new Promise((resolve) => {
+            const checkFirebase = () => {
+                if (window.firebaseReady && window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
                     this.setupRealtimeConnections();
-                    // Force retry for managers that might be waiting
-                    this.forceManagerRetry();
-                    // Set up periodic tasks now that Firebase is ready
-                    this.setupPeriodicTasks();
-                }, 500);
+                    resolve();
+                } else {
+                    setTimeout(checkFirebase, 1000);
+                }
+            };
+            
+            checkFirebase();
+        });
+    }
+
+    setupRealtimeConnections() {
+        try {
+            // Set up real-time listeners for all managers
+            for (const [key, manager] of Object.entries(this.managers)) {
+                if (manager && typeof manager.setupRealtimeListeners === 'function') {
+                    try {
+                        manager.setupRealtimeListeners();
+                    } catch (error) {
+                        console.error(`Error setting up real-time listeners for ${key}:`, error);
+                    }
+                }
             }
-        }, { once: true });
-        
-        // Start checking immediately and continue checking
-        console.log('🚀 Starting Firebase readiness check...');
-        checkFirebase();
+
+            // Initialize managers with data loading
+            this.initializeManagersWithData();
+            
+        } catch (error) {
+            console.error('Error setting up real-time connections:', error);
+        }
     }
 
-    initializeManagerConnections() {
-        console.log('🔧 Initializing manager connections...');
-        console.log('🔍 Available managers:', Object.keys(this.managers));
-        
-        // Initialize managers in the correct order - but don't load data yet
-        if (this.managers.edition) {
-            console.log('🚀 Calling EditionService.initBasic()...');
-            this.managers.edition.initBasic();
-        } else {
-            console.log('❌ EditionService not available in this.managers');
-        }
-        
-        if (this.managers.auth) {
-            console.log('🚀 Calling AuthManager.initBasic()...');
-            this.managers.auth.initBasic();
-        } else {
-            console.log('❌ AuthManager not available in this.managers');
-        }
-        
-        if (this.managers.fixtures) {
-            console.log('🚀 Calling FixturesManager.initBasic()...');
-            this.managers.fixtures.initBasic();
-        } else {
-            console.log('❌ FixturesManager not available in this.managers');
-        }
-        
-        if (this.managers.scores) {
-            console.log('🚀 Calling ScoresManager.initBasic()...');
-            this.managers.scores.initBasic();
-        } else {
-            console.log('❌ ScoresManager not available in this.managers');
-        }
-        
-        if (this.managers.gameLogic) {
-            console.log('🚀 Calling GameLogicManager.initBasic()...');
-            this.managers.gameLogic.initBasic();
-        } else {
-            console.log('❌ GameLogicManager not available in this.managers');
-        }
-        
-        if (this.managers.pickStatus) {
-            console.log('🚀 Calling PickStatusService.initBasic()...');
-            this.managers.pickStatus.initBasic();
-        } else {
-            console.log('❌ PickStatusService not available in this.managers');
-        }
-        
-        if (this.managers.deadline) {
-            console.log('🚀 Calling DeadlineService.initBasic()...');
-            this.managers.deadline.initBasic();
-        } else {
-            console.log('❌ DeadlineService not available in this.managers');
-        }
-        
-        if (this.managers.admin) {
-            console.log('🚀 Calling AdminManager.initBasic()...');
-            this.managers.admin.initBasic();
-        } else {
-            console.log('❌ AdminManager not available in this.managers');
-        }
-        
-        if (this.managers.club) {
-            console.log('🚀 Calling ClubService.initBasic()...');
-            this.managers.club.initBasic();
-        } else {
-            console.log('❌ ClubService not available in this.managers');
-        }
-        
-        if (this.managers.superAdmin) {
-            console.log('🚀 Calling SuperAdminManager.initBasic()...');
-            this.managers.superAdmin.initBasic();
-        } else {
-            console.log('❌ SuperAdminManager not available in this.managers');
-        }
+    async initializeManagersWithData() {
+        try {
+            // Initialize data loading for all managers
+            for (const [key, manager] of Object.entries(this.managers)) {
+                if (manager && typeof manager.init === 'function') {
+                    try {
+                        await manager.init();
+                    } catch (error) {
+                        console.error(`Error initializing data for ${key}:`, error);
+                    }
+                }
+            }
 
-        if (this.managers.fixtureManagement) {
-            console.log('🚀 Calling FixtureManagementManager.initBasic()...');
-            this.managers.fixtureManagement.initBasic();
-        } else {
-            console.log('❌ FixtureManagementManager not available in this.managers');
+            // Set up periodic tasks
+            this.setupPeriodicTasks();
+            
+        } catch (error) {
+            console.error('Error initializing managers with data:', error);
         }
-        
-        console.log('✅ All manager connections initialized');
-        
-        // Now restore Firebase functionality to managers
-        this.restoreManagerFirebaseConnections();
     }
 
-    restoreManagerFirebaseConnections() {
-        console.log('Restoring Firebase connections to managers...');
-        
-        // Just ensure managers have access to Firebase DB, but don't set up listeners yet
-        // Real-time listeners will be set up by setupRealtimeConnections() after Firebase is ready
-        if (this.managers.edition) {
-            this.managers.edition.restoreFirebaseConnection();
-        }
-        if (this.managers.auth) {
-            this.managers.auth.restoreFirebaseConnection();
-        }
-        if (this.managers.fixtures) {
-            this.managers.fixtures.restoreFirebaseConnection();
-        }
-        if (this.managers.scores) {
-            this.managers.scores.restoreFirebaseConnection();
-        }
-        if (this.managers.gameLogic) {
-            this.managers.gameLogic.restoreFirebaseConnection();
-        }
-        if (this.managers.pickStatus) {
-            this.managers.pickStatus.restoreFirebaseConnection();
-        }
-        if (this.managers.deadline) {
-            this.managers.deadline.restoreFirebaseConnection();
-        }
-        if (this.managers.admin) {
-            this.managers.admin.restoreFirebaseConnection();
-        }
-        if (this.managers.club) {
-            this.managers.club.restoreFirebaseConnection();
-        }
-        
-        if (this.managers.superAdmin) {
-            this.managers.superAdmin.restoreFirebaseConnection();
-        }
+    setupPeriodicTasks() {
+        try {
+            // Set up periodic admin status checks
+            if (this.managers.admin && typeof this.managers.admin.startPeriodicChecks === 'function') {
+                this.managers.admin.startPeriodicChecks();
+            }
 
-        if (this.managers.fixtureManagement) {
-            this.managers.fixtureManagement.restoreFirebaseConnection();
+            // Set up other periodic tasks as needed
+            
+        } catch (error) {
+            console.error('Error setting up periodic tasks:', error);
         }
-
-        if (this.managers.fixtureManagement) {
-            this.managers.fixtureManagement.restoreFirebaseConnection();
-        }
-        
-        console.log('Firebase connections restored to all managers');
     }
 
     // Coordinate manager operations to prevent conflicts
     async coordinateManagerOperation(operationName, operation) {
         if (this.connectionState.isConnecting) {
-            console.log(`Operation ${operationName} delayed due to ongoing connection`);
             return new Promise((resolve) => {
                 setTimeout(() => {
                     this.coordinateManagerOperation(operationName, operation).then(resolve);
@@ -354,104 +250,292 @@ class LOSApp {
     }
 
     // Connection state management
-    canAttemptConnection() {
-        const now = Date.now();
-        const timeSinceLastAttempt = now - this.connectionState.lastConnectionAttempt;
+    setConnectionState(connecting, connected = false) {
+        this.connectionState.isConnecting = connecting;
+        this.connectionState.isConnected = connected;
         
-        // Prevent multiple simultaneous connection attempts
-        if (this.connectionState.isConnecting) {
-            console.log('Connection attempt already in progress, skipping...');
-            return false;
+        if (connecting) {
+            this.connectionState.lastConnectionAttempt = Date.now();
+            this.connectionState.connectionRetryCount++;
         }
-        
-        // Rate limit connection attempts (minimum 2 seconds between attempts)
-        if (timeSinceLastAttempt < 2000) {
-            console.log('Connection attempt too soon, waiting...');
-            return false;
-        }
-        
-        return true;
     }
 
-    // Development environment features
-    setupDevelopmentFeatures() {
-        console.log('🚀 Development mode detected - enabling enhanced features');
-        
-        // Add hot reload detection
-        this.setupHotReload();
-        
-        // Add cache-busting for JavaScript files
-        this.setupCacheBusting();
-        
-        // Add development console commands
-        this.setupDevConsole();
+    // Handle connection conflicts gracefully
+    handleConnectionConflict() {
+        if (this.connectionState.connectionRetryCount >= this.maxConnectionRetryAttempts) {
+            this.useFallbackApproach();
+            return;
+        }
+
+        this.attemptConnectionRecovery();
     }
 
-    setupHotReload() {
-        // Check for file changes every 30 seconds in development
-        setInterval(() => {
-            // This is a simple approach - in a real app you might use WebSocket or Server-Sent Events
-            if (this.isDevelopment) {
-                // Force refresh of manager connections
-                this.refreshManagerConnections();
+    // Attempt to recover from connection conflict
+    async attemptConnectionRecovery() {
+        try {
+            await this.performAggressiveCleanup();
+            await this.waitForFirebaseReady();
+        } catch (error) {
+            console.error('Error during connection recovery:', error);
+            this.useFallbackApproach();
+        }
+    }
+
+    // Perform aggressive Firebase cleanup
+    async performAggressiveCleanup() {
+        try {
+            this.clearAllListeners();
+            this.resetConnectionState();
+        } catch (error) {
+            console.error('Error during aggressive cleanup:', error);
+        }
+    }
+
+    // Use fallback approach when recovery fails
+    useFallbackApproach() {
+        this.loadFallbackData();
+    }
+
+    // Load fallback data from localStorage
+    loadFallbackData() {
+        try {
+            const userData = localStorage.getItem('userData');
+            if (userData) {
+                const user = JSON.parse(userData);
+                // Use fallback user data
             }
-        }, 30000); // Increased from 2 seconds to 30 seconds to prevent Firestore state corruption
-    }
 
-    setupCacheBusting() {
-        // Add cache-busting query parameters to script tags in development
-        if (this.isDevelopment) {
-            const scripts = document.querySelectorAll('script[src]');
-            scripts.forEach(script => {
-                if (script.src && !script.src.includes('?v=')) {
-                    script.src += `?v=${Date.now()}`;
-                }
-            });
+            const settings = localStorage.getItem('appSettings');
+            if (settings) {
+                const appSettings = JSON.parse(settings);
+                // Use fallback settings
+            }
+        } catch (error) {
+            console.error('Error loading fallback data:', error);
         }
     }
 
-    setupDevConsole() {
-        // Add development console commands
-        if (this.isDevelopment) {
-            window.dev = {
-                refresh: () => {
-                    console.log('🔄 Manual refresh triggered');
-                    this.refreshManagerConnections();
-                },
-                clearCache: () => {
-                    console.log('🗑️ Clearing all caches...');
-                    if ('caches' in window) {
-                        caches.keys().then(names => {
-                            names.forEach(name => caches.delete(name));
-                        });
-                    }
-                    // Clear localStorage
-                    localStorage.clear();
-                    console.log('✅ Caches cleared');
-                },
-                forceReload: () => {
-                    console.log('🔄 Force reloading page...');
-                    window.location.reload(true);
-                }
-            };
+    // Listener management
+    registerListener(listenerId, callback) {
+        if (this.activeListeners.has(listenerId)) {
+            return; // Listener already exists
+        }
+        this.activeListeners.set(listenerId, callback);
+    }
+
+    unregisterListener(listenerId) {
+        this.activeListeners.delete(listenerId);
+    }
+
+    clearAllListeners() {
+        this.activeListeners.clear();
+    }
+
+    // Firebase connection monitoring
+    setupFirebaseConnectionMonitoring() {
+        if (!window.firebaseDB) {
+            return; // Firebase not ready
+        }
+        window.firebaseDB.enableNetwork();
+    }
+
+    // Reset Firebase connection
+    async resetFirebaseConnection() {
+        if (this.connectionState.isResetting) {
+            return; // Reset already in progress
+        }
+
+        try {
+            this.connectionState.isResetting = true;
             
-            console.log('🛠️ Development commands available:');
-            console.log('  dev.refresh() - Refresh manager connections');
-            console.log('  dev.clearCache() - Clear all caches');
-            console.log('  dev.forceReload() - Force page reload');
+            if (window.firebaseDB) {
+                await window.firebaseDB.disableNetwork();
+                await window.firebaseDB.enableNetwork();
+            }
+            
+            this.retryDataLoading();
+            
+        } catch (error) {
+            console.error('Error resetting Firebase connection:', error);
+        } finally {
+            this.connectionState.isResetting = false;
         }
     }
 
-    refreshManagerConnections() {
-        if (this.managers) {
-            console.log('🔄 Refreshing manager connections...');
-            Object.keys(this.managers).forEach(key => {
-                if (this.managers[key] && this.managers[key].clearListeners) {
-                    this.managers[key].clearListeners();
+    // Retry data loading after connection reset
+    retryDataLoading() {
+        try {
+            this.initializeManagersWithData();
+        } catch (error) {
+            console.error('Error retrying data loading:', error);
+        }
+    }
+
+    // Periodic data refresh
+    setupPeriodicDataRefresh() {
+        if (this.periodicTasks.dataRefresh) {
+            return; // Already set up
+        }
+
+        this.periodicTasks.dataRefresh = setInterval(() => {
+            if (window.firebaseReady && this.managers) {
+                this.refreshData();
+            }
+        }, 30000); // Refresh every 30 seconds
+    }
+
+    // Refresh data
+    refreshData() {
+        try {
+            Object.values(this.managers).forEach(manager => {
+                if (manager && typeof manager.refresh === 'function') {
+                    manager.refresh();
                 }
             });
-            // Re-initialize connections
-            this.setupRealtimeConnections();
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        }
+    }
+
+    // Periodic deadline checks
+    setupPeriodicDeadlineChecks() {
+        if (this.periodicTasks.deadlineCheck) {
+            return; // Already set up
+        }
+
+        this.periodicTasks.deadlineCheck = setInterval(() => {
+            if (window.firebaseReady && this.managers.deadline) {
+                this.checkDeadlines();
+            }
+        }, 60000); // Check every minute
+    }
+
+    // Check deadlines
+    checkDeadlines() {
+        try {
+            if (this.managers.deadline && typeof this.managers.deadline.checkAllDeadlines === 'function') {
+                this.managers.deadline.checkAllDeadlines();
+            }
+        } catch (error) {
+            console.error('Error checking deadlines:', error);
+        }
+    }
+
+    // Manual connection reset
+    manualConnectionReset() {
+        this.resetFirebaseConnection();
+    }
+
+    // Handle Firebase errors
+    handleFirebaseError(error) {
+        if (error.code === 'failed-precondition') {
+            this.handleConnectionConflict();
+        } else {
+            console.error('Firebase error:', error);
+        }
+    }
+
+    // Performance monitoring
+    setupPerformanceMonitoring() {
+        try {
+            if (this.performanceService) {
+                this.performanceService.startMonitoring();
+            }
+        } catch (error) {
+            console.error('Performance monitoring unavailable:', error);
+        }
+    }
+
+    // Service Worker setup
+    async setupServiceWorker() {
+        try {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                // Service Worker registered successfully
+            }
+        } catch (error) {
+            console.error('Service Worker registration failed:', error);
+        }
+    }
+
+    // App lifecycle management
+    pauseApp() {
+        // Pause app activity
+    }
+
+    resumeApp() {
+        // Resume app activity
+    }
+
+    destroyApp() {
+        try {
+            this.clearAllListeners();
+            
+            Object.values(this.periodicTasks).forEach(interval => {
+                if (interval) clearInterval(interval);
+            });
+            
+            if (this.managers) {
+                Object.values(this.managers).forEach(manager => {
+                    if (manager && typeof manager.destroy === 'function') {
+                        manager.destroy();
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error destroying app:', error);
+        }
+    }
+
+    // Global Firebase event handlers
+    setupGlobalFirebaseHandlers() {
+        window.addEventListener('firebaseReady', () => {
+            this.updateAllManagers();
+        });
+
+        window.addEventListener('firebaseError', (e) => {
+            this.handleFirebaseError(e.detail);
+        });
+    }
+
+    // Update all managers with Firebase reference
+    updateAllManagers() {
+        if (this.managers) {
+            Object.entries(this.managers).forEach(([key, manager]) => {
+                if (manager && typeof manager.setFirebaseDB === 'function') {
+                    manager.setFirebaseDB(window.firebaseDB);
+                }
+            });
+        }
+    }
+
+    // Network status monitoring
+    setupNetworkMonitoring() {
+        window.addEventListener('online', () => {
+            // App is online
+        });
+
+        window.addEventListener('offline', () => {
+            // App is offline
+        });
+    }
+
+    // Debug utilities (only in development)
+    setupDebugUtilities() {
+        if (this.isDevelopment) {
+            window.debugPickButtons = () => {
+                const buttons = document.querySelectorAll('.pick-button');
+                console.log('Total pick buttons found:', buttons.length);
+                
+                buttons.forEach((button, index) => {
+                    const teamName = button.textContent.trim();
+                    console.log(`Button ${index + 1}:`, {
+                        teamName,
+                        disabled: button.disabled,
+                        className: button.className
+                    });
+                });
+            };
         }
     }
 
@@ -507,92 +591,69 @@ class LOSApp {
         return 'Invalid DateTime';
     }
 
-    setConnectionState(connecting, connected = false) {
-        this.connectionState.isConnecting = connecting;
-        this.connectionState.isConnected = connected;
-        this.connectionState.lastConnectionAttempt = Date.now();
-        
-        if (connecting) {
-            this.connectionState.connectionRetryCount++;
-        }
-        
-        console.log(`Connection state: connecting=${connecting}, connected=${connected}, retryCount=${this.connectionState.connectionRetryCount}`);
-    }
-
     resetConnectionState() {
         this.connectionState.isConnecting = false;
         this.connectionState.isConnected = false;
         this.connectionState.connectionRetryCount = 0;
-        console.log('Connection state reset');
+        this.connectionState.lastConnectionAttempt = 0;
     }
 
     // Handle connection conflicts gracefully
     handleConnectionConflict() {
-        console.log('Connection conflict detected, implementing graceful handling...');
-        
-        // Clear all listeners to prevent further conflicts
-        this.clearAllListeners();
-        
-        // More aggressive cleanup for Live Server environments
-        if (window.firebaseDB) {
-            try {
-                console.log('Performing aggressive Firebase cleanup for Live Server...');
-                // Clear manager database references
-                Object.keys(this.managers).forEach(key => {
-                    if (this.managers[key] && this.managers[key].clearListeners) {
-                        this.managers[key].clearListeners();
-                    }
-                });
-                
-                // Reset connection state completely
-                this.resetConnectionState();
-                
-                // Wait longer before attempting to reconnect to allow cleanup
-                setTimeout(() => {
-                    if (this.connectionState.connectionRetryCount < 5) { // Increased retry limit
-                        console.log(`Attempting to recover from connection conflict (attempt ${this.connectionState.connectionRetryCount + 1})`);
-                        // Force a fresh Firebase ready check
-                        if (window.firebaseReady) {
-                            this.setupRealtimeConnections();
-                            this.forceManagerRetry();
-                        } else {
-                            console.log('Waiting for Firebase to become ready again...');
-                            setTimeout(() => this.handleConnectionConflict(), 2000);
-                        }
-                    } else {
-                        console.log('Max connection conflict recovery attempts reached, using fallback');
-                        this.continueWithFallback();
-                    }
-                }, 3000); // Increased delay
-                
-            } catch (error) {
-                console.log('Error during aggressive cleanup:', error);
-                // Fallback to original behavior
-                setTimeout(() => {
-                    if (this.connectionState.connectionRetryCount < 3) {
-                        console.log(`Attempting to recover from connection conflict (attempt ${this.connectionState.connectionRetryCount + 1})`);
-                        this.setupRealtimeConnections();
-                    } else {
-                        console.log('Max connection conflict recovery attempts reached, using fallback');
-                        this.continueWithFallback();
-                    }
-                }, 2000);
-            }
-        } else {
-            // Original behavior if no firebaseDB
-            setTimeout(() => {
-                if (this.connectionState.connectionRetryCount < 3) {
-                    console.log(`Attempting to recover from connection conflict (attempt ${this.connectionState.connectionRetryCount + 1})`);
-                    this.setupRealtimeConnections();
-                } else {
-                    console.log('Max connection conflict recovery attempts reached, using fallback');
-                    this.continueWithFallback();
-                }
-            }, 2000);
+        if (this.connectionState.connectionRetryCount >= this.maxConnectionRetryAttempts) {
+            this.useFallbackApproach();
+            return;
+        }
+
+        this.attemptConnectionRecovery();
+    }
+
+    // Attempt to recover from connection conflict
+    async attemptConnectionRecovery() {
+        try {
+            await this.performAggressiveCleanup();
+            await this.waitForFirebaseReady();
+        } catch (error) {
+            console.error('Error during connection recovery:', error);
+            this.useFallbackApproach();
         }
     }
 
-    // Enhanced listener management to prevent conflicts
+    // Perform aggressive Firebase cleanup
+    async performAggressiveCleanup() {
+        try {
+            this.clearAllListeners();
+            this.resetConnectionState();
+        } catch (error) {
+            console.error('Error during aggressive cleanup:', error);
+        }
+    }
+
+    // Use fallback approach when recovery fails
+    useFallbackApproach() {
+        this.loadFallbackData();
+    }
+
+    // Load fallback data from localStorage
+    loadFallbackData() {
+        try {
+            const userData = localStorage.getItem('userData');
+            if (userData) {
+                const user = JSON.parse(userData);
+                // Use fallback user data
+            }
+
+            const settings = localStorage.getItem('appSettings');
+            if (settings) {
+                const appSettings = JSON.parse(settings);
+                // Use fallback settings
+            }
+        } catch (error) {
+            console.error('Error loading fallback data:', error);
+        }
+    }
+
+    // Listener management
     registerListener(listenerId, listenerFunction) {
         if (this.activeListeners.has(listenerId)) {
             console.log(`Listener ${listenerId} already exists, skipping...`);
@@ -655,11 +716,8 @@ class LOSApp {
     }
     
     initializeManagersWithData() {
-        console.log('Initializing managers with data loading...');
-        
         // Ensure Firebase is fully ready before initializing managers
         if (!window.firebaseReady || !window.firebaseDB || typeof window.firebaseDB.collection !== 'function') {
-            console.log('Firebase not fully ready, retrying manager initialization in 1 second...');
             setTimeout(() => this.initializeManagersWithData(), 1000);
             return;
         }
@@ -698,8 +756,6 @@ class LOSApp {
         if (this.managers.fixtureManagement) {
             this.managers.fixtureManagement.initBasic();
         }
-        
-        console.log('All managers initialized with data loading');
     }
     
     initializeRealtimeListeners() {
@@ -721,104 +777,29 @@ class LOSApp {
                 this.managers.fixtureManagement.setupRealtimeListeners();
             }
         } catch (error) {
-            console.log('Realtime listeners setup delayed due to connection issues');
+            console.error('Error setting up real-time listeners:', error);
         }
     }
     
     forceManagerRetry() {
-        console.log('Forcing manager retry after Firebase ready...');
-        console.log(`Firebase state - Ready: ${window.firebaseReady}, DB: ${!!window.firebaseDB}, Collection: ${window.firebaseDB ? typeof window.firebaseDB.collection : 'undefined'}`);
-        
-        // Update all managers' database references
-        Object.keys(this.managers).forEach(key => {
-            if (this.managers[key]) {
-                this.managers[key].db = window.firebaseDB;
-                console.log(`${key} manager DB reference updated: ${!!this.managers[key].db}`);
-            }
-        });
-        
-        // Force retry for managers that might be waiting for Firebase
-        if (this.managers.edition) {
-            console.log('Forcing EditionService retry...');
-            // Reset retry counters and try again
-            this.managers.edition.loadSettingsRetryCount = 0;
-            this.managers.edition.setupListenersRetryCount = 0;
-            this.managers.edition.loadSettings();
-            this.managers.edition.setupRealtimeListeners();
-        }
-        
-        if (this.managers.fixtures) {
-            console.log('Forcing FixturesManager retry...');
-            // Reset retry counters and try again
-            this.managers.fixtures.loadFixturesRetryCount = 0;
-            this.managers.fixtures.loadFixtures();
-        }
-        
-        if (this.managers.gameLogic) {
-            console.log('Forcing GameLogicManager retry...');
-            this.managers.gameLogic.loadUsersRetryCount = 0;
-            if (typeof this.managers.gameLogic.loadUsers === 'function') {
-                this.managers.gameLogic.loadUsers();
-            } else {
-                console.log('GameLogicManager.loadUsers method not available, skipping...');
-            }
-        }
-        
-        if (this.managers.auth) {
-            console.log('Forcing AuthManager retry...');
-            this.managers.auth.loadUserData();
-        }
-    }
-    
-    resetFirebaseConnection() {
         try {
-            // Check if we can attempt a connection reset
-            if (!this.canAttemptConnection()) {
-                console.log('Connection reset already in progress, skipping...');
-                return;
+            if (this.managers) {
+                Object.entries(this.managers).forEach(([key, manager]) => {
+                    if (manager && typeof manager.retry === 'function') {
+                        manager.retry();
+                    }
+                });
             }
-            
-            this.setConnectionState(true);
-            console.log('Resetting Firebase connection...');
-            
-            // Clear any existing listeners and caches
-            this.clearAllListeners();
-            
-            // Disable and re-enable network to reset connection
-            window.firebaseDB.disableNetwork().then(() => {
-                console.log('Firebase network disabled, re-enabling...');
-                return window.firebaseDB.enableNetwork();
-            }).then(() => {
-                console.log('Firebase connection reset successful');
-                this.resetConnectionState();
-                
-                // Wait longer before retrying to ensure connection is stable
-                setTimeout(() => {
-                    console.log('Retrying data loading after connection reset...');
-                    // Use real-time connections to prevent conflicts
-                    this.setupRealtimeConnections();
-                }, 3000); // Reduced to 3 seconds
-            }).catch((error) => {
-                console.error('Failed to reset Firebase connection:', error);
-                this.setConnectionState(false, false);
-                // Even if reset fails, try to continue with fallback
-                this.continueWithFallback();
-            });
         } catch (error) {
-            console.error('Error in resetFirebaseConnection:', error);
-            this.setConnectionState(false, false);
-            this.continueWithFallback();
+            console.error('Error forcing manager retry:', error);
         }
     }
     
     continueWithFallback() {
-        console.log('Continuing with fallback approach...');
-        // Try to load data with minimal Firebase operations
-        if (this.managers.auth) {
-            this.managers.auth.loadUserDataFallback();
-        }
-        if (this.managers.edition) {
-            this.managers.edition.loadSettingsFallback();
+        try {
+            this.loadFallbackData();
+        } catch (error) {
+            console.error('Error in fallback approach:', error);
         }
     }
 
