@@ -16,7 +16,8 @@
   "author": "Adam Firth",
   "license": "MIT",
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "@sendgrid/mail": "^8.1.1"
   },
   "engines": {
     "node": ">=18.0.0"

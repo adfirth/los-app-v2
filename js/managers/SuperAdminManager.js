@@ -628,28 +628,33 @@ class SuperAdminManager {
 
     // Create a new club
     async createNewClub() {
-        const clubName = prompt('Enter club name:');
-        if (!clubName) return;
+        // Create a modal for club creation with more detailed information
+        const clubData = await this.showClubCreationModal();
+        if (!clubData) return;
 
-        const clubId = clubName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        
         try {
-            const clubData = {
+            console.log('🏟️ SuperAdminManager: Creating new club:', clubData);
+            
+            const clubId = clubData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            
+            const clubDataForDB = {
                 clubId: clubId,
-                name: clubName,
-                description: `New club: ${clubName}`,
+                name: clubData.name,
+                description: clubData.description || `New club: ${clubData.name}`,
                 isActive: true,
-                primaryColor: '#059669',
-                secondaryColor: '#047857',
+                primaryColor: clubData.primaryColor || '#059669',
+                secondaryColor: clubData.secondaryColor || '#047857',
                 headerStyle: 'default',
-                contactEmail: 'admin@example.com',
-                website: null,
+                contactEmail: clubData.contactEmail,
+                adminName: clubData.adminName,
+                website: clubData.website || null,
                 logo: null,
                 created_at: new Date(),
                 updated_at: new Date()
             };
 
-            await this.db.collection('clubs').doc(clubId).set(clubData);
+            // Create the club in the database
+            await this.db.collection('clubs').doc(clubId).set(clubDataForDB);
             
             // Create default edition
             const editionData = {
@@ -669,19 +674,192 @@ class SuperAdminManager {
                 updated_at: new Date()
             });
 
+            // Send welcome email to the club administrator
+            let emailResult = null;
+            try {
+                if (window.EmailService) {
+                    const emailService = new window.EmailService();
+                    emailResult = await emailService.sendClubWelcomeEmail({
+                        name: clubData.name,
+                        clubId: clubId,
+                        contactEmail: clubData.contactEmail,
+                        adminName: clubData.adminName,
+                        website: clubData.website
+                    });
+                }
+            } catch (emailError) {
+                console.warn('⚠️ SuperAdminManager: Email sending failed:', emailError);
+                // Don't fail club creation if email fails
+            }
+
             // Log the action
             await this.logAuditEvent('SUPER_ADMIN', 'CLUB_CREATED', {
                 clubId: clubId,
-                clubName: clubName,
+                clubName: clubData.name,
+                adminEmail: clubData.contactEmail,
+                adminName: clubData.adminName,
+                emailSent: emailResult?.success || false,
                 userId: this.currentUser?.uid || 'unknown'
             });
 
-            alert(`✅ Club "${clubName}" created successfully!`);
+            // Show success message with email status
+            this.showClubCreationSuccess(clubData.name, clubData.contactEmail, emailResult);
             
         } catch (error) {
-            console.error('SuperAdminManager: Error creating club:', error);
-            alert('❌ Error creating club: ' + error.message);
+            console.error('❌ SuperAdminManager: Error creating club:', error);
+            this.showToast('Error creating club: ' + error.message, 'error');
         }
+    }
+
+    // Show club creation modal
+    showClubCreationModal() {
+        return new Promise((resolve) => {
+            // Remove existing modal if present
+            const existingModal = document.getElementById('clubCreationModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const modal = document.createElement('div');
+            modal.id = 'clubCreationModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 2000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            `;
+
+            modal.innerHTML = `
+                <div style="background: white; width: 90%; max-width: 600px; max-height: 90vh; border-radius: 8px; overflow: hidden;">
+                    <div style="background: #1f2937; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+                        <span>🏟️ Create New Club</span>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+                    </div>
+                    <div style="padding: 20px; max-height: calc(90vh - 60px); overflow-y: auto;">
+                        <form id="clubCreationForm">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Club Name *</label>
+                                <input type="text" id="clubName" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Description</label>
+                                <textarea id="clubDescription" rows="3" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; resize: vertical;"></textarea>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Administrator Name *</label>
+                                <input type="text" id="adminName" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Administrator Email *</label>
+                                <input type="email" id="adminEmail" required style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                <small style="color: #666;">A welcome email will be sent to this address with registration instructions.</small>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Website (Optional)</label>
+                                <input type="url" id="clubWebsite" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                            </div>
+                            
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Primary Color</label>
+                                <input type="color" id="primaryColor" value="#059669" style="width: 60px; height: 40px; border: none; border-radius: 4px;">
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" onclick="this.closest('#clubCreationModal').remove()" style="padding: 10px 20px; border: 1px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer;">Cancel</button>
+                                <button type="submit" style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">Create Club</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Handle form submission
+            const formElement = modal.querySelector('#clubCreationForm');
+            
+            formElement.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const clubData = {
+                    name: document.getElementById('clubName').value.trim(),
+                    description: document.getElementById('clubDescription').value.trim(),
+                    adminName: document.getElementById('adminName').value.trim(),
+                    contactEmail: document.getElementById('adminEmail').value.trim(),
+                    website: document.getElementById('clubWebsite').value.trim() || null,
+                    primaryColor: document.getElementById('primaryColor').value
+                };
+                
+                modal.remove();
+                resolve(clubData);
+            });
+        });
+    }
+
+    // Show club creation success message
+    showClubCreationSuccess(clubName, adminEmail, emailResult) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        `;
+
+        const emailStatus = emailResult?.success ? 
+            `✅ Welcome email sent to ${adminEmail}` : 
+            `⚠️ Welcome email could not be sent to ${adminEmail}`;
+
+        modal.innerHTML = `
+            <div style="background: white; width: 90%; max-width: 500px; border-radius: 8px; overflow: hidden;">
+                <div style="background: #059669; color: white; padding: 15px; font-weight: bold; text-align: center;">
+                    🎉 Club Created Successfully!
+                </div>
+                <div style="padding: 20px;">
+                    <h3 style="margin-top: 0;">🏟️ ${clubName}</h3>
+                    <p>Your new club has been created successfully!</p>
+                    
+                    <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; border-left: 4px solid #0ea5e9; margin: 20px 0;">
+                        <h4 style="margin-top: 0;">📧 Administrator Setup</h4>
+                        <p><strong>Email:</strong> ${adminEmail}</p>
+                        <p><strong>Status:</strong> ${emailStatus}</p>
+                    </div>
+                    
+                    <div style="background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                        <h4 style="margin-top: 0;">🎯 Next Steps</h4>
+                        <p>The administrator should:</p>
+                        <ol>
+                            <li>Check their email for registration instructions</li>
+                            <li>Register on the LOS App platform</li>
+                            <li>Select "${clubName}" as their club</li>
+                            <li>Complete the setup process</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="this.closest('div[style*=\'position: fixed\']').remove()" style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
     }
 
     // View comprehensive audit logs
