@@ -127,9 +127,27 @@ class GameLogicManager {
             const currentEdition = window.editionService.getCurrentEdition();
             console.log('🔍 GameLogicManager: Current edition:', currentEdition);
             
-            // Get all users for current edition
+            // Get the edition ID from the editions collection
+            let editionId = currentEdition;
+            try {
+                const editionsSnapshot = await this.db.collection('editions')
+                    .where('name', '==', currentEdition)
+                    .limit(1)
+                    .get();
+                
+                if (!editionsSnapshot.empty) {
+                    editionId = editionsSnapshot.docs[0].id;
+                    console.log('🔍 GameLogicManager: Found edition ID:', editionId, 'for name:', currentEdition);
+                } else {
+                    console.log('⚠️ GameLogicManager: No edition found with name:', currentEdition);
+                }
+            } catch (error) {
+                console.error('Error finding edition ID:', error);
+            }
+            
+            // Get all users for current edition (using edition ID)
             const usersSnapshot = await this.db.collection('users')
-                .where('edition', '==', currentEdition)
+                .where('edition', '==', editionId)
                 .get();
             
             console.log('🔍 GameLogicManager: Found users:', usersSnapshot.size);

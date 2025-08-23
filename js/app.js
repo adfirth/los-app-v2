@@ -80,6 +80,12 @@ class LOSApp {
                 fixtureManagement: new FixtureManagementManager()
             };
 
+            // Make key services globally available
+            window.clubService = this.managers.club;
+            window.authManager = this.managers.auth;
+            window.editionService = this.managers.edition;
+            window.gameLogicManager = this.managers.gameLogic;
+
             // Wait for all managers to be ready
             await this.waitForManagersReady();
             
