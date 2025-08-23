@@ -20,13 +20,14 @@ class ClubService {
 
     // Check if service is ready with clubs data
     get isReady() {
+        console.log('🔍 ClubService.isReady getter called - START');
+        console.log('🔍 ClubService.isReady - this.isInitialized:', this.isInitialized);
+        console.log('🔍 ClubService.isReady - this.availableClubs:', this.availableClubs);
+        console.log('🔍 ClubService.isReady - this.clubData keys:', Object.keys(this.clubData));
+        
         const ready = this.isInitialized && this.availableClubs.length > 0 && Object.keys(this.clubData).length > 0;
-        console.log('🔍 ClubService.isReady getter called:', {
-            isInitialized: this.isInitialized,
-            availableClubsLength: this.availableClubs.length,
-            clubDataKeysLength: Object.keys(this.clubData).length,
-            ready: ready
-        });
+        
+        console.log('🔍 ClubService.isReady getter result:', ready);
         return ready;
     }
 
@@ -147,6 +148,10 @@ class ClubService {
             }
         }
 
+        console.log('🔍 ClubService: After loading all clubs, clubData keys:', Object.keys(this.clubData));
+        console.log('🔍 ClubService: After loading all clubs, availableClubs length:', this.availableClubs.length);
+        console.log('🔍 ClubService: After loading all clubs, isReady check:', this.isReady);
+        
         this.updateClubSelectors();
     }
 
