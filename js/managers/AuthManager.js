@@ -196,7 +196,7 @@ class AuthManager {
     async loadUserData(retryCount = 0) {
         try {
             // Prevent infinite retry loops
-            if (retryCount > 5) {
+            if (retryCount > 10) {
                 console.error('AuthManager: Too many retries, showing auth screen');
                 this.showAuthScreen();
                 return;
@@ -204,7 +204,7 @@ class AuthManager {
             
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
-                console.log(`AuthManager: Firebase not ready, retry ${retryCount + 1}/5, retrying in 2 seconds...`);
+                console.log(`AuthManager: Firebase not ready, retry ${retryCount + 1}/10, retrying in 2 seconds...`);
                 
                 // Try to update our database reference if Firebase is ready but we don't have it
                 if (window.firebaseReady && window.firebaseDB && !this.db) {
@@ -218,15 +218,17 @@ class AuthManager {
 
             // Check if ClubService is ready
             if (!window.losApp || !window.losApp.managers.club || 
-                typeof window.losApp.managers.club.setCurrentClubAndEdition !== 'function') {
-                console.log(`AuthManager: ClubService not ready, retry ${retryCount + 1}/5, retrying in 2 seconds...`);
+                typeof window.losApp.managers.club.setCurrentClubAndEdition !== 'function' ||
+                !window.losApp.managers.club.isReady) {
+                console.log(`AuthManager: ClubService not ready, retry ${retryCount + 1}/10, retrying in 2 seconds...`);
+                console.log(`🔍 AuthManager: ClubService status - exists: ${!!window.losApp?.managers?.club}, has method: ${!!window.losApp?.managers?.club?.setCurrentClubAndEdition}, isReady: ${window.losApp?.managers?.club?.isReady}`);
                 setTimeout(() => this.loadUserData(retryCount + 1), 2000);
                 return;
             }
 
             // Check if we can attempt a connection (only if losApp is fully initialized)
             if (window.losApp && typeof window.losApp.canAttemptConnection === 'function' && !window.losApp.canAttemptConnection()) {
-                console.log(`AuthManager: Cannot attempt connection at this time, retry ${retryCount + 1}/5, retrying in 2 seconds...`);
+                console.log(`AuthManager: Cannot attempt connection at this time, retry ${retryCount + 1}/10, retrying in 2 seconds...`);
                 setTimeout(() => this.loadUserData(retryCount + 1), 2000);
                 return;
             }
