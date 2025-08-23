@@ -388,12 +388,28 @@ class SuperAdminManager {
                 
                 <div class="dashboard-section">
                     <h4 style="margin: 0 0 10px 0; color: #1f2937;">Quick Actions</h4>
-                                         <div class="action-buttons" style="display: flex; flex-direction: column; gap: 8px;">
-                         <button onclick="window.losApp.managers.superAdmin.createNewClub()" class="btn btn-primary" style="width: 100%;">➕ Create New Club</button>
-                         <button onclick="window.losApp.managers.superAdmin.viewAuditLogs()" class="btn btn-secondary" style="width: 100%;">📊 View Audit Logs</button>
-                         <button onclick="window.losApp.managers.superAdmin.manageClubs()" class="btn btn-secondary" style="width: 100%;">🏟️ Manage Clubs</button>
-                         <button onclick="window.losApp.managers.superAdmin.manageFixtures()" class="btn btn-secondary" style="width: 100%;">⚽ Manage Fixtures</button>
-                     </div>
+                    <div class="action-buttons" style="display: flex; flex-direction: column; gap: 8px;">
+                        <button onclick="window.losApp.managers.superAdmin.createNewClub()" class="btn btn-primary" style="width: 100%;">➕ Create New Club</button>
+                        <button onclick="window.losApp.managers.superAdmin.viewAuditLogs()" class="btn btn-secondary" style="width: 100%;">📊 View Audit Logs</button>
+                        <button onclick="window.losApp.managers.superAdmin.manageClubs()" class="btn btn-secondary" style="width: 100%;">🏟️ Manage Clubs</button>
+                        <button onclick="window.losApp.managers.superAdmin.manageFixtures()" class="btn btn-secondary" style="width: 100%;">⚽ Manage Fixtures</button>
+                    </div>
+                </div>
+                
+                <div class="dashboard-section">
+                    <h4 style="margin: 0 0 10px 0; color: #1f2937;">System Controls</h4>
+                    <div class="system-controls" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="control-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f9fafb; border-radius: 4px;">
+                            <span style="font-size: 14px;">🔌 API Pull Requests</span>
+                            <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 24px;">
+                                <input type="checkbox" id="apiToggle" onchange="window.losApp.managers.superAdmin.toggleAPIRequests(this.checked)">
+                                <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;"></span>
+                            </label>
+                        </div>
+                        <div class="control-status" id="apiStatus" style="font-size: 12px; color: #6b7280; text-align: center;">
+                            Loading status...
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="dashboard-section">
@@ -408,6 +424,7 @@ class SuperAdminManager {
         document.body.appendChild(dashboard);
         this.updateDashboardStats();
         this.updateRecentActivity();
+        this.loadAPIStatus(); // Load API status when dashboard is created
     }
 
     updateDashboardStats() {
@@ -449,6 +466,164 @@ class SuperAdminManager {
     updateUsersDisplay() {
         // Update dashboard if open
         this.updateDashboardStats();
+    }
+
+    // API Control Methods
+    async loadAPIStatus() {
+        try {
+            if (!this.db) {
+                console.log('❌ SuperAdminManager: Database not ready for API status check');
+                return;
+            }
+
+            const globalSettings = await this.db.collection('global-settings').doc('system').get();
+            if (globalSettings.exists) {
+                const data = globalSettings.data();
+                const apiEnabled = data.apiRequestsEnabled !== false; // Default to true if not set
+                
+                // Update the toggle state
+                const apiToggle = document.getElementById('apiToggle');
+                if (apiToggle) {
+                    apiToggle.checked = apiEnabled;
+                }
+                
+                // Update the status text
+                const apiStatus = document.getElementById('apiStatus');
+                if (apiStatus) {
+                    apiStatus.textContent = apiEnabled ? '✅ API requests are enabled' : '❌ API requests are disabled';
+                    apiStatus.style.color = apiEnabled ? '#059669' : '#dc3545';
+                }
+                
+                console.log('✅ SuperAdminManager: API status loaded:', apiEnabled);
+            } else {
+                console.log('⚠️ SuperAdminManager: No global settings found, creating default...');
+                await this.createDefaultGlobalSettings();
+            }
+        } catch (error) {
+            console.error('❌ SuperAdminManager: Error loading API status:', error);
+        }
+    }
+
+    async toggleAPIRequests(enabled) {
+        try {
+            if (!this.db) {
+                console.log('❌ SuperAdminManager: Database not ready for API toggle');
+                return;
+            }
+
+            console.log(`🔌 SuperAdminManager: Toggling API requests to: ${enabled}`);
+            
+            // Update global settings
+            await this.db.collection('global-settings').doc('system').update({
+                apiRequestsEnabled: enabled,
+                updated_at: new Date()
+            });
+
+            // Update the status display
+            const apiStatus = document.getElementById('apiStatus');
+            if (apiStatus) {
+                apiStatus.textContent = enabled ? '✅ API requests are enabled' : '❌ API requests are disabled';
+                apiStatus.style.color = enabled ? '#059669' : '#dc3545';
+            }
+
+            // Log the action
+            await this.logAuditEvent('SUPER_ADMIN', 'API_TOGGLE', {
+                enabled: enabled,
+                timestamp: new Date()
+            });
+
+            // Show confirmation toast
+            this.showToast(enabled ? 'API requests enabled' : 'API requests disabled', 'success');
+            
+            console.log(`✅ SuperAdminManager: API requests ${enabled ? 'enabled' : 'disabled'} successfully`);
+            
+            // Notify other managers about the change
+            this.notifyAPIToggleChange(enabled);
+            
+        } catch (error) {
+            console.error('❌ SuperAdminManager: Error toggling API requests:', error);
+            this.showToast('Failed to update API settings', 'error');
+            
+            // Revert the toggle state
+            const apiToggle = document.getElementById('apiToggle');
+            if (apiToggle) {
+                apiToggle.checked = !enabled;
+            }
+        }
+    }
+
+    async createDefaultGlobalSettings() {
+        try {
+            console.log('🔧 SuperAdminManager: Creating default global settings...');
+            
+            const defaultSettings = {
+                activeClubs: [],
+                systemVersion: '2.0',
+                apiRequestsEnabled: true, // Default to enabled
+                created_at: new Date(),
+                updated_at: new Date()
+            };
+            
+            await this.db.collection('global-settings').doc('system').set(defaultSettings);
+            console.log('✅ SuperAdminManager: Default global settings created');
+            
+            // Reload API status after creating settings
+            await this.loadAPIStatus();
+            
+        } catch (error) {
+            console.error('❌ SuperAdminManager: Error creating default global settings:', error);
+        }
+    }
+
+    notifyAPIToggleChange(enabled) {
+        // Notify other managers about the API toggle change
+        if (window.losApp?.managers) {
+            const managers = window.losApp.managers;
+            
+            // Notify API managers
+            if (managers.footballWebPagesAPI) {
+                console.log('🔌 SuperAdminManager: Notifying FootballWebPagesAPI of API toggle change');
+                // You can add a method to handle this notification if needed
+            }
+            
+            // Notify other relevant managers
+            if (managers.fixtures) {
+                console.log('🔌 SuperAdminManager: Notifying FixturesManager of API toggle change');
+            }
+            
+            // Dispatch a custom event for other components to listen to
+            const event = new CustomEvent('apiToggleChanged', { 
+                detail: { enabled: enabled } 
+            });
+            window.dispatchEvent(event);
+        }
+    }
+
+    showToast(message, type = 'info') {
+        // Simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 2000;
+            border-left: 4px solid ${type === 'success' ? '#059669' : type === 'error' ? '#dc3545' : '#667eea'};
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 3000);
     }
 
     // Create a new club
@@ -2525,6 +2700,9 @@ class SuperAdminManager {
         
         // Set up real-time listeners
         this.setupRealtimeListeners();
+        
+        // Load API status
+        await this.loadAPIStatus();
     }
 
     // Set current user

@@ -13,6 +13,57 @@ class TeamBadgeService {
         this.isLocalDevelopment = window.location.hostname === '127.0.0.1' || 
                                  window.location.hostname === 'localhost' || 
                                  window.location.hostname === '192.168.1.1';
+        
+        // Listen for API toggle changes
+        this.setupAPIToggleListener();
+    }
+
+    async isAPIEnabled() {
+        try {
+            // Check global settings for API enablement
+            if (window.losApp?.managers?.superAdmin?.db) {
+                const globalSettings = await window.losApp.managers.superAdmin.db
+                    .collection('global-settings').doc('system').get();
+                if (globalSettings.exists) {
+                    const data = globalSettings.data();
+                    return data.apiRequestsEnabled !== false; // Default to true if not set
+                }
+            }
+            
+            // Fallback: check if we can access the global settings through window
+            if (window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
+                const globalSettings = await window.firebaseDB
+                    .collection('global-settings').doc('system').get();
+                if (globalSettings.exists) {
+                    const data = globalSettings.data();
+                    return data.apiRequestsEnabled !== false;
+                }
+            }
+            
+            // Default to enabled if we can't check
+            console.log('⚠️ TeamBadgeService: Could not check global API settings, defaulting to enabled');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ TeamBadgeService: Error checking API enablement:', error);
+            // Default to enabled on error
+            return true;
+        }
+    }
+
+    setupAPIToggleListener() {
+        // Listen for API toggle changes from superadmin
+        window.addEventListener('apiToggleChanged', (event) => {
+            const { enabled } = event.detail;
+            console.log(`🔌 TeamBadgeService: API toggle changed to: ${enabled}`);
+            
+            if (!enabled) {
+                // Clear any pending requests or show a message
+                console.log('🔌 TeamBadgeService: API requests are now disabled');
+            } else {
+                console.log('🔌 TeamBadgeService: API requests are now enabled');
+            }
+        });
     }
 
     /**
@@ -53,6 +104,12 @@ class TeamBadgeService {
      */
     async testConnection() {
         try {
+            // Check if API requests are enabled globally
+            if (!(await this.isAPIEnabled())) {
+                console.log('🔌 TeamBadgeService: API requests are disabled globally, skipping connection test');
+                return false;
+            }
+            
             if (this.isLocalDevelopment) {
                 // Use direct API for local development
                 const response = await fetch(`${this.directApiUrl}/searchteams.php?t=Arsenal`);
@@ -103,6 +160,12 @@ class TeamBadgeService {
                     console.log(`✅ TeamBadgeService: Found local badge for ${teamName}: ${localBadge}`);
                     return localBadge;
                 }
+            }
+            
+            // Check if API requests are enabled globally
+            if (!(await this.isAPIEnabled())) {
+                console.log('🔌 TeamBadgeService: API requests are disabled globally');
+                return null;
             }
             
             // If not found locally, try API (fallback)

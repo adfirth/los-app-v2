@@ -9,6 +9,9 @@ class FootballWebPagesAPI {
         this.isInitialized = false;
         this.retryCount = 0;
         this.maxRetries = 3;
+        
+        // Listen for API toggle changes
+        this.setupAPIToggleListener();
     }
 
     async initializeConfiguration() {
@@ -68,9 +71,62 @@ class FootballWebPagesAPI {
         throw new Error('No valid API configuration found');
     }
 
+    async isAPIEnabled() {
+        try {
+            // Check global settings for API enablement
+            if (this.db && typeof this.db.collection === 'function') {
+                const globalSettings = await this.db.collection('global-settings').doc('system').get();
+                if (globalSettings.exists) {
+                    const data = globalSettings.data();
+                    return data.apiRequestsEnabled !== false; // Default to true if not set
+                }
+            }
+            
+            // Fallback: check if we can access the global settings through window
+            if (window.losApp?.managers?.superAdmin?.db) {
+                const globalSettings = await window.losApp.managers.superAdmin.db
+                    .collection('global-settings').doc('system').get();
+                if (globalSettings.exists) {
+                    const data = globalSettings.data();
+                    return data.apiRequestsEnabled !== false;
+                }
+            }
+            
+            // Default to enabled if we can't check
+            console.log('⚠️ FootballWebPagesAPI: Could not check global API settings, defaulting to enabled');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ FootballWebPagesAPI: Error checking API enablement:', error);
+            // Default to enabled on error
+            return true;
+        }
+    }
+
+    setupAPIToggleListener() {
+        // Listen for API toggle changes from superadmin
+        window.addEventListener('apiToggleChanged', (event) => {
+            const { enabled } = event.detail;
+            console.log(`🔌 FootballWebPagesAPI: API toggle changed to: ${enabled}`);
+            
+            if (!enabled) {
+                // Clear any pending requests or show a message
+                console.log('🔌 FootballWebPagesAPI: API requests are now disabled');
+            } else {
+                console.log('🔌 FootballWebPagesAPI: API requests are now enabled');
+            }
+        });
+    }
+
     async makeAPIRequest(endpoint, params = {}) {
         if (!this.isInitialized) {
             await this.initializeConfiguration();
+        }
+
+        // Check if API requests are enabled globally
+        if (!(await this.isAPIEnabled())) {
+            console.log('🔌 FootballWebPagesAPI: API requests are disabled globally');
+            throw new Error('API requests are currently disabled by system administrator');
         }
 
         const url = new URL(`${this.config.BASE_URL}/${endpoint}`);
