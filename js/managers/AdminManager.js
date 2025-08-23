@@ -1632,23 +1632,26 @@ class AdminManager {
                 ${fixtures.map(fixture => {
                     console.log('🔧 AdminManager: Processing fixture for display:', fixture);
                     
-                    // Handle different date field names
+                    // Handle different date field names with UK format (DD/MM/YY)
                     let dateStr = 'No date';
                     if (fixture.date) {
                         try {
-                            dateStr = new Date(fixture.date).toLocaleDateString();
+                            const date = new Date(fixture.date);
+                            dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
                         } catch (e) {
                             dateStr = fixture.date.toString();
                         }
                     } else if (fixture.fixtureDate) {
                         try {
-                            dateStr = new Date(fixture.fixtureDate).toLocaleDateString();
+                            const date = new Date(fixture.fixtureDate);
+                            dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
                         } catch (e) {
                             dateStr = fixture.fixtureDate.toString();
                         }
                     } else if (fixture.scheduledDate) {
                         try {
-                            dateStr = new Date(fixture.scheduledDate).toLocaleDateString();
+                            const date = new Date(fixture.scheduledDate);
+                            dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
                         } catch (e) {
                             dateStr = fixture.scheduledDate.toString();
                         }
@@ -1667,7 +1670,7 @@ class AdminManager {
                                 <span class="fixture-status status-${status}">${status}</span>
                             </div>
                             <div class="fixture-teams">
-                                <span class="team-name">${fixture.homeTeam || 'TBD'}</span> vs <span class="team-name">${fixture.awayTeam || 'TBD'}</span>
+                                ${this.createTeamWithBadgeHTML(fixture.homeTeam, 'small', '')} vs ${this.createTeamWithBadgeHTML(fixture.awayTeam, 'small', '')}
                             </div>
                             <div class="fixture-details">
                                 <div class="fixture-date">
@@ -2472,6 +2475,46 @@ class AdminManager {
             console.log('- Admin panel classes:', adminPanel.className);
             console.log('- Admin panel display:', getComputedStyle(adminPanel).display);
         }
+    }
+
+    createTeamWithBadgeHTML(teamName, size = 'small', additionalClasses = '') {
+        if (!teamName) {
+            return '<span class="team-name">TBD</span>';
+        }
+
+        // Try to get team badge from various sources
+        let badgeUrl = null;
+        
+        // Check if we have a local badge service
+        if (window.getLocalTeamBadge && typeof window.getLocalTeamBadge === 'function') {
+            try {
+                badgeUrl = window.getLocalTeamBadge(teamName, size);
+            } catch (e) {
+                console.log('🔧 AdminManager: Local badge service error:', e);
+            }
+        }
+        
+        // Check if we have a global badge service
+        if (!badgeUrl && window.teamBadgeService && typeof window.teamBadgeService.getTeamBadge === 'function') {
+            try {
+                badgeUrl = window.teamBadgeService.getTeamBadge(teamName, size);
+            } catch (e) {
+                console.log('🔧 AdminManager: Global badge service error:', e);
+            }
+        }
+        
+        // If no badge found, just return team name
+        if (!badgeUrl) {
+            return `<span class="team-name">${teamName}</span>`;
+        }
+        
+        // Return team with badge
+        return `
+            <div class="team-with-badge ${additionalClasses}">
+                <img src="${badgeUrl}" alt="${teamName}" class="team-badge team-badge-${size}" onerror="this.style.display='none'">
+                <span class="team-name">${teamName}</span>
+            </div>
+        `;
     }
 }
 

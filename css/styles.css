@@ -2087,6 +2087,54 @@ body {
     color: #999;
 }
 
+/* Admin Team Badges */
+.team-with-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.team-with-badge .team-badge {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.team-with-badge .team-badge-small {
+    width: 20px;
+    height: 20px;
+}
+
+.team-with-badge .team-badge-medium {
+    width: 28px;
+    height: 28px;
+}
+
+.team-with-badge .team-badge-large {
+    width: 32px;
+    height: 32px;
+}
+
+.team-with-badge .team-name {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Admin fixture teams layout */
+.fixture-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    flex-wrap: wrap;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .auth-card {
