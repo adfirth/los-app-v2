@@ -75,6 +75,20 @@ class EnvironmentLoader {
             measurementId: "G-FFR18MKG3K"
         };
         
+        // Initialize Firebase
+        try {
+            if (window.firebase && !window.firebase.apps.length) {
+                window.firebase.initializeApp(window.firebaseConfig);
+                console.log('✅ EnvironmentLoader: Firebase initialized successfully');
+            } else if (window.firebase && window.firebase.apps.length) {
+                console.log('✅ EnvironmentLoader: Firebase already initialized');
+            } else {
+                console.log('⚠️ EnvironmentLoader: Firebase SDK not loaded yet');
+            }
+        } catch (error) {
+            console.error('❌ EnvironmentLoader: Error initializing Firebase:', error);
+        }
+        
         console.log('✅ EnvironmentLoader: Firebase configuration set up');
     }
 
@@ -143,8 +157,50 @@ class EnvironmentLoader {
         // Set up API configuration for compatibility
         this.setupAPIConfig();
         
+        // Wait for Firebase SDK and initialize
+        this.waitForFirebaseAndInit();
+        
         console.log('🌍 EnvironmentLoader: Global configuration setup complete');
         console.log('🔑 Available API keys:', Object.keys(this.envVars).filter(key => key.includes('API_KEY')));
+    }
+
+    // Wait for Firebase SDK to load and then initialize
+    waitForFirebaseAndInit() {
+        console.log('⏳ EnvironmentLoader: Waiting for Firebase SDK...');
+        
+        const checkFirebaseSDK = () => {
+            if (window.firebase) {
+                console.log('✅ EnvironmentLoader: Firebase SDK loaded, initializing...');
+                this.initializeFirebase();
+            } else {
+                console.log('⏳ EnvironmentLoader: Firebase SDK not ready, retrying...');
+                setTimeout(checkFirebaseSDK, 100);
+            }
+        };
+        
+        checkFirebaseSDK();
+    }
+
+    // Initialize Firebase when SDK is ready
+    initializeFirebase() {
+        try {
+            if (!window.firebase.apps.length) {
+                window.firebase.initializeApp(window.firebaseConfig);
+                console.log('✅ EnvironmentLoader: Firebase initialized successfully');
+                
+                // Set a flag that the app can check
+                window.FIREBASE_READY = true;
+                
+                // Dispatch custom event for other parts of the app
+                window.dispatchEvent(new CustomEvent('firebase-ready'));
+            } else {
+                console.log('✅ EnvironmentLoader: Firebase already initialized');
+                window.FIREBASE_READY = true;
+                window.dispatchEvent(new CustomEvent('firebase-ready'));
+            }
+        } catch (error) {
+            console.error('❌ EnvironmentLoader: Error initializing Firebase:', error);
+        }
     }
 
     // Set up API configuration for compatibility
