@@ -725,7 +725,7 @@ class AdminManager {
                     </div>
                     
                     <div class="fixtures-display">
-                        <div id="fixturesList" class="fixtures-list">
+                        <div id="adminFixturesList" class="fixtures-list">
                             <div class="empty-state">
                                 <i class="fas fa-calendar-alt"></i>
                                 <h4>No Fixtures Loaded</h4>
@@ -1468,9 +1468,9 @@ class AdminManager {
             const clubSelect = document.getElementById('fixtureClubSelect');
             const editionSelect = document.getElementById('fixtureEditionSelect');
             const gameweekSelect = document.getElementById('fixtureGameweekSelect');
-            const fixturesList = document.getElementById('fixturesList');
-
-            if (!clubSelect || !editionSelect || !gameweekSelect || !fixturesList) {
+                    const fixturesList = document.getElementById('adminFixturesList');
+        
+        if (!clubSelect || !editionSelect || !gameweekSelect || !fixturesList) {
                 console.log('❌ AdminManager: Required elements not found in loadFixturesForDisplay');
                 return;
             }
@@ -1499,7 +1499,10 @@ class AdminManager {
                 // Final check
                 if (!this.db) {
                     console.error('❌ AdminManager: Database reference still not available after restore attempts');
-                    fixturesList.innerHTML = '<p>Error: Database not available. Please refresh the page.</p>';
+                    const adminFixturesList = document.getElementById('adminFixturesList');
+                    if (adminFixturesList) {
+                        adminFixturesList.innerHTML = '<p>Error: Database not available. Please refresh the page.</p>';
+                    }
                     return;
                 }
             }
@@ -1507,16 +1510,19 @@ class AdminManager {
             console.log('🔧 AdminManager: Database reference available:', !!this.db);
 
             // Show loading state
-            fixturesList.innerHTML = `
-                <div class="empty-state">
-                    <div class="loading-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+            const adminFixturesList = document.getElementById('adminFixturesList');
+            if (adminFixturesList) {
+                adminFixturesList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <h4>Loading fixtures...</h4>
                     </div>
-                    <h4>Loading fixtures...</h4>
-                </div>
-            `;
+                `;
+            }
 
             // Load fixtures for the selected parameters
             let fixtures = [];
@@ -1559,13 +1565,16 @@ class AdminManager {
             }
 
             if (fixtures.length === 0) {
-                fixturesList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-calendar-alt"></i>
-                        <h4>No Fixtures Found</h4>
-                        <p>No fixtures found for the selected criteria</p>
-                    </div>
-                `;
+                const adminFixturesList = document.getElementById('adminFixturesList');
+                if (adminFixturesList) {
+                    adminFixturesList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-alt"></i>
+                            <h4>No Fixtures Found</h4>
+                            <p>No fixtures found for the selected criteria</p>
+                        </div>
+                    `;
+                }
                 return;
             }
 
@@ -1577,7 +1586,7 @@ class AdminManager {
 
             // Display fixtures
             console.log('🔧 AdminManager: About to display fixtures:', fixtures);
-            console.log('🔧 AdminManager: fixturesList element:', document.getElementById('fixturesList'));
+            console.log('🔧 AdminManager: adminFixturesList element:', document.getElementById('adminFixturesList'));
             this.displayFixturesList(fixtures);
 
         } catch (error) {
@@ -1587,14 +1596,14 @@ class AdminManager {
     }
 
     displayFixturesList(fixtures) {
-        const fixturesList = document.getElementById('fixturesList');
+        const fixturesList = document.getElementById('adminFixturesList');
         
         console.log('🔧 AdminManager: displayFixturesList called with', fixtures.length, 'fixtures');
-        console.log('🔧 AdminManager: Looking for fixturesList element...');
+        console.log('🔧 AdminManager: Looking for adminFixturesList element...');
         console.log('🔧 AdminManager: All elements with "fixtures" in ID:', Array.from(document.querySelectorAll('[id*="fixtures"]')).map(el => el.id));
         
         if (!fixturesList) {
-            console.error('❌ AdminManager: fixturesList element not found!');
+            console.error('❌ AdminManager: adminFixturesList element not found!');
             console.log('🔧 AdminManager: Available elements in admin panel:', Array.from(document.querySelectorAll('#adminPanel *')).map(el => el.id || el.className));
             return;
         }
