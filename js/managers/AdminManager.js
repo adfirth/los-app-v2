@@ -24,6 +24,15 @@ class AdminManager {
         // Set up Firebase database reference
         this.db = window.firebaseDB;
         
+        // Ensure database reference is available
+        if (!this.db) {
+            console.log('🔧 AdminManager: Waiting for Firebase database...');
+            setTimeout(() => this.init(), 1000);
+            return;
+        }
+        
+        console.log('🔧 AdminManager: Database reference set:', !!this.db);
+        
         // Quick check for super admin email to show admin button immediately
         this.quickSuperAdminCheck();
         
@@ -74,6 +83,17 @@ class AdminManager {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
         console.log('AdminManager Firebase connection restored');
+        
+        // Refresh database reference
+        this.db = window.firebaseDB;
+        console.log('🔧 AdminManager: Database reference refreshed:', !!this.db);
+    }
+    
+    refreshDatabaseReference() {
+        // Manual method to refresh database reference
+        this.db = window.firebaseDB;
+        console.log('🔧 AdminManager: Database reference manually refreshed:', !!this.db);
+        return !!this.db;
     }
 
     clearListeners() {
@@ -514,20 +534,65 @@ class AdminManager {
         }
 
         try {
-            const currentEdition = window.editionService.getCurrentEdition();
+            // Get current club and edition from ClubService
+            const currentClub = window.clubService?.getCurrentClub();
+            const currentEdition = window.clubService?.getCurrentEdition();
             
-            // Get all users for current edition
-            const usersSnapshot = await this.db.collection('users')
-                .where('edition', '==', currentEdition)
-                .get();
-
-            const users = [];
-            usersSnapshot.forEach(doc => {
-                users.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
+            console.log('🔧 AdminManager: Loading users for club:', currentClub, 'edition:', currentEdition);
+            
+            let users = [];
+            
+            if (currentClub && currentEdition) {
+                // Use new multi-club structure
+                console.log('🔧 AdminManager: Using new multi-club structure for users');
+                
+                try {
+                    const usersSnapshot = await this.db.collection('clubs')
+                        .doc(currentClub)
+                        .collection('editions')
+                        .doc(currentEdition)
+                        .collection('users')
+                        .get();
+                    
+                    console.log('🔧 AdminManager: Found users in new structure:', usersSnapshot.size);
+                    
+                    usersSnapshot.forEach(doc => {
+                        users.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                } catch (error) {
+                    console.error('🔧 AdminManager: Error loading users from new structure:', error);
+                }
+            }
+            
+            // Fallback to old structure if new structure fails or no club/edition
+            if (users.length === 0) {
+                console.log('🔧 AdminManager: Falling back to old structure for users');
+                
+                try {
+                    const fallbackEdition = window.editionService?.getCurrentEdition();
+                    if (fallbackEdition) {
+                        const usersSnapshot = await this.db.collection('users')
+                            .where('edition', '==', fallbackEdition)
+                            .get();
+                        
+                        console.log('🔧 AdminManager: Found users in old structure:', usersSnapshot.size);
+                        
+                        usersSnapshot.forEach(doc => {
+                            users.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                    }
+                } catch (error) {
+                    console.error('🔧 AdminManager: Error loading users from old structure:', error);
+                }
+            }
+            
+            console.log('🔧 AdminManager: Total users loaded:', users.length);
 
             adminContent.innerHTML = `
                 <div class="admin-section">
@@ -1422,6 +1487,15 @@ class AdminManager {
             }
 
             console.log('🔧 AdminManager: Loading fixtures for:', { selectedClub, selectedEdition, selectedGameweek });
+
+            // Check database reference
+            if (!this.db) {
+                console.error('❌ AdminManager: Database reference not available');
+                fixturesList.innerHTML = '<p>Error: Database not available</p>';
+                return;
+            }
+            
+            console.log('🔧 AdminManager: Database reference available:', !!this.db);
 
             // Show loading state
             fixturesList.innerHTML = `
@@ -2386,9 +2460,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 AdminManager: Global debug functions added:');
-    console.log('- debugAdminAccess() - Debug admin access issues');
-    console.log('- forceInitAdmin() - Force initialize admin panel');
-    console.log('- testAdminButton() - Test admin button functionality');
-    console.log('- testScoreImport() - Test score import process');
+            console.log('🔧 AdminManager: Global debug functions added:');
+        console.log('- debugAdminAccess() - Debug admin access issues');
+        console.log('- forceInitAdmin() - Force initialize admin panel');
+        console.log('- testAdminButton() - Test admin button functionality');
+        console.log('- testScoreImport() - Test score import process');
+        console.log('- refreshAdminDB() - Refresh admin database reference');
+        
+        // Add global helper function to refresh admin database
+        window.refreshAdminDB = () => {
+            console.log('🔧 Refreshing AdminManager database reference...');
+            if (window.adminManager) {
+                const success = window.adminManager.refreshDatabaseReference();
+                console.log('🔧 AdminManager database refresh result:', success);
+                return success;
+            } else {
+                console.error('❌ AdminManager not available');
+                return false;
+            }
+        };
 });
