@@ -188,6 +188,9 @@ class EnvironmentLoader {
                 window.firebase.initializeApp(window.firebaseConfig);
                 console.log('✅ EnvironmentLoader: Firebase initialized successfully');
                 
+                // Set up Firebase database reference
+                this.setupFirebaseDatabase();
+                
                 // Set a flag that the app can check
                 window.FIREBASE_READY = true;
                 
@@ -195,11 +198,30 @@ class EnvironmentLoader {
                 window.dispatchEvent(new CustomEvent('firebase-ready'));
             } else {
                 console.log('✅ EnvironmentLoader: Firebase already initialized');
+                
+                // Set up Firebase database reference
+                this.setupFirebaseDatabase();
+                
                 window.FIREBASE_READY = true;
                 window.dispatchEvent(new CustomEvent('firebase-ready'));
             }
         } catch (error) {
             console.error('❌ EnvironmentLoader: Error initializing Firebase:', error);
+        }
+    }
+
+    // Set up Firebase database reference
+    setupFirebaseDatabase() {
+        try {
+            // Set up Firestore database reference
+            window.firebaseDB = window.firebase.firestore();
+            console.log('✅ EnvironmentLoader: Firebase database reference set up');
+            
+            // Also set the legacy flag for compatibility
+            window.firebaseReady = true;
+            
+        } catch (error) {
+            console.error('❌ EnvironmentLoader: Error setting up Firebase database:', error);
         }
     }
 
