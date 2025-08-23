@@ -346,10 +346,142 @@
     <script src="js/setup/download-team-badges.js?v=1.0.0"></script>
     
     <!-- Main App -->
-    <script src="js/app.js?v=1.0.0"></script>
+    <script src="js/app.js?v=1.0.1"></script>
     
     <!-- Database Cleanup Script -->
     <script src="cleanup-old-collections.js?v=1.0.0"></script>
+    
+    <!-- Test script to see if cleanup script is loading -->
+    <script>
+        console.log('🔍 TEST: Checking if cleanup script loaded...');
+        console.log('🔍 TEST: window.testCleanupScript exists:', typeof window.testCleanupScript);
+        console.log('🔍 TEST: All window properties:', Object.keys(window).filter(key => key.includes('test')));
+        
+        // If cleanup script didn't load, add it inline as a fallback
+        if (typeof window.testCleanupScript === 'undefined') {
+            console.log('⚠️ Cleanup script failed to load, adding inline fallback...');
+            
+            window.testCleanupScript = function() {
+                console.log('🧹 INLINE FALLBACK: Function is working!');
+                return 'INLINE FALLBACK SUCCESS!';
+            };
+            
+            console.log('✅ Inline fallback added');
+        }
+    </script>
+    
+    <!-- Firebase Cleanup Functions - Simple Inline Script -->
+    <script>
+        console.log('🧹 SIMPLE: Adding cleanup functions...');
+        
+        // Simple cleanup function
+        window.cleanupFirebase = async function() {
+            console.log('🧹 Starting Firebase cleanup...');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            const collectionsToDelete = ['users', 'picks', 'editions', 'fixtures', 'scores'];
+            console.log('🗑️ Collections to delete:', collectionsToDelete);
+            
+            for (const collectionName of collectionsToDelete) {
+                try {
+                    console.log(`🧹 Cleaning up collection: ${collectionName}`);
+                    
+                    const snapshot = await window.firebaseDB.collection(collectionName).get();
+                    
+                    if (snapshot.empty) {
+                        console.log(`✅ Collection ${collectionName} is already empty`);
+                        continue;
+                    }
+                    
+                    console.log(`📄 Found ${snapshot.size} documents in ${collectionName}`);
+                    
+                    const batch = window.firebaseDB.batch();
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    await batch.commit();
+                    console.log(`✅ Deleted ${snapshot.size} documents from ${collectionName}`);
+                    
+                } catch (error) {
+                    console.error(`❌ Error cleaning up ${collectionName}:`, error);
+                }
+            }
+            
+            console.log('🎉 Firebase cleanup completed!');
+        };
+        
+        // Simple structure function
+        window.showFirebaseStructure = async function() {
+            console.log('🏗️ Current database structure:');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            try {
+                const clubsSnapshot = await window.firebaseDB.collection('clubs').get();
+                console.log(`📁 clubs: ${clubsSnapshot.size} clubs`);
+                
+                for (const clubDoc of clubsSnapshot.docs) {
+                    const clubData = clubDoc.data();
+                    console.log(`  🏟️ ${clubData.name || clubDoc.id}:`);
+                    
+                    const editionsSnapshot = await clubDoc.ref.collection('editions').get();
+                    console.log(`    📚 editions: ${editionsSnapshot.size} editions`);
+                    
+                    for (const editionDoc of editionsSnapshot.docs) {
+                        const editionData = editionDoc.data();
+                        console.log(`      📖 ${editionData.name || editionDoc.id}:`);
+                        
+                        const usersSnapshot = await editionDoc.ref.collection('users').get();
+                        const fixturesSnapshot = await editionDoc.ref.collection('fixtures').get();
+                        const picksSnapshot = await editionDoc.ref.collection('picks').get();
+                        
+                        console.log(`        👥 users: ${usersSnapshot.size}`);
+                        console.log(`        ⚽ fixtures: ${fixturesSnapshot.size}`);
+                        console.log(`        🎯 picks: ${picksSnapshot.size}`);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Error checking current structure:', error);
+            }
+        };
+        
+        // Simple verify function
+        window.verifyFirebaseCleanup = async function() {
+            console.log('🔍 Verifying cleanup...');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            const collectionsToDelete = ['users', 'picks', 'editions', 'fixtures', 'scores'];
+            
+            for (const collectionName of collectionsToDelete) {
+                try {
+                    const snapshot = await window.firebaseDB.collection(collectionName).limit(1).get();
+                    if (snapshot.empty) {
+                        console.log(`✅ ${collectionName}: Empty`);
+                    } else {
+                        console.log(`⚠️ ${collectionName}: Still has ${snapshot.size} documents`);
+                    }
+                } catch (error) {
+                    console.log(`❌ ${collectionName}: Error checking - ${error.message}`);
+                }
+            }
+        };
+        
+        console.log('✅ SIMPLE: Firebase cleanup functions added!');
+        console.log('Available functions: cleanupFirebase(), showFirebaseStructure(), verifyFirebaseCleanup()');
+    </script>
     
     <!-- Development helper script -->
     <script>
