@@ -666,5 +666,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings()');
+    window.checkUsersInDatabase = async () => {
+        console.log('🔍 Checking users in database...');
+        if (window.gameLogicManager && window.gameLogicManager.db) {
+            try {
+                // Check all users collection
+                const allUsersSnapshot = await window.gameLogicManager.db.collection('users').get();
+                console.log('🔍 Total users in database:', allUsersSnapshot.size);
+                
+                allUsersSnapshot.forEach(doc => {
+                    const userData = doc.data();
+                    console.log('🔍 User:', doc.id, userData);
+                });
+                
+                // Check users with specific edition
+                const currentEdition = window.editionService?.getCurrentEdition();
+                console.log('🔍 Current edition:', currentEdition);
+                
+                if (currentEdition) {
+                    const editionUsersSnapshot = await window.gameLogicManager.db.collection('users')
+                        .where('edition', '==', currentEdition)
+                        .get();
+                    console.log('🔍 Users with current edition:', editionUsersSnapshot.size);
+                    
+                    editionUsersSnapshot.forEach(doc => {
+                        const userData = doc.data();
+                        console.log('🔍 Edition user:', doc.id, userData);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('❌ Error checking users:', error);
+            }
+        } else {
+            console.error('❌ GameLogicManager or database not available');
+        }
+    };
+    
+    window.checkDatabaseStructure = async () => {
+        console.log('🔍 Checking database structure...');
+        if (window.gameLogicManager && window.gameLogicManager.db) {
+            try {
+                // Check collections
+                const collections = ['users', 'clubs', 'editions', 'fixtures', 'picks'];
+                
+                for (const collectionName of collections) {
+                    try {
+                        const snapshot = await window.gameLogicManager.db.collection(collectionName).limit(1).get();
+                        console.log(`🔍 Collection '${collectionName}': ${snapshot.size} documents (sampled)`);
+                        
+                        if (snapshot.size > 0) {
+                            const sampleDoc = snapshot.docs[0];
+                            const sampleData = sampleDoc.data();
+                            console.log(`🔍 Sample document from '${collectionName}':`, sampleData);
+                        }
+                    } catch (error) {
+                        console.log(`❌ Collection '${collectionName}' not accessible:`, error.message);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Error checking database structure:', error);
+            }
+        } else {
+            console.error('❌ GameLogicManager or database not available');
+        }
+    };
+    
+    console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings(), checkUsersInDatabase(), checkDatabaseStructure()');
 });

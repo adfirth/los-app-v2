@@ -52,6 +52,14 @@ class PerformanceService {
     }
 
     /**
+     * Start performance monitoring (compatibility method)
+     */
+    startMonitoring() {
+        console.log('📊 PerformanceService: startMonitoring() called - monitoring already active');
+        // Monitoring is already active from constructor
+    }
+
+    /**
      * Setup intersection observer for lazy loading
      */
     setupIntersectionObserver() {
