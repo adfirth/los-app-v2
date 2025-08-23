@@ -179,7 +179,18 @@ class LOSApp {
     }
 
     setupRealtimeConnections() {
+        if (this.listenerSetupInProgress) {
+            console.log('Listener setup already in progress, skipping...');
+            return;
+        }
+        
+        this.listenerSetupInProgress = true;
+        console.log('Setting up real-time connections...');
+        
         try {
+            // Set up connection status monitoring
+            this.monitorConnectionStatus();
+            
             // Set up real-time listeners for all managers
             for (const [key, manager] of Object.entries(this.managers)) {
                 if (manager && typeof manager.setupRealtimeListeners === 'function') {
@@ -194,8 +205,20 @@ class LOSApp {
             // Initialize managers with data loading
             this.initializeManagersWithData();
             
+            // Add a small delay to prevent listener conflicts
+            setTimeout(() => {
+                this.initializeRealtimeListeners();
+                this.listenerSetupInProgress = false;
+            }, 1000);
+            
+            // Delay setupLiveUpdates until after managers are fully initialized
+            setTimeout(() => {
+                this.setupLiveUpdates();
+            }, 2000);
+            
         } catch (error) {
             console.error('Error setting up real-time connections:', error);
+            this.listenerSetupInProgress = false;
         }
     }
 
@@ -694,32 +717,7 @@ class LOSApp {
         console.log('All listeners cleared');
     }
 
-    setupRealtimeConnections() {
-        if (this.listenerSetupInProgress) {
-            console.log('Listener setup already in progress, skipping...');
-            return;
-        }
-        
-        this.listenerSetupInProgress = true;
-        console.log('Setting up real-time connections...');
-        
-        // Set up connection status monitoring
-        this.monitorConnectionStatus();
-        
-        // Initialize all managers with full data loading now that Firebase is ready
-        this.initializeManagersWithData();
-        
-        // Add a small delay to prevent listener conflicts
-        setTimeout(() => {
-            this.initializeRealtimeListeners();
-            this.listenerSetupInProgress = false;
-        }, 1000);
-        
-        // Delay setupLiveUpdates until after managers are fully initialized
-        setTimeout(() => {
-            this.setupLiveUpdates();
-        }, 2000);
-    }
+
     
     initializeManagersWithData() {
         // Ensure Firebase is fully ready before initializing managers
