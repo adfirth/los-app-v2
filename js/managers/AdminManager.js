@@ -1576,6 +1576,8 @@ class AdminManager {
             this.currentEditingClub = selectedClub;
 
             // Display fixtures
+            console.log('🔧 AdminManager: About to display fixtures:', fixtures);
+            console.log('🔧 AdminManager: fixturesList element:', document.getElementById('fixturesList'));
             this.displayFixturesList(fixtures);
 
         } catch (error) {
@@ -1587,7 +1589,15 @@ class AdminManager {
     displayFixturesList(fixtures) {
         const fixturesList = document.getElementById('fixturesList');
         
-        if (!fixturesList) return;
+        console.log('🔧 AdminManager: displayFixturesList called with', fixtures.length, 'fixtures');
+        console.log('🔧 AdminManager: Looking for fixturesList element...');
+        console.log('🔧 AdminManager: All elements with "fixtures" in ID:', Array.from(document.querySelectorAll('[id*="fixtures"]')).map(el => el.id));
+        
+        if (!fixturesList) {
+            console.error('❌ AdminManager: fixturesList element not found!');
+            console.log('🔧 AdminManager: Available elements in admin panel:', Array.from(document.querySelectorAll('#adminPanel *')).map(el => el.id || el.className));
+            return;
+        }
         
         if (fixtures.length === 0) {
             fixturesList.innerHTML = `
@@ -1611,7 +1621,30 @@ class AdminManager {
             </div>
             <div class="fixtures-grid">
                 ${fixtures.map(fixture => {
-                    const date = new Date(fixture.date).toLocaleDateString();
+                    console.log('🔧 AdminManager: Processing fixture for display:', fixture);
+                    
+                    // Handle different date field names
+                    let dateStr = 'No date';
+                    if (fixture.date) {
+                        try {
+                            dateStr = new Date(fixture.date).toLocaleDateString();
+                        } catch (e) {
+                            dateStr = fixture.date.toString();
+                        }
+                    } else if (fixture.fixtureDate) {
+                        try {
+                            dateStr = new Date(fixture.fixtureDate).toLocaleDateString();
+                        } catch (e) {
+                            dateStr = fixture.fixtureDate.toString();
+                        }
+                    } else if (fixture.scheduledDate) {
+                        try {
+                            dateStr = new Date(fixture.scheduledDate).toLocaleDateString();
+                        } catch (e) {
+                            dateStr = fixture.scheduledDate.toString();
+                        }
+                    }
+                    
                     const status = fixture.status || 'scheduled';
                     const score = fixture.homeScore !== null && fixture.awayScore !== null 
                         ? `${fixture.homeScore} - ${fixture.awayScore}` 
@@ -1629,11 +1662,11 @@ class AdminManager {
                             </div>
                             <div class="fixture-details">
                                 <div class="fixture-date">
-                                    <i class="fas fa-calendar"></i> ${date}
+                                    <i class="fas fa-calendar"></i> ${dateStr}
                                 </div>
-                                ${fixture.kickOffTime ? `
+                                ${(fixture.kickOffTime || fixture.kickoffTime || fixture.time || fixture.startTime) ? `
                                     <div class="fixture-time">
-                                        <i class="fas fa-clock"></i> ${fixture.kickOffTime}
+                                        <i class="fas fa-clock"></i> ${fixture.kickOffTime || fixture.kickoffTime || fixture.time || fixture.startTime}
                                     </div>
                                 ` : ''}
                                 <div class="fixture-score">
