@@ -1,0 +1,250 @@
+// Console Logger Service
+// Automatically captures console output for debugging and analysis
+
+class ConsoleLogger {
+    constructor() {
+        this.logs = [];
+        this.maxLogs = 1000;
+        this.isCapturing = false;
+        this.originalConsole = {};
+        this.setupConsoleCapture();
+    }
+
+    // Set up console capture
+    setupConsoleCapture() {
+        // Store original console methods
+        this.originalConsole.log = console.log;
+        this.originalConsole.error = console.error;
+        this.originalConsole.warn = console.warn;
+        this.originalConsole.info = console.info;
+        this.originalConsole.debug = console.debug;
+
+        // Override console methods
+        this.overrideConsoleMethod('log', 'log');
+        this.overrideConsoleMethod('error', 'error');
+        this.overrideConsoleMethod('warn', 'warn');
+        this.overrideConsoleMethod('info', 'info');
+        this.overrideConsoleMethod('debug', 'debug');
+
+        console.log('🔧 ConsoleLogger: Console capture initialized');
+    }
+
+    // Override a console method
+    overrideConsoleMethod(method, level) {
+        const original = this.originalConsole[method];
+        
+        console[method] = (...args) => {
+            // Call original method
+            original.apply(console, args);
+            
+            // Capture the log
+            this.captureLog(level, args);
+        };
+    }
+
+    // Capture a log entry
+    captureLog(level, args) {
+        if (!this.isCapturing) return;
+
+        const timestamp = new Date().toISOString();
+        const message = args.map(arg => {
+            if (typeof arg === 'object') {
+                try {
+                    return JSON.stringify(arg);
+                } catch (e) {
+                    return String(arg);
+                }
+            }
+            return String(arg);
+        }).join(' ');
+
+        const logEntry = {
+            timestamp,
+            level,
+            message,
+            args: args.length > 1 ? args : undefined
+        };
+
+        this.logs.push(logEntry);
+
+        // Keep logs under max limit
+        if (this.logs.length > this.maxLogs) {
+            this.logs.shift();
+        }
+
+        // Auto-save to localStorage
+        this.saveToLocalStorage();
+    }
+
+    // Start capturing
+    startCapture() {
+        this.isCapturing = true;
+        console.log('🔧 ConsoleLogger: Console capture started');
+    }
+
+    // Stop capturing
+    stopCapture() {
+        this.isCapturing = false;
+        console.log('🔧 ConsoleLogger: Console capture stopped');
+    }
+
+    // Get all captured logs
+    getLogs() {
+        return this.logs;
+    }
+
+    // Get logs by level
+    getLogsByLevel(level) {
+        return this.logs.filter(log => log.level === level);
+    }
+
+    // Get logs since timestamp
+    getLogsSince(timestamp) {
+        return this.logs.filter(log => new Date(log.timestamp) > new Date(timestamp));
+    }
+
+    // Clear logs
+    clearLogs() {
+        this.logs = [];
+        this.saveToLocalStorage();
+        console.log('🔧 ConsoleLogger: Logs cleared');
+    }
+
+    // Save logs to localStorage
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem('consoleLogs', JSON.stringify(this.logs));
+        } catch (e) {
+            console.warn('🔧 ConsoleLogger: Could not save to localStorage:', e);
+        }
+    }
+
+    // Load logs from localStorage
+    loadFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem('consoleLogs');
+            if (saved) {
+                this.logs = JSON.parse(saved);
+                console.log(`🔧 ConsoleLogger: Loaded ${this.logs.length} logs from localStorage`);
+            }
+        } catch (e) {
+            console.warn('🔧 ConsoleLogger: Could not load from localStorage:', e);
+        }
+    }
+
+    // Export logs as JSON
+    exportLogs() {
+        const dataStr = JSON.stringify(this.logs, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `console-logs-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        console.log('🔧 ConsoleLogger: Logs exported');
+    }
+
+    // Get logs summary
+    getLogsSummary() {
+        const summary = {
+            total: this.logs.length,
+            byLevel: {},
+            recent: this.logs.slice(-10),
+            errors: this.getLogsByLevel('error').length,
+            warnings: this.getLogsByLevel('warn').length
+        };
+
+        // Count by level
+        this.logs.forEach(log => {
+            summary.byLevel[log.level] = (summary.byLevel[log.level] || 0) + 1;
+        });
+
+        return summary;
+    }
+
+    // Display logs in console
+    displayLogs(limit = 50) {
+        const recentLogs = this.logs.slice(-limit);
+        console.group('🔧 ConsoleLogger: Recent Logs');
+        recentLogs.forEach(log => {
+            const method = this.originalConsole[log.level] || console.log;
+            method.call(console, `[${log.timestamp}] ${log.level.toUpperCase()}:`, log.message);
+        });
+        console.groupEnd();
+    }
+
+    // Send logs to Netlify function for real-time streaming
+    async streamLogsToNetlify() {
+        try {
+            const response = await fetch('/.netlify/functions/console-stream', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    logs: this.logs.slice(-50), // Send last 50 logs
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                })
+            });
+
+            if (response.ok) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // Auto-stream logs every 5 seconds
+    startAutoStreaming() {
+        if (this.streamingInterval) {
+            clearInterval(this.streamingInterval);
+        }
+        
+        this.streamingInterval = setInterval(() => {
+            if (this.logs.length > 0) {
+                this.streamLogsToNetlify();
+            }
+        }, 5000); // Stream every 5 seconds
+        
+        console.log('🔧 ConsoleLogger: Auto-streaming started (every 5 seconds)');
+    }
+
+    // Stop auto-streaming
+    stopAutoStreaming() {
+        if (this.streamingInterval) {
+            clearInterval(this.streamingInterval);
+            this.streamingInterval = null;
+            console.log('🔧 ConsoleLogger: Auto-streaming stopped');
+        }
+    }
+}
+
+// Create global instance
+window.consoleLogger = new ConsoleLogger();
+
+// Auto-start capture
+window.consoleLogger.startCapture();
+
+// Load existing logs
+window.consoleLogger.loadFromLocalStorage();
+
+// Start auto-streaming to Netlify
+window.consoleLogger.startAutoStreaming();
+
+// Add global helper functions
+window.getConsoleLogs = () => window.consoleLogger.getLogs();
+window.getConsoleSummary = () => window.consoleLogger.getLogsSummary();
+window.exportConsoleLogs = () => window.consoleLogger.exportLogs();
+window.displayConsoleLogs = (limit) => window.consoleLogger.displayLogs(limit);
+window.clearConsoleLogs = () => window.consoleLogger.clearLogs();
+window.startConsoleStreaming = () => window.consoleLogger.startAutoStreaming();
+window.stopConsoleStreaming = () => window.consoleLogger.stopAutoStreaming();
+
+console.log('🔧 ConsoleLogger: Service loaded and ready');
+console.log('🔧 ConsoleLogger: Use getConsoleLogs(), getConsoleSummary(), exportConsoleLogs(), displayConsoleLogs(), or clearConsoleLogs()');
