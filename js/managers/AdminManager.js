@@ -1846,6 +1846,24 @@ class AdminManager {
 
             console.log('🔧 AdminManager: Loading scores for:', { selectedClub, selectedEdition, selectedGameweek });
 
+            // Check database reference and try to restore if needed
+            if (!this.db) {
+                console.log('🔧 AdminManager: Database reference not available in loadScoresForDisplay, attempting to restore...');
+                this.restoreFirebaseConnection();
+                
+                // If still not available, try manual refresh
+                if (!this.db) {
+                    this.refreshDatabaseReference();
+                }
+                
+                // Final check
+                if (!this.db) {
+                    console.error('❌ AdminManager: Database reference still not available after restore attempts');
+                    scoresList.innerHTML = '<p>Error: Database not available. Please refresh the page.</p>';
+                    return;
+                }
+            }
+
             // Show loading state
             scoresList.innerHTML = `
                 <div class="empty-state">
