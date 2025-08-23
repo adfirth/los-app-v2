@@ -1195,6 +1195,17 @@ class LOSApp {
         this.refreshData();
     }
 
+    updateConnectionStatus(isOnline) {
+        // Update connection status
+        if (this.uiService && typeof this.uiService.updateConnectionStatus === 'function') {
+            if (isOnline) {
+                this.uiService.updateConnectionStatus('connected', 'Connected');
+            } else {
+                this.uiService.updateConnectionStatus('disconnected', 'Disconnected');
+            }
+        }
+    }
+
     destroy() {
         // Clean up resources
         console.log('Destroying app...');
