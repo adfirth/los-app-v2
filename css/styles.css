@@ -1397,6 +1397,190 @@ body {
     border: 1px solid #e0e0e0;
 }
 
+/* Enhanced Standings Table */
+.standings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.standings-header-row {
+    display: flex;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 700;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 12px;
+}
+
+.standings-header-cell {
+    padding: 16px 12px;
+    text-align: left;
+    border-right: 1px solid #dee2e6;
+}
+
+.standings-header-cell:last-child {
+    border-right: none;
+}
+
+.position-header {
+    width: 60px;
+    text-align: center;
+}
+
+.player-header {
+    flex: 2;
+}
+
+.card-header {
+    width: 140px;
+}
+
+.pick-header {
+    width: 120px;
+}
+
+.lives-header {
+    width: 80px;
+    text-align: center;
+}
+
+.last-pick-header {
+    width: 100px;
+    text-align: center;
+}
+
+.standings-row {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.standings-row:hover {
+    background: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.standings-row.current-user {
+    background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, rgba(211, 47, 47, 0.1) 100%);
+    border-left: 4px solid #d32f2f;
+    border-right: 4px solid #d32f2f;
+    font-weight: 600;
+}
+
+.standings-row.eliminated {
+    background: rgba(220, 53, 69, 0.05);
+    opacity: 0.7;
+}
+
+.standings-cell {
+    padding: 16px 12px;
+    border-right: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.standings-cell:last-child {
+    border-right: none;
+}
+
+.position-cell {
+    width: 60px;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: #495057;
+}
+
+.player-cell {
+    flex: 2;
+    justify-content: flex-start;
+}
+
+.player-name {
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 16px;
+}
+
+.current-user-badge {
+    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+}
+
+.card-cell {
+    width: 140px;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.card-icon {
+    font-size: 18px;
+}
+
+.card-text {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-cell.no-cards .card-text {
+    color: #28a745;
+}
+
+.card-cell.yellow-card .card-text {
+    color: #ffc107;
+}
+
+.card-cell.red-card .card-text {
+    color: #dc3545;
+}
+
+.pick-cell {
+    width: 120px;
+    justify-content: flex-start;
+    font-weight: 500;
+    color: #495057;
+}
+
+.lives-cell {
+    width: 80px;
+    justify-content: center;
+    gap: 6px;
+}
+
+.lives-count {
+    font-weight: 700;
+    font-size: 18px;
+    color: #d32f2f;
+}
+
+.lives-icon {
+    font-size: 16px;
+}
+
+.last-pick-cell {
+    width: 100px;
+    justify-content: center;
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
 .standings-header {
     background: #f5f5f5;
     padding: 20px 24px;

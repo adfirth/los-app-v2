@@ -153,11 +153,17 @@ class GameLogicManager {
                 }
             }
             
-            // Sort standings by lives (descending), then by last pick time
+            // Sort standings: current user first, then by card status (no cards, yellow card, red card), then by last pick time
             this.standings.sort((a, b) => {
+                // Current user always comes first
+                if (a.isCurrentUser && !b.isCurrentUser) return -1;
+                if (!a.isCurrentUser && b.isCurrentUser) return 1;
+                
+                // Then sort by card status (lives descending)
                 if (a.lives !== b.lives) {
                     return b.lives - a.lives; // More lives first
                 }
+                
                 // If lives are equal, sort by last pick time (earlier is better)
                 if (a.lastPick && b.lastPick) {
                     return new Date(a.lastPick) - new Date(b.lastPick);
@@ -185,6 +191,31 @@ class GameLogicManager {
         return picks[gameweeks[0]];
     }
 
+    getCurrentGameweekPick(picks) {
+        if (!picks || Object.keys(picks).length === 0) return null;
+        
+        const currentGameweek = window.losApp?.managers?.edition?.getCurrentGameweek() || 1;
+        return picks[currentGameweek] || null;
+    }
+
+    getCardStatus(lives) {
+        if (lives === 0) return 'red-card';
+        if (lives === 1) return 'yellow-card';
+        return 'no-cards';
+    }
+
+    getCardStatusText(lives) {
+        if (lives === 0) return 'Red Card (Eliminated)';
+        if (lives === 1) return 'Yellow Card (1 Life)';
+        return 'No Cards (2 Lives)';
+    }
+
+    getCardStatusIcon(lives) {
+        if (lives === 0) return '🔴';
+        if (lives === 1) return '🟡';
+        return '🟢';
+    }
+
     displayStandings() {
         console.log('🔍 GameLogicManager: Displaying standings, count:', this.standings.length);
         
@@ -205,22 +236,50 @@ class GameLogicManager {
             return;
         }
 
-        let standingsHTML = '';
+        // Create enhanced standings table
+        let standingsHTML = `
+            <div class="standings-table">
+                <div class="standings-header-row">
+                    <div class="standings-header-cell position-header">Pos</div>
+                    <div class="standings-header-cell player-header">Player</div>
+                    <div class="standings-header-cell card-header">Card Status</div>
+                    <div class="standings-header-cell pick-header">Current GW Pick</div>
+                    <div class="standings-header-cell lives-header">Lives</div>
+                    <div class="standings-header-cell last-pick-header">Last Pick</div>
+                </div>
+        `;
+
         this.standings.forEach((player, index) => {
             const position = index + 1;
             const eliminatedClass = player.eliminated ? 'eliminated' : '';
-            const winnerClass = player.lives > 0 && this.standings.length === 1 ? 'winner' : '';
+            const currentUserClass = player.isCurrentUser ? 'current-user' : '';
+            const cardStatusIcon = this.getCardStatusIcon(player.lives);
+            const cardStatusText = this.getCardStatusText(player.lives);
+            const currentPick = player.currentGameweekPick || 'No pick made';
+            const lastPick = player.lastPick ? `GW${Object.keys(player.picks).sort((a, b) => Number(b) - Number(a))[0]}` : 'No picks yet';
             
             standingsHTML += `
-                <div class="standings-row ${eliminatedClass} ${winnerClass}" data-uid="${player.uid}">
-                    <div class="position">${position}</div>
-                    <div class="player-name">${player.displayName}</div>
-                    <div class="lives">${player.lives}</div>
-                    <div class="last-pick">${player.lastPick || 'No picks yet'}</div>
+                <div class="standings-row ${eliminatedClass} ${currentUserClass}" data-uid="${player.uid}">
+                    <div class="standings-cell position-cell">${position}</div>
+                    <div class="standings-cell player-cell">
+                        <span class="player-name">${player.displayName}</span>
+                        ${player.isCurrentUser ? '<span class="current-user-badge">YOU</span>' : ''}
+                    </div>
+                    <div class="standings-cell card-cell ${player.cardStatus}">
+                        <span class="card-icon">${cardStatusIcon}</span>
+                        <span class="card-text">${cardStatusText}</span>
+                    </div>
+                    <div class="standings-cell pick-cell">${currentPick}</div>
+                    <div class="standings-cell lives-cell">
+                        <span class="lives-count">${player.lives}</span>
+                        <span class="lives-icon">❤️</span>
+                    </div>
+                    <div class="standings-cell last-pick-cell">${lastPick}</div>
                 </div>
             `;
         });
 
+        standingsHTML += '</div>';
         standingsList.innerHTML = standingsHTML;
     }
 
@@ -261,7 +320,10 @@ class GameLogicManager {
                 lives: userData.lives || 0,
                 picks: userPicks,
                 eliminated: userData.lives <= 0,
-                lastPick: this.getLastPick(userPicks)
+                lastPick: this.getLastPick(userPicks),
+                currentGameweekPick: this.getCurrentGameweekPick(userPicks),
+                cardStatus: this.getCardStatus(userData.lives || 0),
+                isCurrentUser: doc.id === window.losApp?.managers?.auth?.currentUser?.uid
             };
             
             console.log('🔍 GameLogicManager: Adding player to standings (old):', playerData);
@@ -304,7 +366,10 @@ class GameLogicManager {
                 lives: userData.lives || 0,
                 picks: userPicks,
                 eliminated: userData.lives <= 0,
-                lastPick: this.getLastPick(userPicks)
+                lastPick: this.getLastPick(userPicks),
+                currentGameweekPick: this.getCurrentGameweekPick(userPicks),
+                cardStatus: this.getCardStatus(userData.lives || 0),
+                isCurrentUser: doc.id === window.losApp?.managers?.auth?.currentUser?.uid
             };
             
             console.log('🔍 GameLogicManager: Adding player to standings (new):', playerData);
