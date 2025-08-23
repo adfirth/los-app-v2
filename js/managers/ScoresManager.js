@@ -1366,18 +1366,24 @@ class ScoresManager {
             }
             
             console.log(`🔍 ScoresManager: Fetching football data from: ${url}`);
+            console.log(`🔍 ScoresManager: Headers:`, headers);
             
             const response = await fetch(url, {
                 method: 'GET',
                 headers: headers
             });
             
+            console.log(`🔍 ScoresManager: Response status:`, response.status, response.statusText);
+            
             if (!response.ok) {
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                console.error(`❌ ScoresManager: API response error:`, errorText);
+                throw new Error(`API request failed: ${response.status} ${response.statusText}: ${errorText}`);
             }
             
             const data = await response.json();
-            console.log(`✅ ScoresManager: Football data fetched successfully: ${data.matches?.length || 0} matches`);
+            console.log(`✅ ScoresManager: Football data fetched successfully:`, data);
+            console.log(`✅ ScoresManager: Matches count: ${data.matches?.length || 0}`);
             
             // Process the API data and update fixtures
             if (data.matches && data.matches.length > 0) {
@@ -1618,4 +1624,24 @@ class ScoresManager {
 // Initialize ScoresManager when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.scoresManager = new ScoresManager();
+    
+    // Add global helper functions for debugging
+    window.testScoreImport = async (gameweek = 1) => {
+        console.log('🧪 Testing score import for gameweek:', gameweek);
+        if (window.scoresManager) {
+            try {
+                const result = await window.scoresManager.importScoresFromAPI(gameweek);
+                console.log('✅ Score import test result:', result);
+                return result;
+            } catch (error) {
+                console.error('❌ Score import test failed:', error);
+                return false;
+            }
+        } else {
+            console.error('❌ ScoresManager not available');
+            return false;
+        }
+    };
+    
+    console.log('🔧 ScoresManager: Global helper function added: testScoreImport(gameweek)');
 });

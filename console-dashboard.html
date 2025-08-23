@@ -139,10 +139,11 @@
         </div>
         
         <div class="controls">
-            <button onclick="refreshLogs()">🔄 Refresh Logs</button>
+            <button onclick="manualRefreshLogs()">🔄 Refresh Logs</button>
             <button onclick="clearLogs()" class="danger">🗑️ Clear All</button>
             <button onclick="exportLogs()">📥 Export JSON</button>
             <button onclick="toggleAutoRefresh()" class="auto-refresh" id="autoRefreshBtn">⏸️ Auto-Refresh</button>
+            <button onclick="testConsoleLogger()" style="background: #9b59b6;">🧪 Test ConsoleLogger</button>
         </div>
         
         <div class="stats" id="stats">
@@ -162,6 +163,10 @@
                 <div class="stat-number" id="lastUpdate">-</div>
                 <div class="stat-label">Last Update</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-number" id="consoleLoggerStatus" style="font-size: 16px;">❓</div>
+                <div class="stat-label">ConsoleLogger Status</div>
+            </div>
         </div>
         
         <div class="logs-container" id="logsContainer">
@@ -179,6 +184,9 @@
         </div>
     </div>
 
+    <!-- Load ConsoleLogger service first -->
+    <script src="js/services/ConsoleLogger.js"></script>
+
     <script>
         let autoRefreshInterval = null;
         let isAutoRefreshing = false;
@@ -193,25 +201,24 @@
                 console.log('🔧 Console Dashboard: ConsoleLogger ready event received');
                 if (e.detail.consoleLogger) {
                     window.consoleLogger = e.detail.consoleLogger;
+                    updateConsoleLoggerStatus();
                     initializeDashboard();
                 }
             });
         });
 
         // Wait for ConsoleLogger to be available
+        let consoleLoggerRetryCount = 0;
+        const maxRetries = 50; // 5 seconds with 100ms intervals
+        
         function waitForConsoleLogger() {
-            if (window.consoleLogger) {
+            if (window.consoleLogger && typeof window.consoleLogger.getLogs === 'function') {
                 initializeDashboard();
-            } else {
-                // Show error after 3 seconds if ConsoleLogger is not available
-                setTimeout(() => {
-                    if (!window.consoleLogger) {
-                        showErrorState();
-                    }
-                }, 3000);
-                
-                // Keep trying
+            } else if (consoleLoggerRetryCount < maxRetries) {
+                consoleLoggerRetryCount++;
                 setTimeout(waitForConsoleLogger, 100);
+            } else {
+                showErrorState();
             }
         }
 
@@ -225,6 +232,7 @@
         function retryConnection() {
             document.getElementById('errorIndicator').style.display = 'none';
             document.getElementById('loadingIndicator').style.display = 'block';
+            consoleLoggerRetryCount = 0; // Reset retry counter
             waitForConsoleLogger();
         }
 
@@ -236,14 +244,61 @@
             document.getElementById('loadingIndicator').style.display = 'none';
             document.getElementById('errorIndicator').style.display = 'none';
             
+            // Update status immediately
+            updateConsoleLoggerStatus();
+            
+            // Only start auto-refresh if ConsoleLogger is working
+            if (window.consoleLogger && typeof window.consoleLogger.getLogs === 'function') {
+                // Add a test log to verify ConsoleLogger is working
+                console.log('🔧 Console Dashboard: Testing ConsoleLogger - this should appear in the dashboard');
+                console.warn('🔧 Console Dashboard: Test warning message');
+                console.error('🔧 Console Dashboard: Test error message');
+                
+                // Wait a moment for the logs to be captured, then refresh
+                setTimeout(() => {
+                    refreshLogs();
+                    startAutoRefresh();
+                }, 100);
+            } else {
+                console.error('🔧 Console Dashboard: ConsoleLogger not properly initialized');
+                showErrorState();
+            }
+        }
+
+        // Manual refresh with user feedback
+        function manualRefreshLogs() {
+            if (!window.consoleLogger || typeof window.consoleLogger.getLogs !== 'function') {
+                showNotification('ConsoleLogger not available - cannot refresh logs', 'error');
+                return;
+            }
             refreshLogs();
-            startAutoRefresh();
+        }
+
+        // Test ConsoleLogger functionality
+        function testConsoleLogger() {
+            if (!window.consoleLogger || typeof window.consoleLogger.getLogs !== 'function') {
+                showNotification('ConsoleLogger not available - cannot test', 'error');
+                return;
+            }
+            
+            // Generate test logs
+            console.log('🧪 Test log message from dashboard');
+            console.warn('🧪 Test warning message from dashboard');
+            console.error('🧪 Test error message from dashboard');
+            console.info('🧪 Test info message from dashboard');
+            
+            showNotification('Test logs generated - check the dashboard and refresh', 'success');
+            
+            // Refresh after a short delay to show the new logs
+            setTimeout(() => {
+                refreshLogs();
+            }, 200);
         }
 
         // Refresh logs from ConsoleLogger
         function refreshLogs() {
             try {
-                if (!window.consoleLogger) {
+                if (!window.consoleLogger || typeof window.consoleLogger.getLogs !== 'function') {
                     console.error('ConsoleLogger not available');
                     return;
                 }
@@ -270,6 +325,21 @@
             document.getElementById('totalLogs').textContent = summary.total || 0;
             document.getElementById('errorLogs').textContent = summary.errors || 0;
             document.getElementById('warningLogs').textContent = summary.warnings || 0;
+            
+            // Update ConsoleLogger status
+            updateConsoleLoggerStatus();
+        }
+
+        // Update ConsoleLogger status display
+        function updateConsoleLoggerStatus() {
+            const statusElement = document.getElementById('consoleLoggerStatus');
+            if (window.consoleLogger && typeof window.consoleLogger.getLogs === 'function') {
+                statusElement.textContent = '✅';
+                statusElement.style.color = '#27ae60';
+            } else {
+                statusElement.textContent = '❌';
+                statusElement.style.color = '#e74c3c';
+            }
         }
 
         // Display logs
@@ -305,9 +375,12 @@
         function clearLogs() {
             if (confirm('Are you sure you want to clear all logs? This will clear logs from both the dashboard and localStorage.')) {
                 try {
-                    if (window.consoleLogger) {
+                    if (window.consoleLogger && typeof window.consoleLogger.clearLogs === 'function') {
                         window.consoleLogger.clearLogs();
                         console.log('🔧 Console Dashboard: All logs cleared');
+                    } else {
+                        showNotification('ConsoleLogger not available', 'error');
+                        return;
                     }
                     
                     // Refresh display
@@ -325,7 +398,7 @@
         // Export logs as JSON
         function exportLogs() {
             try {
-                if (window.consoleLogger) {
+                if (window.consoleLogger && typeof window.consoleLogger.exportLogs === 'function') {
                     window.consoleLogger.exportLogs();
                     showNotification('Logs exported successfully!', 'success');
                 } else {
@@ -342,6 +415,11 @@
             if (isAutoRefreshing) {
                 stopAutoRefresh();
             } else {
+                // Check if ConsoleLogger is available before starting
+                if (!window.consoleLogger || typeof window.consoleLogger.getLogs !== 'function') {
+                    showNotification('ConsoleLogger not available - cannot start auto-refresh', 'error');
+                    return;
+                }
                 startAutoRefresh();
             }
         }
@@ -349,6 +427,12 @@
         // Start auto-refresh
         function startAutoRefresh() {
             if (autoRefreshInterval) return;
+            
+            // Only start if ConsoleLogger is available
+            if (!window.consoleLogger || typeof window.consoleLogger.getLogs !== 'function') {
+                console.error('🔧 Console Dashboard: Cannot start auto-refresh - ConsoleLogger not available');
+                return;
+            }
             
             isAutoRefreshing = true;
             autoRefreshInterval = setInterval(refreshLogs, 5000); // Refresh every 5 seconds

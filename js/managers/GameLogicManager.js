@@ -108,6 +108,8 @@ class GameLogicManager {
 
     async loadStandings() {
         try {
+            console.log('🔍 GameLogicManager: Starting to load standings...');
+            
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
                 console.log('GameLogicManager: Firebase not ready, retrying in 2 seconds...');
@@ -123,17 +125,22 @@ class GameLogicManager {
             }
 
             const currentEdition = window.editionService.getCurrentEdition();
+            console.log('🔍 GameLogicManager: Current edition:', currentEdition);
             
             // Get all users for current edition
             const usersSnapshot = await this.db.collection('users')
                 .where('edition', '==', currentEdition)
                 .get();
             
+            console.log('🔍 GameLogicManager: Found users:', usersSnapshot.size);
+            
             this.standings = [];
             
             // Use for...of loop to properly handle async operations
             for (const doc of usersSnapshot.docs) {
                 const userData = doc.data();
+                console.log('🔍 GameLogicManager: Processing user:', doc.id, userData);
+                
                 // Load picks for this user from multi-club structure
                 let userPicks = {};
                 try {
@@ -141,12 +148,16 @@ class GameLogicManager {
                     const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
                     const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
                     
+                    console.log('🔍 GameLogicManager: Current club:', currentClubId, 'Current edition:', currentEdition);
+                    
                     if (currentClubId && currentEdition) {
                         const picksSnapshot = await this.db.collection('clubs').doc(currentClubId)
                             .collection('editions').doc(currentEdition)
                             .collection('picks')
                             .where('userId', '==', doc.id)
                             .get();
+                        
+                        console.log('🔍 GameLogicManager: Found picks for user:', doc.id, picksSnapshot.size);
                         
                         picksSnapshot.forEach(pickDoc => {
                             const pickData = pickDoc.data();
@@ -157,14 +168,17 @@ class GameLogicManager {
                     console.error('Error loading picks for user:', doc.id, error);
                 }
                 
-                this.standings.push({
+                const playerData = {
                     uid: doc.id,
                     displayName: userData.displayName,
                     lives: userData.lives || 0,
                     picks: userPicks,
                     eliminated: userData.lives <= 0,
                     lastPick: this.getLastPick(userPicks)
-                });
+                };
+                
+                console.log('🔍 GameLogicManager: Adding player to standings:', playerData);
+                this.standings.push(playerData);
             }
             
             // Sort standings by lives (descending), then by last pick time
@@ -219,10 +233,16 @@ class GameLogicManager {
     }
 
     displayStandings() {
+        console.log('🔍 GameLogicManager: Displaying standings, count:', this.standings.length);
+        
         const standingsList = document.getElementById('standingsList');
-        if (!standingsList) return;
+        if (!standingsList) {
+            console.error('❌ GameLogicManager: standingsList element not found!');
+            return;
+        }
 
         if (this.standings.length === 0) {
+            console.log('🔍 GameLogicManager: No standings to display, showing empty state');
             this.showEmptyStandings();
             return;
         }
@@ -612,4 +632,39 @@ class GameLogicManager {
 // Initialize GameLogicManager when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.gameLogicManager = new GameLogicManager();
+    
+    // Add global helper functions for debugging
+    window.testStandings = () => {
+        console.log('🧪 Testing standings...');
+        if (window.gameLogicManager) {
+            console.log('🔍 Current standings:', window.gameLogicManager.getStandings());
+            console.log('🔍 Standings count:', window.gameLogicManager.getStandings().length);
+            window.gameLogicManager.loadStandings();
+        } else {
+            console.error('❌ GameLogicManager not available');
+        }
+    };
+    
+    window.debugStandings = () => {
+        console.log('🔍 Debugging standings...');
+        if (window.gameLogicManager) {
+            console.log('🔍 GameLogicManager instance:', window.gameLogicManager);
+            console.log('🔍 Database reference:', window.gameLogicManager.db);
+            console.log('🔍 Firebase ready:', window.firebaseReady);
+            console.log('🔍 Current edition:', window.editionService?.getCurrentEdition());
+        } else {
+            console.error('❌ GameLogicManager not available');
+        }
+    };
+    
+    window.forceRefreshStandings = () => {
+        console.log('🔄 Force refreshing standings...');
+        if (window.gameLogicManager) {
+            window.gameLogicManager.loadStandings();
+        } else {
+            console.error('❌ GameLogicManager not available');
+        }
+    };
+    
+    console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings()');
 });

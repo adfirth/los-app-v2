@@ -6,6 +6,12 @@
     
     // Wait for DOM to be ready
     function initConsoleLogger() {
+        // Prevent multiple initializations
+        if (window.consoleLogger) {
+            console.log('🔧 ConsoleLogger: Already initialized, skipping...');
+            return;
+        }
+        
         try {
             class ConsoleLogger {
                 constructor() {
@@ -276,6 +282,11 @@
 
             // Create global instance
             window.consoleLogger = new ConsoleLogger();
+
+            // Verify the instance was created successfully
+            if (!window.consoleLogger || typeof window.consoleLogger.getLogs !== 'function') {
+                throw new Error('Failed to create ConsoleLogger instance');
+            }
 
             // Auto-start capture
             window.consoleLogger.startCapture();
