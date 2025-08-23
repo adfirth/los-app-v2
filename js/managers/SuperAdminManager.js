@@ -922,20 +922,47 @@ class SuperAdminManager {
             // Clear existing options
             competitionSelect.innerHTML = '<option value="">Select Competition</option>';
             
-            // Get competitions from config
-            const competitions = window.APIConfig.competitions;
+            // Get competitions from config with fallback
+            let competitions = {};
+            if (window.APIConfig && window.APIConfig.competitions) {
+                competitions = window.APIConfig.competitions;
+            } else if (window.FOOTBALL_WEBPAGES_CONFIG && window.FOOTBALL_WEBPAGES_CONFIG.LEAGUES) {
+                // Fallback to FOOTBALL_WEBPAGES_CONFIG
+                competitions = window.FOOTBALL_WEBPAGES_CONFIG.LEAGUES;
+            } else {
+                // Hardcoded fallback
+                competitions = {
+                    'national-league': { id: '5', name: 'National League', description: 'English National League (5th tier)' },
+                    'premier-league': { id: '1', name: 'Premier League', description: 'English Premier League (1st tier)' },
+                    'championship': { id: '2', name: 'EFL Championship', description: 'English Championship (2nd tier)' },
+                    'league-one': { id: '3', name: 'EFL League One', description: 'English League One (3rd tier)' },
+                    'league-two': { id: '4', name: 'EFL League Two', description: 'English League Two (4th tier)' }
+                };
+            }
             
             // Add competition options
             Object.entries(competitions).forEach(([key, comp]) => {
                 const option = document.createElement('option');
                 option.value = comp.id;
-                option.textContent = `${comp.name} (${comp.description})`;
+                option.textContent = `${comp.name} (${comp.description || ''})`;
                 competitionSelect.appendChild(option);
             });
             
             console.log(`✅ Populated competition dropdown with ${Object.keys(competitions).length} competitions`);
         } catch (error) {
             console.error('❌ Error populating competition dropdown:', error);
+            // Add fallback options even if there's an error
+            const competitionSelect = document.getElementById('competition-select');
+            if (competitionSelect) {
+                competitionSelect.innerHTML = `
+                    <option value="">Select Competition</option>
+                    <option value="5">National League (English National League)</option>
+                    <option value="1">Premier League (English Premier League)</option>
+                    <option value="2">EFL Championship (English Championship)</option>
+                    <option value="3">EFL League One (English League One)</option>
+                    <option value="4">EFL League Two (English League Two)</option>
+                `;
+            }
         }
     }
 
@@ -950,20 +977,47 @@ class SuperAdminManager {
             // Clear existing options
             competitionSelect.innerHTML = '<option value="">Select Competition</option>';
             
-            // Get competitions from config
-            const competitions = window.APIConfig.competitions;
+            // Get competitions from config with fallback
+            let competitions = {};
+            if (window.APIConfig && window.APIConfig.competitions) {
+                competitions = window.APIConfig.competitions;
+            } else if (window.FOOTBALL_WEBPAGES_CONFIG && window.FOOTBALL_WEBPAGES_CONFIG.LEAGUES) {
+                // Fallback to FOOTBALL_WEBPAGES_CONFIG
+                competitions = window.FOOTBALL_WEBPAGES_CONFIG.LEAGUES;
+            } else {
+                // Hardcoded fallback
+                competitions = {
+                    'national-league': { id: '5', name: 'National League', description: 'English National League (5th tier)' },
+                    'premier-league': { id: '1', name: 'Premier League', description: 'English Premier League (1st tier)' },
+                    'championship': { id: '2', name: 'EFL Championship', description: 'English Championship (2nd tier)' },
+                    'league-one': { id: '3', name: 'EFL League One', description: 'English League One (3rd tier)' },
+                    'league-two': { id: '4', name: 'EFL League Two', description: 'English League Two (4th tier)' }
+                };
+            }
             
             // Add competition options
             Object.entries(competitions).forEach(([key, comp]) => {
                 const option = document.createElement('option');
                 option.value = comp.id;
-                option.textContent = `${comp.name} (${comp.description})`;
+                option.textContent = `${comp.name} (${comp.description || ''})`;
                 competitionSelect.appendChild(option);
             });
             
             console.log(`✅ Populated score competition dropdown with ${Object.keys(competitions).length} competitions`);
         } catch (error) {
             console.error('❌ Error populating score competition dropdown:', error);
+            // Add fallback options even if there's an error
+            const competitionSelect = document.getElementById('score-competition-select');
+            if (competitionSelect) {
+                competitionSelect.innerHTML = `
+                    <option value="">Select Competition</option>
+                    <option value="5">National League (English National League)</option>
+                    <option value="1">Premier League (English Premier League)</option>
+                    <option value="2">EFL Championship (English Championship)</option>
+                    <option value="3">EFL League One (English League One)</option>
+                    <option value="4">EFL League Two (English League Two)</option>
+                `;
+            }
         }
     }
 

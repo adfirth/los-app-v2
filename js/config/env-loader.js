@@ -239,6 +239,33 @@ class EnvironmentLoader {
                 key: '2e08ed83camsh44dc27a6c439f8dp1c388ajsn65cd74585fef',
                 host: 'football-web-pages1.p.rapidapi.com',
                 baseUrl: 'https://football-web-pages1.p.rapidapi.com'
+            },
+            competitions: {
+                'national-league': { 
+                    id: '5', 
+                    name: 'National League', 
+                    description: 'English National League (5th tier)' 
+                },
+                'premier-league': { 
+                    id: '1', 
+                    name: 'Premier League', 
+                    description: 'English Premier League (1st tier)' 
+                },
+                'championship': { 
+                    id: '2', 
+                    name: 'EFL Championship', 
+                    description: 'English Championship (2nd tier)' 
+                },
+                'league-one': { 
+                    id: '3', 
+                    name: 'EFL League One', 
+                    description: 'English League One (3rd tier)' 
+                },
+                'league-two': { 
+                    id: '4', 
+                    name: 'EFL League Two', 
+                    description: 'English League Two (4th tier)' 
+                }
             }
         };
         
