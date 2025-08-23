@@ -220,18 +220,38 @@ class GameLogicManager {
 
     calculateLivesFromPicks(userPicks, startingLives = 2) {
         if (!userPicks || Object.keys(userPicks).length === 0) {
+            console.log('🔍 GameLogicManager: No picks to calculate lives from, returning starting lives:', startingLives);
             return startingLives;
         }
 
         let lives = startingLives;
+        console.log('🔍 GameLogicManager: Calculating lives from picks. Starting lives:', startingLives);
+        console.log('🔍 GameLogicManager: User picks data:', userPicks);
         
         // Count losing picks (cards received)
-        Object.values(userPicks).forEach(pick => {
-            if (pick && pick.result === 'loss') {
-                lives--;
+        Object.entries(userPicks).forEach(([gameweek, pick]) => {
+            console.log(`🔍 GameLogicManager: Checking GW${gameweek} pick:`, pick);
+            
+            if (pick && pick.result) {
+                console.log(`🔍 GameLogicManager: GW${gameweek} result: "${pick.result}" (type: ${typeof pick.result})`);
+                
+                // Check for various possible loss values
+                if (pick.result === 'loss' || pick.result === 'L' || pick.result === 'Loss' || pick.result === 'LOSS') {
+                    lives--;
+                    console.log(`🔍 GameLogicManager: GW${gameweek} is a LOSS, lives reduced to: ${lives}`);
+                } else if (pick.result === 'win' || pick.result === 'W' || pick.result === 'Win' || pick.result === 'WIN') {
+                    console.log(`🔍 GameLogicManager: GW${gameweek} is a WIN, lives remain: ${lives}`);
+                } else if (pick.result === 'draw' || pick.result === 'D' || pick.result === 'Draw' || pick.result === 'DRAW') {
+                    console.log(`🔍 GameLogicManager: GW${gameweek} is a DRAW, lives remain: ${lives}`);
+                } else {
+                    console.log(`🔍 GameLogicManager: GW${gameweek} has unknown result: "${pick.result}", treating as neutral`);
+                }
+            } else {
+                console.log(`🔍 GameLogicManager: GW${gameweek} has no result field or result is falsy:`, pick);
             }
         });
 
+        console.log('🔍 GameLogicManager: Final calculated lives:', lives);
         // Ensure lives don't go below 0
         return Math.max(0, lives);
     }
@@ -339,12 +359,16 @@ class GameLogicManager {
                 
                 picksSnapshot.forEach(pickDoc => {
                     const pickData = pickDoc.data();
+                    console.log(`🔍 GameLogicManager: Raw pick data for GW${pickData.gameweek}:`, pickData);
+                    
                     userPicks[pickData.gameweek] = {
                         teamPicked: pickData.teamPicked,
                         result: pickData.result,
                         fixtureId: pickData.fixtureId,
                         isAutopick: pickData.isAutopick || false
                     };
+                    
+                    console.log(`🔍 GameLogicManager: Processed pick for GW${pickData.gameweek}:`, userPicks[pickData.gameweek]);
                 });
             } catch (error) {
                 console.error('Error loading picks for user (old):', doc.id, error);
@@ -391,12 +415,16 @@ class GameLogicManager {
                 
                 picksSnapshot.forEach(pickDoc => {
                     const pickData = pickDoc.data();
+                    console.log(`🔍 GameLogicManager: Raw pick data for GW${pickData.gameweek}:`, pickData);
+                    
                     userPicks[pickData.gameweek] = {
                         teamPicked: pickData.teamPicked,
                         result: pickData.result,
                         fixtureId: pickData.fixtureId,
                         isAutopick: pickData.isAutopick || false
                     };
+                    
+                    console.log(`🔍 GameLogicManager: Processed pick for GW${pickData.gameweek}:`, userPicks[pickData.gameweek]);
                 });
             } catch (error) {
                 console.error('Error loading picks for user (new):', doc.id, error);
