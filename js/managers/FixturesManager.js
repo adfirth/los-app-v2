@@ -170,7 +170,8 @@ class FixturesManager {
                         const fixture = {
                             ...fixtureData,
                             homeScore: this.getScoreValue(fixtureData.homeScore) || this.getScoreValue(fixtureData.apiData?.['home-team']?.score),
-                            awayScore: this.getScoreValue(fixtureData.awayScore) || this.getScoreValue(fixtureData.apiData?.['away-team']?.score)
+                            awayScore: this.getScoreValue(fixtureData.awayScore) || this.getScoreValue(fixtureData.apiData?.['away-team']?.score),
+                            time: fixtureData.time || fixtureData.kickOffTime
                         };
                         
                         this.currentFixtures.push(fixture);
@@ -353,21 +354,21 @@ class FixturesManager {
         try {
             // Find the earliest kick-off time with proper validation
             const validFixtures = this.currentFixtures.filter(fixture => {
-                if (!fixture.date || !fixture.kickOffTime) {
+                if (!fixture.date || !fixture.time) {
                     console.log(`⚠️ Fixture missing date or time: ${fixture.homeTeam} vs ${fixture.awayTeam}`, {
                         date: fixture.date,
-                        time: fixture.kickOffTime
+                        time: fixture.time
                     });
                     return false;
                 }
                 
                 // Try to create a valid date object
-                const testDate = new Date(`${fixture.date}T${fixture.kickOffTime}`);
+                const testDate = new Date(`${fixture.date}T${fixture.time}`);
                 if (isNaN(testDate.getTime())) {
                     console.log(`⚠️ Invalid date/time for fixture: ${fixture.homeTeam} vs ${fixture.awayTeam}`, {
                         date: fixture.date,
-                        time: fixture.kickOffTime,
-                        combined: `${fixture.date}T${fixture.kickOffTime}`
+                        time: fixture.time,
+                        combined: `${fixture.date}T${fixture.time}`
                     });
                     return false;
                 }
@@ -382,16 +383,16 @@ class FixturesManager {
             }
 
             const earliestFixture = validFixtures.reduce((earliest, fixture) => {
-                const fixtureTime = new Date(`${fixture.date}T${fixture.kickOffTime}`);
-                const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime}`);
+                const fixtureTime = new Date(`${fixture.date}T${fixture.time}`);
+                const earliestTime = new Date(`${earliest.date}T${earliest.time}`);
                 return fixtureTime < earliestTime ? fixture : earliest;
             });
 
-            const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime}`);
+            const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.time}`);
             const now = new Date();
             
             console.log('⏰ Earliest fixture:', `${earliestFixture.homeTeam} vs ${earliestFixture.awayTeam}`);
-            console.log('⏰ Fixture date/time:', `${earliestFixture.date} ${earliestFixture.kickOffTime}`);
+            console.log('⏰ Fixture date/time:', `${earliestFixture.date} ${earliestFixture.time}`);
             console.log('⏰ Deadline time:', deadlineTime.toISOString());
             console.log('⏰ Current time:', now.toISOString());
             console.log('⏰ Time until deadline (ms):', deadlineTime - now);
@@ -675,7 +676,7 @@ class FixturesManager {
         };
 
         const formattedDate = formatUKDate(fixture.date);
-        const formattedTime = formatUKTime(fixture.kickOffTime);
+        const formattedTime = formatUKTime(fixture.time || fixture.kickOffTime);
 
         card.innerHTML = `
             <div class="fixture-header">
@@ -683,8 +684,8 @@ class FixturesManager {
                     <div class="fixture-date">${formattedDate}</div>
                     <div class="fixture-time">${formattedTime}</div>
                 </div>
-                <div class="fixture-status ${typeof fixture.status === 'string' ? fixture.status : fixture.status?.status || 'TBD'}">
-                    ${typeof fixture.status === 'string' ? fixture.status.toUpperCase() : (fixture.status?.status || 'TBD').toUpperCase()}
+                <div class="fixture-status ${typeof fixture.status === 'string' ? fixture.status : fixture.status?.short || fixture.status?.status || 'TBD'}">
+                    ${typeof fixture.status === 'string' ? fixture.status.toUpperCase() : (fixture.status?.short || fixture.status?.status || 'TBD').toUpperCase()}
                 </div>
             </div>
             
