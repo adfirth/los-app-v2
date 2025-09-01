@@ -563,6 +563,14 @@ class FixturesManager {
     }
 
     createFixtureCard(fixture, index) {
+        // Debug logging for score display
+        if (window.DEBUG_MODE) {
+            console.log(`🔍 Fixture ${index}: ${fixture.homeTeam} vs ${fixture.awayTeam}`);
+            console.log(`🔍 Home score: ${fixture.homeScore} (type: ${typeof fixture.homeScore})`);
+            console.log(`🔍 Away score: ${fixture.awayScore} (type: ${typeof fixture.awayScore})`);
+            console.log(`🔍 Status: ${fixture.status} (type: ${typeof fixture.status})`);
+        }
+
         const card = document.createElement('div');
         card.className = 'fixture-card';
         
@@ -664,7 +672,7 @@ class FixturesManager {
                         aria-label="${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? 'Selected: ' : 'Pick '}${fixture.homeTeam}${isHomeUnavailable ? ' (unavailable)' : ''}"
                         aria-pressed="${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? 'true' : 'false'}">
                     ${this.createTeamWithBadgeHTML(fixture.homeTeam, 'small')}
-                    ${fixture.homeScore !== null ? `<span class="team-score">${fixture.homeScore}</span>` : ''}
+                    ${fixture.homeScore !== null && fixture.homeScore !== undefined ? `<span class="team-score">${fixture.homeScore}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
                 </button>
                 
@@ -679,7 +687,7 @@ class FixturesManager {
                         aria-label="${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? 'Selected: ' : 'Pick '}${fixture.awayTeam}${isAwayUnavailable ? ' (unavailable)' : ''}"
                         aria-pressed="${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? 'true' : 'false'}">
                     ${this.createTeamWithBadgeHTML(fixture.awayTeam, 'small')}
-                    ${fixture.awayScore !== null ? `<span class="team-score">${fixture.awayScore}</span>` : ''}
+                    ${fixture.awayScore !== null && fixture.awayScore !== undefined ? `<span class="team-score">${fixture.awayScore}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
                 </button>
             </div>
@@ -1220,6 +1228,23 @@ class FixturesManager {
             console.error('Error deleting fixture:', error);
             throw error;
         }
+        // Add global debug functions
+        window.debugFixtures = () => {
+            console.log('🔍 Debugging fixtures data...');
+            console.log('Current fixtures:', this.currentFixtures);
+            if (this.currentFixtures && this.currentFixtures.length > 0) {
+                this.currentFixtures.forEach((fixture, index) => {
+                    console.log(`Fixture ${index}: ${fixture.homeTeam} ${fixture.homeScore} - ${fixture.awayScore} ${fixture.awayTeam} (${fixture.status})`);
+                });
+            }
+        };
+        
+        window.enableFixtureDebug = () => {
+            window.DEBUG_MODE = true;
+            console.log('🔧 Fixture debug mode enabled');
+        };
+        
+        console.log('🔧 FixturesManager: Global debug functions added: debugFixtures(), enableFixtureDebug()');
     }
 }
 
