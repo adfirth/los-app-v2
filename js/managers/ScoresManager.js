@@ -1539,11 +1539,11 @@ class ScoresManager {
             console.log(`✅ ScoresManager: Fixtures-results fetched successfully:`, data);
             
             // Process the API data and update fixtures
-            if (data.matches && data.matches.length > 0) {
-                await this.processFixturesResults(data.matches, gameweek);
+            if (data.fixtures && data.fixtures.length > 0) {
+                await this.processFixturesResults(data.fixtures, gameweek);
                 return true;
             } else {
-                console.log('ℹ️ ScoresManager: No matches found in API response');
+                console.log('ℹ️ ScoresManager: No fixtures found in API response');
                 return false;
             }
             
@@ -1586,11 +1586,11 @@ class ScoresManager {
         const data = await response.json();
         console.log(`✅ ScoresManager: Direct API call successful:`, data);
         
-        if (data.matches && data.matches.length > 0) {
-            await this.processFixturesResults(data.matches, 1); // Default to gameweek 1 for now
+        if (data.fixtures && data.fixtures.length > 0) {
+            await this.processFixturesResults(data.fixtures, 1); // Default to gameweek 1 for now
             return true;
         } else {
-            console.log('ℹ️ ScoresManager: No matches found in direct API response');
+            console.log('ℹ️ ScoresManager: No fixtures found in direct API response');
             return false;
         }
     }
@@ -1605,13 +1605,13 @@ class ScoresManager {
         return { from, to };
     }
 
-    async processFixturesResults(matches, gameweek) {
+    async processFixturesResults(fixtures, gameweek) {
         try {
-            console.log(`🔧 ScoresManager: Processing ${matches.length} matches from fixtures-results for gameweek ${gameweek}`);
+            console.log(`🔧 ScoresManager: Processing ${fixtures.length} fixtures from fixtures-results for gameweek ${gameweek}`);
             
-            // Process each match from the fixtures-results API
-            matches.forEach((match, index) => {
-                console.log(`Match ${index + 1}: ${match['home-team']?.name || 'Unknown'} ${match['home-team']?.score || 0} - ${match['away-team']?.score || 0} ${match['away-team']?.name || 'Unknown'}`);
+            // Process each fixture from the fixtures-results API
+            fixtures.forEach((fixture, index) => {
+                console.log(`Fixture ${index + 1}: ${fixture.homeTeam || 'Unknown'} ${fixture.homeScore || 0} - ${fixture.awayScore || 0} ${fixture.awayTeam || 'Unknown'} (${fixture.status || 'TBD'})`);
             });
             
             // TODO: Implement actual score updating logic to update fixtures in database
