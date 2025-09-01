@@ -1490,8 +1490,17 @@ class ScoresManager {
                 throw new Error('API requests are currently disabled by system administrator');
             }
             
-            // Get current date range for the gameweek
-            const dateRange = this.getDateRangeForGameweek(gameweek);
+            // Try to get actual fixture dates from database first (most precise)
+            let dateRange = await this.getActualFixtureDatesForGameweek(gameweek);
+            
+            // If database lookup fails, fall back to hardcoded dates
+            if (!dateRange) {
+                dateRange = this.getDateRangeForGameweek(gameweek);
+                console.log(`📅 ScoresManager: Using fallback date range: ${dateRange.from} to ${dateRange.to}`);
+            } else {
+                console.log(`📅 ScoresManager: Using precise date range from database: ${dateRange.from} to ${dateRange.to}`);
+            }
+            
             console.log(`📅 ScoresManager: Date range for gameweek ${gameweek}: ${dateRange.from} to ${dateRange.to}`);
             
             let url;
@@ -1515,6 +1524,7 @@ class ScoresManager {
             }
             
             console.log(`🔍 ScoresManager: Fetching fixtures-results from: ${url}`);
+            console.log(`💰 ScoresManager: This should fetch significantly fewer fixtures (targeted date range)`);
             
             const response = await fetch(url, {
                 method: 'GET',
@@ -1596,12 +1606,37 @@ class ScoresManager {
     }
 
     getDateRangeForGameweek(gameweek) {
-        // For now, return a reasonable date range for testing
-        // In a real implementation, you'd calculate this based on the gameweek
-        const today = new Date();
-        const from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7).toISOString().split('T')[0];
-        const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+        // Get the actual fixture dates for this gameweek from the database
+        // This will be much more targeted than the current ±7 day range
+        const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
+        const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
         
+        // For now, use a more targeted approach based on gameweek
+        // Gameweek 1: Aug 9, Gameweek 2: Aug 23, etc.
+        const gameweekDates = {
+            1: { from: '2025-08-09', to: '2025-08-09' },
+            2: { from: '2025-08-23', to: '2025-08-23' },
+            3: { from: '2025-09-06', to: '2025-09-06' },
+            4: { from: '2025-09-20', to: '2025-09-20' },
+            5: { from: '2025-10-04', to: '2025-10-04' },
+            6: { from: '2025-10-18', to: '2025-10-18' },
+            7: { from: '2025-11-01', to: '2025-11-01' },
+            8: { from: '2025-11-15', to: '2025-11-15' },
+            9: { from: '2025-11-29', to: '2025-11-29' },
+            10: { from: '2025-12-13', to: '2025-12-13' }
+        };
+        
+        if (gameweekDates[gameweek]) {
+            console.log(`📅 ScoresManager: Using targeted date range for GW${gameweek}: ${gameweekDates[gameweek].from} to ${gameweekDates[gameweek].to}`);
+            return gameweekDates[gameweek];
+        }
+        
+        // Fallback to a very narrow range (±1 day) if gameweek not found
+        const today = new Date();
+        const from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
+        const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString().split('T')[0];
+        
+        console.log(`📅 ScoresManager: Using fallback date range: ${from} to ${to}`);
         return { from, to };
     }
 
@@ -1696,7 +1731,7 @@ class ScoresManager {
 
                     console.log(`🔧 ScoresManager: Updating fixture ${matchingFixture.id}: ${apiFixture.homeTeam} ${apiFixture.homeScore} - ${apiFixture.awayScore} ${apiFixture.awayTeam} (${apiFixture.status})`);
                     console.log(`🔧 ScoresManager: API fixture structure:`, apiFixture);
-                    console.log(`🔧 ScoresManager: Extracted homeScore:`, homeScore, `(type: ${typeof homeScore})`);
+                    console.log(`�� ScoresManager: Extracted homeScore:`, homeScore, `(type: ${typeof homeScore})`);
                     console.log(`🔧 ScoresManager: Extracted awayScore:`, awayScore, `(type: ${typeof awayScore})`);
                     console.log(`🔧 ScoresManager: New score data:`, updateData);
 
@@ -1962,6 +1997,96 @@ class ScoresManager {
     // Cleanup method
     destroy() {
         this.stopLiveScoreUpdates();
+    }
+
+    async getActualFixtureDatesForGameweek(gameweek) {
+        try {
+            // Get the actual fixture dates for this gameweek from the database
+            const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
+            const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
+            
+            if (!this.db) {
+                this.db = window.firebaseDB;
+            }
+            
+            if (!this.db) {
+                console.log('⚠️ ScoresManager: Database not available for fixture date lookup');
+                return null;
+            }
+            
+            const fixturesSnapshot = await this.db.collection('clubs')
+                .doc(currentClub)
+                .collection('editions')
+                .doc(currentEdition)
+                .collection('fixtures')
+                .where('gameWeek', '==', gameweek)
+                .get();
+            
+            if (fixturesSnapshot.empty) {
+                console.log(`ℹ️ ScoresManager: No fixtures found for gameweek ${gameweek}`);
+                return null;
+            }
+            
+            const dates = [];
+            fixturesSnapshot.forEach(doc => {
+                const fixtureData = doc.data();
+                if (fixtureData.date) {
+                    dates.push(fixtureData.date);
+                }
+            });
+            
+            if (dates.length === 0) {
+                console.log(`⚠️ ScoresManager: No dates found in fixtures for gameweek ${gameweek}`);
+                return null;
+            }
+            
+            // Sort dates and get min/max
+            dates.sort();
+            const from = dates[0];
+            const to = dates[dates.length - 1];
+            
+            console.log(`📅 ScoresManager: Found ${dates.length} fixture dates for GW${gameweek}: ${from} to ${to}`);
+            return { from, to, allDates: dates };
+            
+        } catch (error) {
+            console.error('❌ ScoresManager: Error getting fixture dates:', error);
+            return null;
+        }
+    }
+
+    getDateRangeForGameweek(gameweek) {
+        // Get the actual fixture dates for this gameweek from the database
+        // This will be much more targeted than the current ±7 day range
+        const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
+        const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
+        
+        // For now, use a more targeted approach based on gameweek
+        // Gameweek 1: Aug 9, Gameweek 2: Aug 23, etc.
+        const gameweekDates = {
+            1: { from: '2025-08-09', to: '2025-08-09' },
+            2: { from: '2025-08-23', to: '2025-08-23' },
+            3: { from: '2025-09-06', to: '2025-09-06' },
+            4: { from: '2025-09-20', to: '2025-09-20' },
+            5: { from: '2025-10-04', to: '2025-10-04' },
+            6: { from: '2025-10-18', to: '2025-10-18' },
+            7: { from: '2025-11-01', to: '2025-11-01' },
+            8: { from: '2025-11-15', to: '2025-11-15' },
+            9: { from: '2025-11-29', to: '2025-11-29' },
+            10: { from: '2025-12-13', to: '2025-12-13' }
+        };
+        
+        if (gameweekDates[gameweek]) {
+            console.log(`📅 ScoresManager: Using targeted date range for GW${gameweek}: ${gameweekDates[gameweek].from} to ${gameweekDates[gameweek].to}`);
+            return gameweekDates[gameweek];
+        }
+        
+        // Fallback to a very narrow range (±1 day) if gameweek not found
+        const today = new Date();
+        const from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
+        const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString().split('T')[0];
+        
+        console.log(`📅 ScoresManager: Using fallback date range: ${from} to ${to}`);
+        return { from, to };
     }
 }
 
