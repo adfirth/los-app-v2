@@ -704,11 +704,14 @@ class ScoresManager {
 
             if (!response.ok) {
                 // If Netlify function fails, try direct API call as fallback
-                if (!this.isDevelopmentMode() && response.status === 404) {
-                    console.log('⚠️ ScoresManager: Netlify function not found, trying direct API call...');
-                    return await this.makeDirectAPICall(date);
+                if (!this.isDevelopmentMode() && (response.status === 404 || response.status === 500 || response.status === 429)) {
+                    console.log(`⚠️ ScoresManager: Netlify function failed (${response.status}), trying direct API call as fallback...`);
+                    return await this.importScoresDirectAPI(dateRange);
                 }
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                
+                const errorText = await response.text();
+                console.error(`❌ ScoresManager: API response error:`, errorText);
+                throw new Error(`API request failed: ${response.status} ${response.statusText}: ${errorText}`);
             }
 
             const data = await response.json();
@@ -1544,8 +1547,8 @@ class ScoresManager {
             
             if (!response.ok) {
                 // If Netlify function fails, try direct API call as fallback
-                if (!this.isDevelopmentMode() && response.status === 404) {
-                    console.log('⚠️ ScoresManager: Netlify function not found, trying direct API call...');
+                if (!this.isDevelopmentMode() && (response.status === 404 || response.status === 500 || response.status === 429)) {
+                    console.log(`⚠️ ScoresManager: Netlify function failed (${response.status}), trying direct API call as fallback...`);
                     return await this.importScoresDirectAPI(dateRange);
                 }
                 
@@ -1570,7 +1573,7 @@ class ScoresManager {
             console.error('❌ ScoresManager: Error importing scores from API:', error);
             
             // If Netlify function fails, try direct API call as fallback
-            if (!this.isDevelopmentMode() && error.message.includes('404')) {
+            if (!this.isDevelopmentMode() && (error.message.includes('404') || error.message.includes('500') || error.message.includes('429'))) {
                 console.log('⚠️ ScoresManager: Netlify function failed, trying direct API call as fallback...');
                 try {
                     const dateRange = this.getDateRangeForGameweek(gameweek);
