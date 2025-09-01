@@ -644,8 +644,8 @@ class FixturesManager {
                     <div class="fixture-date">${formattedDate}</div>
                     <div class="fixture-time">${formattedTime}</div>
                 </div>
-                <div class="fixture-status ${fixture.status}">
-                    ${fixture.status.toUpperCase()}
+                <div class="fixture-status ${typeof fixture.status === 'string' ? fixture.status : fixture.status?.status || 'TBD'}">
+                    ${typeof fixture.status === 'string' ? fixture.status.toUpperCase() : (fixture.status?.status || 'TBD').toUpperCase()}
                 </div>
             </div>
             
