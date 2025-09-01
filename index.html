@@ -689,6 +689,74 @@
         };
         
         console.log('🔍 Additional function added: checkCurrentGameweekFixtures()');
+        
+        // 🔍 Check picks collection for data inconsistencies
+        window.investigatePicksCollection = async function() {
+            console.log('🔍 Investigating picks collection...');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            try {
+                const currentClubId = window.losApp?.managers?.club?.getCurrentClub() || 'altrincham-fc-juniors';
+                const currentEdition = window.losApp?.managers?.club?.getCurrentEdition() || '2025-26-national-league-1';
+                const currentGameweek = window.editionService?.getCurrentGameweek() || 1;
+                
+                console.log(`🔍 Checking picks for Club: ${currentClubId}, Edition: ${currentEdition}, Gameweek: ${currentGameweek}`);
+                
+                // Check picks collection
+                const picksSnapshot = await window.firebaseDB.collection('clubs').doc(currentClubId)
+                    .collection('editions').doc(currentEdition)
+                    .collection('picks')
+                    .where('gameweek', '==', currentGameweek)
+                    .get();
+                
+                if (picksSnapshot.empty) {
+                    console.log(`ℹ️ No picks found for Gameweek ${currentGameweek}`);
+                } else {
+                    console.log(`📊 Found ${picksSnapshot.size} picks for Gameweek ${currentGameweek}:`);
+                    
+                    picksSnapshot.forEach(doc => {
+                        const pickData = doc.data();
+                        console.log(`  📄 Pick ID: ${doc.id}`);
+                        console.log(`    User ID: ${pickData.userId}`);
+                        console.log(`    Team Picked: ${pickData.teamPicked || 'NULL'}`);
+                        console.log(`    Is Autopick: ${pickData.isAutopick}`);
+                        console.log(`    Lives After Pick: ${pickData.livesAfterPick || 'NULL'}`);
+                        console.log(`    Saved At: ${pickData.savedAt?.toDate?.() || pickData.savedAt}`);
+                        console.log(`    Fixture ID: ${pickData.fixtureId || 'NULL'}`);
+                        console.log(`    Result: ${pickData.result || 'NULL'}`);
+                        console.log('    ---');
+                    });
+                }
+                
+                // Also check for any picks with null teamPicked
+                const nullTeamPicksSnapshot = await window.firebaseDB.collection('clubs').doc(currentClubId)
+                    .collection('editions').doc(currentEdition)
+                    .collection('picks')
+                    .where('teamPicked', '==', null)
+                    .get();
+                
+                if (!nullTeamPicksSnapshot.empty) {
+                    console.log(`⚠️ Found ${nullTeamPicksSnapshot.size} picks with NULL teamPicked:`);
+                    nullTeamPicksSnapshot.forEach(doc => {
+                        const pickData = doc.data();
+                        console.log(`  🚨 Pick ID: ${doc.id}`);
+                        console.log(`    User ID: ${pickData.userId}`);
+                        console.log(`    Gameweek: ${pickData.gameweek}`);
+                        console.log(`    Is Autopick: ${pickData.isAutopick}`);
+                        console.log(`    Saved At: ${pickData.savedAt?.toDate?.() || pickData.savedAt}`);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('❌ Error investigating picks:', error);
+            }
+        };
+        
+        console.log('🔍 Additional function added: investigatePicksCollection()');
     </script>
     
     <!-- Development helper script -->
