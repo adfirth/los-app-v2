@@ -450,7 +450,16 @@ class ScoresManager {
     }
 
     createFixtureScore(fixture) {
-        const status = fixture.status || 'scheduled';
+        // Handle status field properly - it can be a string or object
+        let status = fixture.status || 'scheduled';
+        let statusText = status;
+        
+        // If status is an object, extract the text
+        if (typeof status === 'object' && status !== null) {
+            statusText = status.short || status.full || status.status || 'TBD';
+            status = statusText; // Use the text for CSS class
+        }
+        
         const homeScore = fixture.homeScore !== null ? fixture.homeScore : '-';
         const awayScore = fixture.awayScore !== null ? fixture.awayScore : '-';
         
@@ -481,7 +490,7 @@ class ScoresManager {
                         ${window.losApp?.managers?.edition?.formatDate?.(fixture.date) || 'Date TBC'} at ${fixture.kickOffTime ? (window.losApp?.managers?.edition?.formatTime?.(fixture.kickOffTime) || fixture.kickOffTime) : 'Time TBC'}
                     </div>
                     <div class="score-status-badge ${status}">
-                        ${status.toUpperCase()}
+                        ${statusText.toUpperCase()}
                     </div>
                 </div>
             </div>
