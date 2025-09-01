@@ -481,6 +481,126 @@
         
         console.log('✅ SIMPLE: Firebase cleanup functions added!');
         console.log('Available functions: cleanupFirebase(), showFirebaseStructure(), verifyFirebaseCleanup()');
+        
+        // 🔍 INVESTIGATION TOOLS for debugging fake fixtures issue
+        window.investigateFakeFixtures = async function() {
+            console.log('🔍 Investigating fake fixtures issue...');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            try {
+                // Check old fixtures collection
+                console.log('📋 Checking old fixtures collection...');
+                const oldFixturesSnapshot = await window.firebaseDB.collection('fixtures').get();
+                
+                if (oldFixturesSnapshot.empty) {
+                    console.log('✅ Old fixtures collection is empty - no fake fixtures found here');
+                } else {
+                    console.log(`⚠️ Found ${oldFixturesSnapshot.size} documents in old fixtures collection:`);
+                    
+                    oldFixturesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        console.log(`📄 Document ID: ${doc.id}`);
+                        console.log('📊 Data:', data);
+                        
+                        // Check if this contains the fake Premier League fixtures
+                        if (data.fixtures && Array.isArray(data.fixtures)) {
+                            const fakeTeams = ['Arsenal', 'Chelsea', 'Liverpool', 'Manchester City', 'Manchester United', 'Tottenham', 'Newcastle', 'Aston Villa', 'Brighton', 'West Ham'];
+                            const hasFakeFixtures = data.fixtures.some(fixture => 
+                                fakeTeams.includes(fixture.homeTeam) || fakeTeams.includes(fixture.awayTeam)
+                            );
+                            
+                            if (hasFakeFixtures) {
+                                console.log('🚨 FAKE FIXTURES FOUND in this document!');
+                                console.log('Teams found:', data.fixtures.map(f => `${f.homeTeam} vs ${f.awayTeam}`));
+                            }
+                        }
+                    });
+                }
+                
+                // Check new multi-club structure
+                console.log('🏆 Checking new multi-club structure...');
+                const clubsSnapshot = await window.firebaseDB.collection('clubs').get();
+                
+                if (clubsSnapshot.empty) {
+                    console.log('⚠️ No clubs found in new structure');
+                } else {
+                    console.log(`✅ Found ${clubsSnapshot.size} clubs in new structure`);
+                    
+                    for (const clubDoc of clubsSnapshot.docs) {
+                        const clubId = clubDoc.id;
+                        console.log(`🏟️ Club: ${clubId}`);
+                        
+                        const editionsSnapshot = await window.firebaseDB.collection('clubs').doc(clubId).collection('editions').get();
+                        if (!editionsSnapshot.empty) {
+                            console.log(`  📚 Editions: ${editionsSnapshot.size}`);
+                            
+                            for (const editionDoc of editionsSnapshot.docs) {
+                                const editionId = editionDoc.id;
+                                console.log(`    📖 Edition: ${editionId}`);
+                                
+                                const fixturesSnapshot = await window.firebaseDB.collection('clubs').doc(clubId)
+                                    .collection('editions').doc(editionId)
+                                    .collection('fixtures').get();
+                                
+                                if (!fixturesSnapshot.empty) {
+                                    console.log(`      📋 Fixtures: ${fixturesSnapshot.size} gameweeks`);
+                                    
+                                    fixturesSnapshot.forEach(fixtureDoc => {
+                                        const fixtureData = fixtureDoc.data();
+                                        console.log(`        • ${fixtureDoc.id}: ${fixtureData.fixtures ? fixtureData.fixtures.length : 0} fixtures`);
+                                    });
+                                } else {
+                                    console.log(`      📋 No fixtures found`);
+                                }
+                            }
+                        } else {
+                            console.log(`  📚 No editions found`);
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Error during investigation:', error);
+            }
+        };
+        
+        // 🧹 Clean up old fixtures collection
+        window.cleanupOldFixtures = async function() {
+            console.log('🧹 Cleaning up old fixtures collection...');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            try {
+                const oldFixturesSnapshot = await window.firebaseDB.collection('fixtures').get();
+                
+                if (oldFixturesSnapshot.empty) {
+                    console.log('✅ Old fixtures collection is already empty');
+                    return;
+                }
+                
+                // Delete all documents in the old fixtures collection
+                const batch = window.firebaseDB.batch();
+                oldFixturesSnapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                console.log(`✅ Successfully deleted ${oldFixturesSnapshot.size} documents from old fixtures collection`);
+                
+            } catch (error) {
+                console.error('❌ Error cleaning up old fixtures:', error);
+            }
+        };
+        
+        console.log('🔍 INVESTIGATION TOOLS added!');
+        console.log('Available functions: investigateFakeFixtures(), cleanupOldFixtures()');
     </script>
     
     <!-- Development helper script -->
