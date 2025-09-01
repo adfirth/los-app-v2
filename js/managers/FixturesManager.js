@@ -698,7 +698,7 @@ class FixturesManager {
                         aria-label="${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? 'Selected: ' : 'Pick '}${fixture.homeTeam}${isHomeUnavailable ? ' (unavailable)' : ''}"
                         aria-pressed="${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? 'true' : 'false'}">
                     ${this.createTeamWithBadgeHTML(fixture.homeTeam, 'small')}
-                    ${fixture.homeScore !== null && fixture.homeScore !== undefined ? `<span class="team-score">${fixture.homeScore}</span>` : ''}
+                    ${fixture.homeScore !== null && fixture.homeScore !== undefined ? `<span class="team-score">${this.getScoreValue(fixture.homeScore)}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
                 </button>
                 
@@ -713,7 +713,7 @@ class FixturesManager {
                         aria-label="${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? 'Selected: ' : 'Pick '}${fixture.awayTeam}${isAwayUnavailable ? ' (unavailable)' : ''}"
                         aria-pressed="${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? 'true' : 'false'}">
                     ${this.createTeamWithBadgeHTML(fixture.awayTeam, 'small')}
-                    ${fixture.awayScore !== null && fixture.awayScore !== undefined ? `<span class="team-score">${fixture.awayScore}</span>` : ''}
+                    ${fixture.awayScore !== null && fixture.awayScore !== undefined ? `<span class="team-score">${this.getScoreValue(fixture.awayScore)}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
                 </button>
             </div>
@@ -764,6 +764,42 @@ class FixturesManager {
             console.log(`✅ Event listeners added to ${pickButtons.length} buttons`);
         }
         return card;
+    }
+
+    getScoreValue(score) {
+        // Handle different score formats
+        if (score === null || score === undefined) {
+            return null;
+        }
+        
+        // If it's a simple number or string, return it
+        if (typeof score === 'number' || typeof score === 'string') {
+            return score;
+        }
+        
+        // If it's an object (like Firestore Timestamp), try to extract the value
+        if (typeof score === 'object') {
+            // Check if it has a 'seconds' property (Firestore Timestamp)
+            if (score.seconds !== undefined) {
+                return score.seconds;
+            }
+            // Check if it has a 'value' property
+            if (score.value !== undefined) {
+                return score.value;
+            }
+            // Check if it has a 'score' property
+            if (score.score !== undefined) {
+                return score.score;
+            }
+            // If it's an object with numeric properties, try to find the score
+            for (const key in score) {
+                if (typeof score[key] === 'number' && !isNaN(score[key])) {
+                    return score[key];
+                }
+            }
+        }
+        
+        return null;
     }
 
     isTeamUnavailable(teamName) {
