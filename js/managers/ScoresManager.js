@@ -1609,6 +1609,26 @@ class ScoresManager {
         try {
             console.log(`🔧 ScoresManager: Processing ${fixtures.length} fixtures from fixtures-results for gameweek ${gameweek}`);
             
+            // Ensure database reference is available
+            if (!this.db) {
+                console.log('🔧 ScoresManager: Database reference not available, attempting to restore...');
+                this.db = window.firebaseDB;
+                
+                if (!this.db) {
+                    console.log('🔧 ScoresManager: Trying to get database reference from other managers...');
+                    this.db = window.losApp?.managers?.superAdmin?.db || 
+                             window.losApp?.managers?.admin?.db ||
+                             window.firebase?.firestore?.() ||
+                             null;
+                }
+                
+                if (!this.db) {
+                    throw new Error('Database reference not available - cannot update scores');
+                }
+                
+                console.log('✅ ScoresManager: Database reference restored successfully');
+            }
+            
             // Get current club and edition
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
             const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
