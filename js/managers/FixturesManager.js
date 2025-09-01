@@ -196,6 +196,9 @@ class FixturesManager {
                         // Don't create sample fixtures - just show empty state
                         console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
                         this.currentFixtures = [];
+                        
+                        // Clean up any existing sample fixtures in old structure
+                        await this.cleanupSampleFixtures(currentEdition, currentGameweek);
                     }
                 }
             } catch (error) {
@@ -214,6 +217,9 @@ class FixturesManager {
                     // Don't create sample fixtures - just show empty state
                     console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
                     this.currentFixtures = [];
+                    
+                    // Clean up any existing sample fixtures in old structure
+                    await this.cleanupSampleFixtures(currentEdition, currentGameweek);
                 }
             }
             
@@ -1321,6 +1327,22 @@ class FixturesManager {
             throw error;
         }
 
+    }
+
+    async cleanupSampleFixtures(edition, gameweek) {
+        try {
+            const fixturesRef = this.db.collection('fixtures').doc(`${edition}_gw${gameweek}`);
+            const fixturesDoc = await fixturesRef.get();
+
+            if (fixturesDoc.exists) {
+                await fixturesRef.delete();
+                console.log(`✅ Sample fixtures for ${edition} Gameweek ${gameweek} cleaned up.`);
+            } else {
+                console.log(`ℹ️ No sample fixtures found for ${edition} Gameweek ${gameweek} to clean up.`);
+            }
+        } catch (error) {
+            console.error('Error cleaning up sample fixtures:', error);
+        }
     }
 }
 
