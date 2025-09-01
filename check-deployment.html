@@ -5,141 +5,244 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deployment Check</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .success { background-color: #d4edda; border-color: #c3e6cb; padding: 15px; border-radius: 4px; margin: 10px 0; }
-        .error { background-color: #f8d7da; border-color: #f5c6cb; padding: 15px; border-radius: 4px; margin: 10px 0; }
-        .warning { background-color: #fff3cd; border-color: #ffeaa7; padding: 15px; border-radius: 4px; margin: 10px 0; }
-        .info { background-color: #d1ecf1; border-color: #bee5eb; padding: 15px; border-radius: 4px; margin: 10px 0; }
-        pre {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 Deployment Environment Check</h1>
+    <h1>🔍 Deployment Investigation Tool</h1>
+    
+    <div class="debug-section">
+        <h2>Database Structure Investigation</h2>
+        <p>This tool will help investigate where the 5 fake fixtures are coming from.</p>
         
-        <div id="deploymentInfo">
-            <p>Checking your deployment environment...</p>
-        </div>
-
-        <div class="info">
-            <h3>📋 Next Steps</h3>
-            <div id="nextSteps">
-                <p>Loading...</p>
-            </div>
-        </div>
+        <button onclick="checkOldFixturesStructure()">🔍 Check Old Fixtures Structure</button>
+        <button onclick="checkNewFixturesStructure()">🔍 Check New Fixtures Structure</button>
+        <button onclick="checkAllCollections()">🔍 Check All Collections</button>
+        <button onclick="cleanupOldStructure()">🧹 Clean Up Old Structure</button>
+        
+        <div id="results"></div>
     </div>
 
     <script>
-        function checkDeployment() {
-            const deploymentInfo = document.getElementById('deploymentInfo');
-            const nextSteps = document.getElementById('nextSteps');
-            
-            const hostname = window.location.hostname;
-            const protocol = window.location.protocol;
-            const port = window.location.port;
-            
-            let environment = 'Unknown';
-            let isLocal = false;
-            let isNetlify = false;
-            
-            if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('192.168.') || hostname.includes('10.0.')) {
-                environment = 'Local Development';
-                isLocal = true;
-            } else if (hostname.includes('netlify.app')) {
-                environment = 'Netlify Production';
-                isNetlify = true;
-            } else if (hostname.includes('netlify.com')) {
-                environment = 'Netlify (Custom Domain)';
-                isNetlify = true;
+        // Wait for Firebase to be ready
+        function waitForFirebase() {
+            if (window.firebaseReady && window.firebaseDB) {
+                console.log('✅ Firebase ready, starting investigation...');
+                return true;
             } else {
-                environment = 'Other Hosting';
-            }
-            
-            deploymentInfo.innerHTML = `
-                <div class="${isLocal ? 'warning' : isNetlify ? 'success' : 'info'}">
-                    <h3>🌍 Environment: ${environment}</h3>
-                    <p><strong>Hostname:</strong> ${hostname}</p>
-                    <p><strong>Protocol:</strong> ${protocol}</p>
-                    <p><strong>Port:</strong> ${port || 'Default'}</p>
-                    <p><strong>Full URL:</strong> ${window.location.href}</p>
-                </div>
-            `;
-            
-            if (isLocal) {
-                nextSteps.innerHTML = `
-                    <h4>🚨 Netlify Functions Don't Work Locally!</h4>
-                    <p>You're running the app locally, but Netlify functions only work when deployed to Netlify.</p>
-                    
-                    <h4>🔧 Solutions:</h4>
-                    <ol>
-                        <li><strong>Deploy to Netlify:</strong> Push your code to GitHub and connect to Netlify</li>
-                        <li><strong>Use Netlify CLI:</strong> Install and run <code>netlify dev</code> for local development</li>
-                        <li><strong>Test on Netlify:</strong> Deploy and test the functions on the live site</li>
-                    </ol>
-                    
-                    <h4>📦 Quick Deploy:</h4>
-                    <ol>
-                        <li>Push your code to GitHub</li>
-                        <li>Go to <a href="https://app.netlify.com" target="_blank">app.netlify.com</a></li>
-                        <li>Click "New site from Git"</li>
-                        <li>Connect your GitHub repository</li>
-                        <li>Set environment variables in Netlify dashboard</li>
-                    </ol>
-                `;
-            } else if (isNetlify) {
-                nextSteps.innerHTML = `
-                    <h4>✅ You're on Netlify!</h4>
-                    <p>Your site is deployed to Netlify, so functions should work.</p>
-                    
-                    <h4>🔧 If functions aren't working:</h4>
-                    <ol>
-                        <li><strong>Check deployment:</strong> Go to your Netlify dashboard and check deployment status</li>
-                        <li><strong>Check functions:</strong> Look for function deployment errors in the logs</li>
-                        <li><strong>Environment variables:</strong> Ensure RAPIDAPI_KEY is set in Netlify dashboard</li>
-                        <li><strong>Redeploy:</strong> Trigger a new deployment if needed</li>
-                    </ol>
-                    
-                    <h4>🔍 Debug Steps:</h4>
-                    <ol>
-                        <li>Open <a href="test-netlify-functions.html" target="_blank">test-netlify-functions.html</a> to test all functions</li>
-                        <li>Check Netlify function logs in your dashboard</li>
-                        <li>Verify the function files are in the correct location</li>
-                    </ol>
-                `;
-            } else {
-                nextSteps.innerHTML = `
-                    <h4>❓ Unknown Environment</h4>
-                    <p>You're not on localhost or Netlify. Netlify functions may not work on this hosting platform.</p>
-                    
-                    <h4>🔧 Recommendations:</h4>
-                    <ol>
-                        <li>Deploy to Netlify for full functionality</li>
-                        <li>Check if your hosting platform supports serverless functions</li>
-                        <li>Consider using a different API approach for your hosting platform</li>
-                    </ol>
-                `;
+                console.log('⏳ Waiting for Firebase...');
+                setTimeout(waitForFirebase, 1000);
+                return false;
             }
         }
-        
-        // Check deployment when page loads
-        window.addEventListener('load', checkDeployment);
+
+        async function checkOldFixturesStructure() {
+            if (!waitForFirebase()) return;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>🔍 Checking Old Fixtures Structure...</h3>';
+            
+            try {
+                const db = window.firebaseDB;
+                
+                // Check the old fixtures collection
+                const oldFixturesSnapshot = await db.collection('fixtures').get();
+                
+                let html = '<h3>📋 Old Fixtures Collection Results:</h3>';
+                
+                if (oldFixturesSnapshot.empty) {
+                    html += '<p class="success">✅ Old fixtures collection is empty - no fake fixtures found here</p>';
+                } else {
+                    html += `<p class="warning">⚠️ Found ${oldFixturesSnapshot.size} documents in old fixtures collection:</p>`;
+                    
+                    oldFixturesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        html += `<div style="margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #ffc107;">`;
+                        html += `<strong>Document ID:</strong> ${doc.id}<br>`;
+                        html += `<strong>Data:</strong> <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                        html += `</div>`;
+                    });
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error checking old fixtures: ${error.message}</p>`;
+                console.error('Error checking old fixtures:', error);
+            }
+        }
+
+        async function checkNewFixturesStructure() {
+            if (!waitForFirebase()) return;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>🔍 Checking New Fixtures Structure...</h3>';
+            
+            try {
+                const db = window.firebaseDB;
+                
+                // Check the new multi-club structure
+                const clubsSnapshot = await db.collection('clubs').get();
+                
+                let html = '<h3>🏆 New Multi-Club Structure Results:</h3>';
+                
+                if (clubsSnapshot.empty) {
+                    html += '<p class="warning">⚠️ No clubs found in new structure</p>';
+                } else {
+                    html += `<p class="success">✅ Found ${clubsSnapshot.size} clubs in new structure:</p>`;
+                    
+                    for (const clubDoc of clubsSnapshot.docs) {
+                        const clubId = clubDoc.id;
+                        html += `<div style="margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #28a745;">`;
+                        html += `<strong>Club ID:</strong> ${clubId}<br>`;
+                        
+                        // Check editions
+                        const editionsSnapshot = await db.collection('clubs').doc(clubId).collection('editions').get();
+                        if (!editionsSnapshot.empty) {
+                            html += `<strong>Editions:</strong> ${editionsSnapshot.size}<br>`;
+                            
+                            for (const editionDoc of editionsSnapshot.docs) {
+                                const editionId = editionDoc.id;
+                                html += `&nbsp;&nbsp;• ${editionId}<br>`;
+                                
+                                // Check fixtures for this edition
+                                const fixturesSnapshot = await db.collection('clubs').doc(clubId)
+                                    .collection('editions').doc(editionId)
+                                    .collection('fixtures').get();
+                                
+                                if (!fixturesSnapshot.empty) {
+                                    html += `&nbsp;&nbsp;&nbsp;&nbsp;📋 Fixtures: ${fixturesSnapshot.size} gameweeks<br>`;
+                                    
+                                    fixturesSnapshot.forEach(fixtureDoc => {
+                                        const fixtureData = fixtureDoc.data();
+                                        html += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;• ${fixtureDoc.id}: ${fixtureData.fixtures ? fixtureData.fixtures.length : 0} fixtures<br>`;
+                                    });
+                                } else {
+                                    html += `&nbsp;&nbsp;&nbsp;&nbsp;📋 No fixtures found<br>`;
+                                }
+                            }
+                        } else {
+                            html += `<strong>Editions:</strong> None found<br>`;
+                        }
+                        
+                        html += `</div>`;
+                    }
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error checking new structure: ${error.message}</p>`;
+                console.error('Error checking new structure:', error);
+            }
+        }
+
+        async function checkAllCollections() {
+            if (!waitForFirebase()) return;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>🔍 Checking All Collections...</h3>';
+            
+            try {
+                const db = window.firebaseDB;
+                
+                // Get all root collections
+                const collections = await db.listCollections();
+                
+                let html = '<h3>📚 All Root Collections:</h3>';
+                
+                for (const collection of collections) {
+                    const collectionName = collection.id;
+                    html += `<div style="margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #6c757d;">`;
+                    html += `<strong>Collection:</strong> ${collectionName}<br>`;
+                    
+                    // Get document count
+                    const snapshot = await db.collection(collectionName).get();
+                    html += `<strong>Documents:</strong> ${snapshot.size}<br>`;
+                    
+                    // Show first few document IDs
+                    if (!snapshot.empty) {
+                        html += `<strong>Sample Document IDs:</strong><br>`;
+                        snapshot.docs.slice(0, 5).forEach(doc => {
+                            html += `&nbsp;&nbsp;• ${doc.id}<br>`;
+                        });
+                        if (snapshot.size > 5) {
+                            html += `&nbsp;&nbsp;... and ${snapshot.size - 5} more<br>`;
+                        }
+                    }
+                    
+                    html += `</div>`;
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error checking collections: ${error.message}</p>`;
+                console.error('Error checking collections:', error);
+            }
+        }
+
+        async function cleanupOldStructure() {
+            if (!waitForFirebase()) return;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h3>🧹 Cleaning Up Old Structure...</h3>';
+            
+            try {
+                const db = window.firebaseDB;
+                
+                // Delete the old fixtures collection entirely
+                const oldFixturesSnapshot = await db.collection('fixtures').get();
+                
+                if (oldFixturesSnapshot.empty) {
+                    resultsDiv.innerHTML = '<p class="success">✅ Old fixtures collection is already empty</p>';
+                    return;
+                }
+                
+                // Delete all documents in the old fixtures collection
+                const batch = db.batch();
+                oldFixturesSnapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                
+                resultsDiv.innerHTML = `<p class="success">✅ Successfully deleted ${oldFixturesSnapshot.size} documents from old fixtures collection</p>`;
+                
+                // Also check for other old collections that might contain fixtures
+                const oldCollections = ['users', 'picks', 'settings'];
+                
+                for (const collectionName of oldCollections) {
+                    try {
+                        const snapshot = await db.collection(collectionName).get();
+                        if (!snapshot.empty) {
+                            resultsDiv.innerHTML += `<p class="warning">⚠️ Found ${snapshot.size} documents in old ${collectionName} collection</p>`;
+                        }
+                    } catch (error) {
+                        // Collection might not exist, ignore
+                    }
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="error">❌ Error cleaning up old structure: ${error.message}</p>`;
+                console.error('Error cleaning up old structure:', error);
+            }
+        }
+
+        // Auto-start when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 Deployment investigation tool loaded');
+            if (waitForFirebase()) {
+                console.log('✅ Firebase already ready');
+            }
+        });
     </script>
 </body>
 </html>
