@@ -1609,13 +1609,94 @@ class ScoresManager {
         try {
             console.log(`🔧 ScoresManager: Processing ${fixtures.length} fixtures from fixtures-results for gameweek ${gameweek}`);
             
-            // Process each fixture from the fixtures-results API
-            fixtures.forEach((fixture, index) => {
-                console.log(`Fixture ${index + 1}: ${fixture.homeTeam || 'Unknown'} ${fixture.homeScore || 0} - ${fixture.awayScore || 0} ${fixture.awayTeam || 'Unknown'} (${fixture.status || 'TBD'})`);
+            // Get current club and edition
+            const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
+            const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
+            
+            console.log(`🔧 ScoresManager: Updating scores for club: ${currentClub}, edition: ${currentEdition}, gameweek: ${gameweek}`);
+            
+            // Get existing fixtures from database
+            const fixturesSnapshot = await this.db.collection('clubs')
+                .doc(currentClub)
+                .collection('editions')
+                .doc(currentEdition)
+                .collection('fixtures')
+                .where('gameWeek', '==', gameweek)
+                .get();
+            
+            if (fixturesSnapshot.empty) {
+                console.log('ℹ️ ScoresManager: No fixtures found in database for this gameweek');
+                return;
+            }
+            
+            const existingFixtures = [];
+            const fixtureDocs = [];
+            fixturesSnapshot.forEach(doc => {
+                const fixtureData = doc.data();
+                existingFixtures.push({
+                    ...fixtureData,
+                    id: doc.id,
+                    docRef: doc.ref
+                });
+                fixtureDocs.push(doc);
             });
             
-            // TODO: Implement actual score updating logic to update fixtures in database
-            console.log('ℹ️ ScoresManager: Fixtures-results processing completed (placeholder implementation)');
+            console.log(`🔧 ScoresManager: Found ${existingFixtures.length} fixtures in database for gameweek ${gameweek}`);
+            
+            // Create a batch for database updates
+            const batch = this.db.batch();
+            let updateCount = 0;
+            
+            // Process each fixture from the API
+            fixtures.forEach((apiFixture, index) => {
+                // Find matching fixture in database by team names
+                const matchingFixture = existingFixtures.find(dbFixture => {
+                    const dbHomeTeam = dbFixture.homeTeam?.toLowerCase() || '';
+                    const dbAwayTeam = dbFixture.awayTeam?.toLowerCase() || '';
+                    const apiHomeTeam = apiFixture.homeTeam?.toLowerCase() || '';
+                    const apiAwayTeam = apiFixture.awayTeam?.toLowerCase() || '';
+                    
+                    return (dbHomeTeam.includes(apiHomeTeam) || apiHomeTeam.includes(dbHomeTeam)) &&
+                           (dbAwayTeam.includes(apiAwayTeam) || apiAwayTeam.includes(dbAwayTeam));
+                });
+                
+                if (matchingFixture) {
+                    // Check if scores need updating
+                    const needsUpdate = matchingFixture.homeScore !== apiFixture.homeScore ||
+                                      matchingFixture.awayScore !== apiFixture.awayScore ||
+                                      matchingFixture.status !== apiFixture.status;
+                    
+                    if (needsUpdate) {
+                        console.log(`🔧 ScoresManager: Updating fixture ${matchingFixture.id}: ${apiFixture.homeTeam} ${apiFixture.homeScore} - ${apiFixture.awayScore} ${apiFixture.awayTeam} (${apiFixture.status})`);
+                        
+                        batch.update(matchingFixture.docRef, {
+                            homeScore: apiFixture.homeScore,
+                            awayScore: apiFixture.awayScore,
+                            status: apiFixture.status || 'completed',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastScoreUpdate: new Date().toISOString()
+                        });
+                        
+                        updateCount++;
+                    } else {
+                        console.log(`ℹ️ ScoresManager: Fixture ${matchingFixture.id} already up to date: ${apiFixture.homeTeam} ${apiFixture.homeScore} - ${apiFixture.awayScore} ${apiFixture.awayTeam}`);
+                    }
+                } else {
+                    console.log(`⚠️ ScoresManager: No matching fixture found for: ${apiFixture.homeTeam} vs ${apiFixture.awayTeam}`);
+                }
+            });
+            
+            // Commit the batch if there are updates
+            if (updateCount > 0) {
+                console.log(`🔧 ScoresManager: Committing ${updateCount} score updates to database...`);
+                await batch.commit();
+                console.log(`✅ ScoresManager: Successfully updated ${updateCount} fixture scores in database`);
+            } else {
+                console.log('ℹ️ ScoresManager: No score updates needed - all fixtures are up to date');
+            }
+            
+            console.log('✅ ScoresManager: Fixtures-results processing completed successfully');
             
         } catch (error) {
             console.error('❌ ScoresManager: Error processing fixtures-results:', error);
