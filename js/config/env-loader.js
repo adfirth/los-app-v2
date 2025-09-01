@@ -168,12 +168,22 @@ class EnvironmentLoader {
     waitForFirebaseAndInit() {
         console.log('⏳ EnvironmentLoader: Waiting for Firebase SDK...');
         
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait time
+        
         const checkFirebaseSDK = () => {
+            attempts++;
+            
             if (window.firebase) {
                 console.log('✅ EnvironmentLoader: Firebase SDK loaded, initializing...');
                 this.initializeFirebase();
+            } else if (attempts >= maxAttempts) {
+                console.warn('⚠️ EnvironmentLoader: Firebase SDK not loaded after 5 seconds, proceeding without Firebase');
+                // Set up API configuration even without Firebase
+                this.setupAPIConfig();
+                window.FIREBASE_READY = false;
             } else {
-                console.log('⏳ EnvironmentLoader: Firebase SDK not ready, retrying...');
+                console.log(`⏳ EnvironmentLoader: Firebase SDK not ready, retrying... (${attempts}/${maxAttempts})`);
                 setTimeout(checkFirebaseSDK, 100);
             }
         };

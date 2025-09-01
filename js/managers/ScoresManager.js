@@ -103,9 +103,10 @@ class ScoresManager {
 
     initializeAPI() {
         try {
-            // Load API configuration
-            if (window.FOOTBALL_WEBPAGES_CONFIG) {
-                this.apiConfig = window.FOOTBALL_WEBPAGES_CONFIG;
+            // Load API configuration with multiple fallback sources
+            this.apiConfig = this.loadAPIConfiguration();
+            
+            if (this.apiConfig && this.apiConfig.RAPIDAPI_KEY) {
                 console.log('✅ ScoresManager: API configuration loaded');
             } else {
                 console.warn('⚠️ ScoresManager: No API configuration found');
@@ -121,6 +122,43 @@ class ScoresManager {
         } catch (error) {
             console.error('❌ ScoresManager: Error initializing API:', error);
         }
+    }
+
+    loadAPIConfiguration() {
+        // Wait for environment loader to finish if it's still loading
+        if (window.environmentLoader && !window.environmentLoader.isLoaded()) {
+            console.log('⏳ ScoresManager: Waiting for environment loader to finish...');
+            return null;
+        }
+
+        // Try multiple sources for API configuration
+        const configSources = [
+            () => window.FOOTBALL_WEBPAGES_CONFIG,
+            () => window.APIConfig?.rapidAPI ? {
+                RAPIDAPI_KEY: window.APIConfig.rapidAPI.key,
+                RAPIDAPI_HOST: window.APIConfig.rapidAPI.host,
+                BASE_URL: window.APIConfig.rapidAPI.baseUrl
+            } : null,
+            () => window.ENV_CONFIG,
+            () => ({ RAPIDAPI_KEY: window.RAPIDAPI_KEY }),
+            () => window.footballWebPagesAPI?.config,
+            () => window.apiManager?.footballWebPagesAPI?.config
+        ];
+
+        for (const source of configSources) {
+            try {
+                const config = source();
+                if (config && config.RAPIDAPI_KEY && config.RAPIDAPI_KEY !== 'YOUR_RAPIDAPI_KEY_HERE') {
+                    console.log('✅ ScoresManager: API configuration loaded from source');
+                    return config;
+                }
+            } catch (error) {
+                console.warn('⚠️ ScoresManager: Failed to load config from source:', error);
+            }
+        }
+
+        console.warn('⚠️ ScoresManager: No valid API configuration found from any source');
+        return null;
     }
 
     initializeTeamBadgeService() {
@@ -479,6 +517,12 @@ class ScoresManager {
 
     async updateVidiprinter() {
         try {
+            // Try to reload API configuration if not available
+            if (!this.apiConfig || !this.apiConfig.RAPIDAPI_KEY) {
+                console.log('🔄 ScoresManager: Retrying API configuration load...');
+                this.apiConfig = this.loadAPIConfiguration();
+            }
+
             if (!this.apiConfig || !this.apiConfig.RAPIDAPI_KEY) {
                 console.warn('⚠️ ScoresManager: No API key available for vidiprinter updates');
                 this.updateVidiprinterStatus('No API Key', 'error');
@@ -650,6 +694,11 @@ class ScoresManager {
             });
 
             if (!response.ok) {
+                // If Netlify function fails, try direct API call as fallback
+                if (!this.isDevelopmentMode() && response.status === 404) {
+                    console.log('⚠️ ScoresManager: Netlify function not found, trying direct API call...');
+                    return await this.makeDirectAPICall(date);
+                }
                 throw new Error(`API request failed: ${response.status} ${response.statusText}`);
             }
 
@@ -658,8 +707,41 @@ class ScoresManager {
             
         } catch (error) {
             console.error('❌ ScoresManager: Direct vidiprinter request failed:', error);
+            
+            // If Netlify function fails, try direct API call as fallback
+            if (!this.isDevelopmentMode() && error.message.includes('404')) {
+                console.log('⚠️ ScoresManager: Netlify function failed, trying direct API call as fallback...');
+                try {
+                    return await this.makeDirectAPICall(date);
+                } catch (fallbackError) {
+                    console.error('❌ ScoresManager: Direct API fallback also failed:', fallbackError);
+                }
+            }
+            
             throw error;
         }
+    }
+
+    async makeDirectAPICall(date) {
+        console.log('🔧 ScoresManager: Making direct API call...');
+        
+        const url = `https://football-web-pages1.p.rapidapi.com/vidiprinter.json?comp=5&team=0&date=${date}`;
+        const headers = {
+            'X-RapidAPI-Key': this.apiConfig.RAPIDAPI_KEY,
+            'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
+        };
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`Direct API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data.vidiprinter || { events: [] };
     }
 
     initializeVidiprinterDisplay() {
@@ -1677,6 +1759,44 @@ class ScoresManager {
         }
     }
 
+    // Method to manually reload API configuration (for debugging)
+    reloadAPIConfiguration() {
+        console.log('🔄 ScoresManager: Manually reloading API configuration...');
+        this.apiConfig = this.loadAPIConfiguration();
+        
+        if (this.apiConfig && this.apiConfig.RAPIDAPI_KEY) {
+            console.log('✅ ScoresManager: API configuration reloaded successfully');
+            return true;
+        } else {
+            console.warn('⚠️ ScoresManager: Failed to reload API configuration');
+            return false;
+        }
+    }
+
+    // Debug method to test API configuration
+    debugAPIConfiguration() {
+        console.log('🔍 ScoresManager: Debugging API configuration...');
+        console.log('Current apiConfig:', this.apiConfig);
+        console.log('window.FOOTBALL_WEBPAGES_CONFIG:', window.FOOTBALL_WEBPAGES_CONFIG);
+        console.log('window.APIConfig:', window.APIConfig);
+        console.log('window.ENV_CONFIG:', window.ENV_CONFIG);
+        console.log('window.RAPIDAPI_KEY:', window.RAPIDAPI_KEY);
+        console.log('window.environmentLoader:', window.environmentLoader);
+        
+        if (window.environmentLoader) {
+            console.log('Environment loader loaded:', window.environmentLoader.isLoaded());
+        }
+        
+        return {
+            apiConfig: this.apiConfig,
+            footballWebPagesConfig: window.FOOTBALL_WEBPAGES_CONFIG,
+            apiConfig: window.APIConfig,
+            envConfig: window.ENV_CONFIG,
+            rapidAPIKey: window.RAPIDAPI_KEY,
+            environmentLoader: window.environmentLoader
+        };
+    }
+
     // Cleanup method
     destroy() {
         this.stopLiveScoreUpdates();
@@ -1705,5 +1825,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 ScoresManager: Global helper function added: testScoreImport(gameweek)');
+    window.reloadAPIConfig = () => {
+        if (window.scoresManager) {
+            return window.scoresManager.reloadAPIConfiguration();
+        } else {
+            console.error('❌ ScoresManager not available');
+            return false;
+        }
+    };
+    
+    window.debugAPIConfig = () => {
+        if (window.scoresManager) {
+            return window.scoresManager.debugAPIConfiguration();
+        } else {
+            console.error('❌ ScoresManager not available');
+            return false;
+        }
+    };
+    
+    console.log('🔧 ScoresManager: Global helper functions added: testScoreImport(gameweek), reloadAPIConfig(), debugAPIConfig()');
 });

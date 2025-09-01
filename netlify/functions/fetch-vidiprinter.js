@@ -31,18 +31,27 @@ exports.handler = async (event, context) => {
 
         // Get API key from environment variables
         const apiKey = process.env.RAPIDAPI_KEY;
+        console.log('🔑 Netlify function: API key available:', !!apiKey);
+        console.log('🔑 Netlify function: API key length:', apiKey ? apiKey.length : 0);
+        
         if (!apiKey) {
+            console.error('❌ Netlify function: RapidAPI key not configured in environment variables');
+            console.log('🔍 Available environment variables:', Object.keys(process.env).filter(key => key.includes('API')));
+            
             return {
                 statusCode: 500,
                 headers,
-                body: JSON.stringify({ error: 'RapidAPI key not configured' })
+                body: JSON.stringify({ 
+                    error: 'RapidAPI key not configured',
+                    details: 'Please set RAPIDAPI_KEY environment variable in Netlify dashboard'
+                })
             };
         }
 
         // Build the API URL
         const url = `https://football-web-pages1.p.rapidapi.com/vidiprinter.json?comp=${comp}&team=${team || 0}&date=${date}`;
         
-        console.log(`🔍 Fetching vidiprinter data from: ${url}`);
+        console.log(`🔍 Netlify function: Fetching vidiprinter data from: ${url}`);
 
         // Make the API request
         const response = await fetch(url, {
@@ -54,12 +63,13 @@ exports.handler = async (event, context) => {
         });
 
         if (!response.ok) {
+            console.error(`❌ Netlify function: API request failed: ${response.status} ${response.statusText}`);
             throw new Error(`API request failed: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
         
-        console.log(`✅ Vidiprinter data fetched successfully: ${data.events?.length || 0} events`);
+        console.log(`✅ Netlify function: Vidiprinter data fetched successfully: ${data.events?.length || 0} events`);
 
         return {
             statusCode: 200,
@@ -68,7 +78,7 @@ exports.handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('❌ Error fetching vidiprinter data:', error);
+        console.error('❌ Netlify function: Error fetching vidiprinter data:', error);
         
         return {
             statusCode: 500,

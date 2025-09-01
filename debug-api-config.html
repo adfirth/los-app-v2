@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Configuration Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API Configuration Debug Tool</h1>
+        
+        <div class="section info">
+            <h3>📋 Current Status</h3>
+            <p>This tool helps debug API configuration issues in the LOS App.</p>
+            <button onclick="checkConfiguration()">Check Configuration</button>
+            <button onclick="testVidiprinterAPI()">Test Vidiprinter API</button>
+            <button onclick="reloadConfig()">Reload Configuration</button>
+            <button onclick="testSimpleAPI()">Simple API Test</button>
+        </div>
+
+        <div id="configStatus" class="section">
+            <h3>🔍 Configuration Status</h3>
+            <div id="configResult">Click "Check Configuration" to see current status</div>
+        </div>
+
+        <div id="apiTest" class="section">
+            <h3>🧪 API Test Results</h3>
+            <div id="apiResult">Click "Test Vidiprinter API" to test the API</div>
+        </div>
+
+        <div class="section info">
+            <h3>🔧 Debug Commands</h3>
+            <p>You can also run these commands in the browser console:</p>
+            <pre>debugAPIConfig()     // Debug API configuration
+reloadAPIConfig()   // Reload API configuration
+testScoreImport()   // Test score import process</pre>
+        </div>
+    </div>
+
+    <script>
+        // Load Firebase SDK first
+        const firebaseScript = document.createElement('script');
+        firebaseScript.src = 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js';
+        document.head.appendChild(firebaseScript);
+
+        const firestoreScript = document.createElement('script');
+        firestoreScript.src = 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js';
+        document.head.appendChild(firestoreScript);
+
+        // Load the environment loader after Firebase
+        firebaseScript.onload = () => {
+            const envLoaderScript = document.createElement('script');
+            envLoaderScript.src = 'js/config/env-loader.js';
+            document.head.appendChild(envLoaderScript);
+        };
+
+        // Load the ScoresManager after environment loader
+        const scoresManagerScript = document.createElement('script');
+        scoresManagerScript.src = 'js/managers/ScoresManager.js';
+        document.head.appendChild(scoresManagerScript);
+
+        async function checkConfiguration() {
+            const resultDiv = document.getElementById('configResult');
+            resultDiv.innerHTML = '<p>Checking configuration...</p>';
+
+            try {
+                // Wait for scripts to load (longer wait time)
+                await new Promise(resolve => setTimeout(resolve, 3000));
+
+                const config = {
+                    environmentLoader: window.environmentLoader,
+                    environmentLoaded: window.environmentLoader?.isLoaded(),
+                    footballWebPagesConfig: window.FOOTBALL_WEBPAGES_CONFIG,
+                    apiConfig: window.APIConfig,
+                    rapidAPIKey: window.RAPIDAPI_KEY,
+                    scoresManager: window.scoresManager,
+                    firebaseReady: window.FIREBASE_READY,
+                    apiKeyAvailable: false
+                };
+
+                // Check if API key is available
+                if (window.FOOTBALL_WEBPAGES_CONFIG?.RAPIDAPI_KEY) {
+                    config.apiKeyAvailable = true;
+                    config.apiKeySource = 'FOOTBALL_WEBPAGES_CONFIG';
+                } else if (window.APIConfig?.rapidAPI?.key) {
+                    config.apiKeyAvailable = true;
+                    config.apiKeySource = 'APIConfig';
+                } else if (window.RAPIDAPI_KEY) {
+                    config.apiKeyAvailable = true;
+                    config.apiKeySource = 'RAPIDAPI_KEY';
+                }
+
+                let statusClass = config.apiKeyAvailable ? 'success' : 'error';
+                let statusText = config.apiKeyAvailable ? '✅ API Key Found' : '❌ API Key Missing';
+
+                resultDiv.innerHTML = `
+                    <div class="${statusClass}">
+                        <h4>${statusText}</h4>
+                        <pre>${JSON.stringify(config, null, 2)}</pre>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error checking configuration</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testVidiprinterAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '<p>Testing vidiprinter API...</p>';
+
+            try {
+                // Wait for scripts to load (longer wait time)
+                await new Promise(resolve => setTimeout(resolve, 3000));
+
+                if (!window.scoresManager) {
+                    throw new Error('ScoresManager not available - scripts may still be loading');
+                }
+
+                // Test the vidiprinter API
+                const response = await fetch('/.netlify/functions/fetch-vidiprinter?comp=5&team=0&date=2025-09-01');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+                }
+
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ API Test Successful</h4>
+                        <p>Response received with ${data.events?.length || 0} events</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ API Test Failed</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function reloadConfig() {
+            const resultDiv = document.getElementById('configResult');
+            resultDiv.innerHTML = '<p>Reloading configuration...</p>';
+
+            try {
+                // Wait for scripts to load (longer wait time)
+                await new Promise(resolve => setTimeout(resolve, 3000));
+
+                if (window.reloadAPIConfig) {
+                    const success = window.reloadAPIConfig();
+                    resultDiv.innerHTML = `
+                        <div class="${success ? 'success' : 'error'}">
+                            <h4>${success ? '✅' : '❌'} Configuration Reload</h4>
+                            <p>${success ? 'Configuration reloaded successfully' : 'Failed to reload configuration'}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('reloadAPIConfig function not available - ScoresManager may not be loaded yet');
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error reloading configuration</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testSimpleAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.innerHTML = '<p>Testing simple API call...</p>';
+
+            try {
+                // Test the vidiprinter API directly without complex dependencies
+                const response = await fetch('/.netlify/functions/fetch-vidiprinter?comp=5&team=0&date=2025-09-01');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+                }
+
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Simple API Test Successful</h4>
+                        <p>Response received with ${data.events?.length || 0} events</p>
+                        <p><strong>API Key Status:</strong> ${data.error ? '❌ ' + data.error : '✅ Working'}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Simple API Test Failed</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-check configuration when page loads
+        window.addEventListener('load', () => {
+            setTimeout(checkConfiguration, 2000);
+        });
+    </script>
+</body>
+</html>
