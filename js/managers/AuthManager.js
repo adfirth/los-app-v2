@@ -599,6 +599,7 @@ updateUserDisplay() {
 
     initializeApp() {
         // Initialize other managers
+        if (window.clubService) window.clubService.init();
         if (window.editionService) window.editionService.init();
         if (window.fixturesManager) window.fixturesManager.init();
         if (window.scoresManager) window.scoresManager.init();
