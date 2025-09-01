@@ -1689,14 +1689,19 @@ class ScoresManager {
                     if (needsUpdate) {
                         console.log(`🔧 ScoresManager: Updating fixture ${matchingFixture.id}: ${apiFixture.homeTeam} ${apiFixture.homeScore} - ${apiFixture.awayScore} ${apiFixture.awayTeam} (${apiFixture.status})`);
                         
-                        batch.update(matchingFixture.docRef, {
+                        // Update the fixture with the score data
+                        const updateData = {
                             homeScore: apiFixture.homeScore,
                             awayScore: apiFixture.awayScore,
-                            status: apiFixture.status || 'completed',
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            updated_at: firebase.firestore.FieldValue.serverTimestamp(),
-                            lastScoreUpdate: new Date().toISOString()
-                        });
+                            status: apiFixture.status,
+                            lastScoreUpdate: new Date()
+                        };
+
+                        console.log(`🔧 ScoresManager: New score data:`, updateData);
+                        console.log(`🔧 ScoresManager: API fixture homeScore:`, apiFixture.homeScore, `(type: ${typeof apiFixture.homeScore})`);
+                        console.log(`🔧 ScoresManager: API fixture awayScore:`, apiFixture.awayScore, `(type: ${typeof apiFixture.awayScore})`);
+
+                        batch.update(matchingFixture.docRef, updateData);
                         
                         updateCount++;
                     } else {
