@@ -547,11 +547,32 @@
                                     .collection('fixtures').get();
                                 
                                 if (!fixturesSnapshot.empty) {
-                                    console.log(`      📋 Fixtures: ${fixturesSnapshot.size} gameweeks`);
+                                    console.log(`      📋 Fixtures: ${fixturesSnapshot.size} fixture documents`);
                                     
+                                    // Group fixtures by gameWeek to show actual structure
+                                    const fixturesByGameweek = {};
                                     fixturesSnapshot.forEach(fixtureDoc => {
                                         const fixtureData = fixtureDoc.data();
-                                        console.log(`        • ${fixtureDoc.id}: ${fixtureData.fixtures ? fixtureData.fixtures.length : 0} fixtures`);
+                                        const gameWeek = fixtureData.gameWeek || 'unknown';
+                                        if (!fixturesByGameweek[gameWeek]) {
+                                            fixturesByGameweek[gameWeek] = [];
+                                        }
+                                        fixturesByGameweek[gameWeek].push({
+                                            id: fixtureDoc.id,
+                                            homeTeam: fixtureData.homeTeam,
+                                            awayTeam: fixtureData.awayTeam,
+                                            date: fixtureData.date,
+                                            status: fixtureData.status
+                                        });
+                                    });
+                                    
+                                    // Display grouped fixtures
+                                    Object.keys(fixturesByGameweek).sort().forEach(gameWeek => {
+                                        const fixtures = fixturesByGameweek[gameWeek];
+                                        console.log(`        • Gameweek ${gameWeek}: ${fixtures.length} fixtures`);
+                                        fixtures.forEach(fixture => {
+                                            console.log(`          - ${fixture.homeTeam} vs ${fixture.awayTeam} (${fixture.date}) [${fixture.status}]`);
+                                        });
                                     });
                                 } else {
                                     console.log(`      📋 No fixtures found`);
@@ -601,6 +622,73 @@
         
         console.log('🔍 INVESTIGATION TOOLS added!');
         console.log('Available functions: investigateFakeFixtures(), cleanupOldFixtures()');
+        
+        // 🔍 Check current gameweek fixtures specifically
+        window.checkCurrentGameweekFixtures = async function() {
+            console.log('🔍 Checking current gameweek fixtures...');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            try {
+                // Get current club and edition
+                const currentClubId = window.losApp?.managers?.club?.getCurrentClub() || 'altrincham-fc-juniors';
+                const currentEdition = window.losApp?.managers?.club?.getCurrentEdition() || '2025-26-national-league-1';
+                const currentGameweek = window.editionService?.getCurrentGameweek() || 3;
+                
+                console.log(`🔍 Checking fixtures for Club: ${currentClubId}, Edition: ${currentEdition}, Gameweek: ${currentGameweek}`);
+                
+                // Check new structure for current gameweek
+                const fixturesSnapshot = await window.firebaseDB.collection('clubs').doc(currentClubId)
+                    .collection('editions').doc(currentEdition)
+                    .collection('fixtures')
+                    .where('gameWeek', '==', currentGameweek)
+                    .get();
+                
+                if (fixturesSnapshot.empty) {
+                    console.log(`⚠️ No fixtures found in new structure for Gameweek ${currentGameweek}`);
+                    console.log('🔍 This explains why no fixtures are showing!');
+                } else {
+                    console.log(`✅ Found ${fixturesSnapshot.size} fixtures in new structure for Gameweek ${currentGameweek}:`);
+                    
+                    fixturesSnapshot.forEach(fixtureDoc => {
+                        const fixtureData = fixtureDoc.data();
+                        console.log(`  • ${fixtureData.homeTeam} vs ${fixtureData.awayTeam}`);
+                        console.log(`    Date: ${fixtureData.date}, Time: ${fixtureData.time || fixtureData.kickOffTime}`);
+                        console.log(`    Status: ${fixtureData.status}, Scores: ${fixtureData.homeScore || 'null'} - ${fixtureData.awayScore || 'null'}`);
+                    });
+                }
+                
+                // Also check what gameweeks are available
+                const allFixturesSnapshot = await window.firebaseDB.collection('clubs').doc(currentClubId)
+                    .collection('editions').doc(currentEdition)
+                    .collection('fixtures')
+                    .orderBy('gameWeek')
+                    .get();
+                
+                if (!allFixturesSnapshot.empty) {
+                    const gameweeks = {};
+                    allFixturesSnapshot.forEach(doc => {
+                        const gameWeek = doc.data().gameWeek;
+                        if (gameWeek) {
+                            gameweeks[gameWeek] = (gameweeks[gameWeek] || 0) + 1;
+                        }
+                    });
+                    
+                    console.log('📊 Available gameweeks and fixture counts:');
+                    Object.keys(gameweeks).sort((a, b) => parseInt(a) - parseInt(b)).forEach(gw => {
+                        console.log(`  • Gameweek ${gw}: ${gameweeks[gw]} fixtures`);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('❌ Error checking current gameweek fixtures:', error);
+            }
+        };
+        
+        console.log('🔍 Additional function added: checkCurrentGameweekFixtures()');
     </script>
     
     <!-- Development helper script -->
