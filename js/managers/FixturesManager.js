@@ -169,8 +169,8 @@ class FixturesManager {
                         // Create fixture object with processed scores
                         const fixture = {
                             ...fixtureData,
-                            homeScore: this.getScoreValue(fixtureData.homeScore),
-                            awayScore: this.getScoreValue(fixtureData.awayScore)
+                            homeScore: this.getScoreValue(fixtureData.homeScore) || this.getScoreValue(fixtureData.apiData?.['home-team']?.score),
+                            awayScore: this.getScoreValue(fixtureData.awayScore) || this.getScoreValue(fixtureData.apiData?.['away-team']?.score)
                         };
                         
                         this.currentFixtures.push(fixture);
