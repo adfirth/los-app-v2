@@ -6,6 +6,26 @@ class FixturesManager {
         this.userPicks = {}; // Initialize userPicks to prevent undefined errors
         this.db = null;
         
+        // Add global debug functions immediately
+        window.enableFixtureDebug = () => {
+            window.DEBUG_MODE = true;
+            console.log('🔧 Fixture debug mode enabled');
+        };
+        
+        window.debugFixtures = () => {
+            console.log('🔍 Debugging fixtures data...');
+            console.log('Current fixtures:', this.currentFixtures);
+            if (this.currentFixtures && this.currentFixtures.length > 0) {
+                this.currentFixtures.forEach((fixture, index) => {
+                    console.log(`Fixture ${index}: ${fixture.homeTeam} ${fixture.homeScore} - ${fixture.awayScore} ${fixture.awayTeam} (${fixture.status})`);
+                });
+            } else {
+                console.log('No fixtures loaded yet');
+            }
+        };
+        
+        console.log('🔧 FixturesManager: Global debug functions added: debugFixtures(), enableFixtureDebug()');
+        
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
     }
@@ -1228,23 +1248,7 @@ class FixturesManager {
             console.error('Error deleting fixture:', error);
             throw error;
         }
-        // Add global debug functions
-        window.debugFixtures = () => {
-            console.log('🔍 Debugging fixtures data...');
-            console.log('Current fixtures:', this.currentFixtures);
-            if (this.currentFixtures && this.currentFixtures.length > 0) {
-                this.currentFixtures.forEach((fixture, index) => {
-                    console.log(`Fixture ${index}: ${fixture.homeTeam} ${fixture.homeScore} - ${fixture.awayScore} ${fixture.awayTeam} (${fixture.status})`);
-                });
-            }
-        };
-        
-        window.enableFixtureDebug = () => {
-            window.DEBUG_MODE = true;
-            console.log('🔧 Fixture debug mode enabled');
-        };
-        
-        console.log('🔧 FixturesManager: Global debug functions added: debugFixtures(), enableFixtureDebug()');
+
     }
 }
 
