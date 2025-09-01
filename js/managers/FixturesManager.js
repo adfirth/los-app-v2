@@ -193,9 +193,9 @@ class FixturesManager {
                         this.currentFixtures = fixturesData.fixtures || [];
                         console.log(`✅ Loaded ${this.currentFixtures.length} fixtures from old structure`);
                     } else {
-                        // Create sample fixtures if none exist
-                        await this.createSampleFixtures(currentEdition, currentGameweek);
-                        this.currentFixtures = await this.getSampleFixtures();
+                        // Don't create sample fixtures - just show empty state
+                        console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
+                        this.currentFixtures = [];
                     }
                 }
             } catch (error) {
@@ -211,9 +211,9 @@ class FixturesManager {
                     this.currentFixtures = fixturesData.fixtures || [];
                     console.log(`✅ Loaded ${this.currentFixtures.length} fixtures from old structure`);
                 } else {
-                    // Create sample fixtures if none exist
-                    await this.createSampleFixtures(currentEdition, currentGameweek);
-                    this.currentFixtures = await this.getSampleFixtures();
+                    // Don't create sample fixtures - just show empty state
+                    console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
+                    this.currentFixtures = [];
                 }
             }
             
