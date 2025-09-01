@@ -157,6 +157,12 @@ class FixturesManager {
                     this.currentFixtures = [];
                     fixturesSnapshot.forEach(doc => {
                         const fixtureData = doc.data();
+                        
+                        // Debug logging to see raw fixture data
+                        if (window.DEBUG_MODE) {
+                            console.log(`🔍 Raw fixture data for ${fixtureData.homeTeam} vs ${fixtureData.awayTeam}:`, fixtureData);
+                        }
+                        
                         // Transform to match expected format
                         this.currentFixtures.push({
                             ...fixtureData,
