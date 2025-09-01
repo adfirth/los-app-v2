@@ -158,17 +158,22 @@ class FixturesManager {
                     fixturesSnapshot.forEach(doc => {
                         const fixtureData = doc.data();
                         
-                        // Debug logging to see raw fixture data
                         if (window.DEBUG_MODE) {
                             console.log(`🔍 Raw fixture data for ${fixtureData.homeTeam} vs ${fixtureData.awayTeam}:`, fixtureData);
+                            console.log(`🔍 Home score raw:`, fixtureData.homeScore, `(type: ${typeof fixtureData.homeScore})`);
+                            console.log(`🔍 Away score raw:`, fixtureData.awayScore, `(type: ${typeof fixtureData.awayScore})`);
+                            console.log(`🔍 Home score processed:`, this.getScoreValue(fixtureData.homeScore));
+                            console.log(`🔍 Away score processed:`, this.getScoreValue(fixtureData.awayScore));
                         }
                         
-                        // Transform to match expected format
-                        this.currentFixtures.push({
+                        // Create fixture object with processed scores
+                        const fixture = {
                             ...fixtureData,
-                            id: doc.id,
-                            kickOffTime: fixtureData.time || 'TBD'
-                        });
+                            homeScore: this.getScoreValue(fixtureData.homeScore),
+                            awayScore: this.getScoreValue(fixtureData.awayScore)
+                        };
+                        
+                        this.currentFixtures.push(fixture);
                     });
                     
                     console.log(`✅ Loaded ${this.currentFixtures.length} fixtures from new structure`);
@@ -769,36 +774,60 @@ class FixturesManager {
     getScoreValue(score) {
         // Handle different score formats
         if (score === null || score === undefined) {
+            if (window.DEBUG_MODE) {
+                console.log(`🔍 getScoreValue: null/undefined score`);
+            }
             return null;
         }
         
         // If it's a simple number or string, return it
         if (typeof score === 'number' || typeof score === 'string') {
+            if (window.DEBUG_MODE) {
+                console.log(`🔍 getScoreValue: simple value ${score} (type: ${typeof score})`);
+            }
             return score;
         }
         
         // If it's an object (like Firestore Timestamp), try to extract the value
         if (typeof score === 'object') {
+            if (window.DEBUG_MODE) {
+                console.log(`🔍 getScoreValue: object score:`, score);
+            }
             // Check if it has a 'seconds' property (Firestore Timestamp)
             if (score.seconds !== undefined) {
+                if (window.DEBUG_MODE) {
+                    console.log(`🔍 getScoreValue: found seconds property: ${score.seconds}`);
+                }
                 return score.seconds;
             }
             // Check if it has a 'value' property
             if (score.value !== undefined) {
+                if (window.DEBUG_MODE) {
+                    console.log(`🔍 getScoreValue: found value property: ${score.value}`);
+                }
                 return score.value;
             }
             // Check if it has a 'score' property
             if (score.score !== undefined) {
+                if (window.DEBUG_MODE) {
+                    console.log(`🔍 getScoreValue: found score property: ${score.score}`);
+                }
                 return score.score;
             }
             // If it's an object with numeric properties, try to find the score
             for (const key in score) {
                 if (typeof score[key] === 'number' && !isNaN(score[key])) {
+                    if (window.DEBUG_MODE) {
+                        console.log(`🔍 getScoreValue: found numeric property ${key}: ${score[key]}`);
+                    }
                     return score[key];
                 }
             }
         }
         
+        if (window.DEBUG_MODE) {
+            console.log(`🔍 getScoreValue: no valid score found, returning null`);
+        }
         return null;
     }
 
