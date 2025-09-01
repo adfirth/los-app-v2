@@ -1681,32 +1681,28 @@ class ScoresManager {
                 });
                 
                 if (matchingFixture) {
-                    // Check if scores need updating
-                    const needsUpdate = matchingFixture.homeScore !== apiFixture.homeScore ||
-                                      matchingFixture.awayScore !== apiFixture.awayScore ||
-                                      matchingFixture.status !== apiFixture.status;
+                    // Extract scores from the correct location in API response
+                    const homeScore = apiFixture['home-team']?.score || apiFixture.homeScore;
+                    const awayScore = apiFixture['away-team']?.score || apiFixture.awayScore;
+                    const fixtureStatus = apiFixture.status?.short || apiFixture.status || 'FT';
+
+                    // Update the fixture with the score data
+                    const updateData = {
+                        homeScore: homeScore,
+                        awayScore: awayScore,
+                        status: fixtureStatus,
+                        lastScoreUpdate: new Date()
+                    };
+
+                    console.log(`🔧 ScoresManager: Updating fixture ${matchingFixture.id}: ${apiFixture.homeTeam} ${apiFixture.homeScore} - ${apiFixture.awayScore} ${apiFixture.awayTeam} (${apiFixture.status})`);
+                    console.log(`🔧 ScoresManager: API fixture structure:`, apiFixture);
+                    console.log(`🔧 ScoresManager: Extracted homeScore:`, homeScore, `(type: ${typeof homeScore})`);
+                    console.log(`🔧 ScoresManager: Extracted awayScore:`, awayScore, `(type: ${typeof awayScore})`);
+                    console.log(`🔧 ScoresManager: New score data:`, updateData);
+
+                    batch.update(matchingFixture.docRef, updateData);
                     
-                    if (needsUpdate) {
-                        console.log(`🔧 ScoresManager: Updating fixture ${matchingFixture.id}: ${apiFixture.homeTeam} ${apiFixture.homeScore} - ${apiFixture.awayScore} ${apiFixture.awayTeam} (${apiFixture.status})`);
-                        
-                        // Update the fixture with the score data
-                        const updateData = {
-                            homeScore: apiFixture.homeScore,
-                            awayScore: apiFixture.awayScore,
-                            status: apiFixture.status,
-                            lastScoreUpdate: new Date()
-                        };
-
-                        console.log(`🔧 ScoresManager: New score data:`, updateData);
-                        console.log(`🔧 ScoresManager: API fixture homeScore:`, apiFixture.homeScore, `(type: ${typeof apiFixture.homeScore})`);
-                        console.log(`🔧 ScoresManager: API fixture awayScore:`, apiFixture.awayScore, `(type: ${typeof apiFixture.awayScore})`);
-
-                        batch.update(matchingFixture.docRef, updateData);
-                        
-                        updateCount++;
-                    } else {
-                        console.log(`ℹ️ ScoresManager: Fixture ${matchingFixture.id} already up to date: ${apiFixture.homeTeam} ${apiFixture.homeScore} - ${apiFixture.awayScore} ${apiFixture.awayTeam}`);
-                    }
+                    updateCount++;
                 } else {
                     console.log(`⚠️ ScoresManager: No matching fixture found for: ${apiFixture.homeTeam} vs ${apiFixture.awayTeam}`);
                 }
