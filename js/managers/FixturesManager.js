@@ -182,45 +182,22 @@ class FixturesManager {
                     // Note: Removed automatic date update logic to preserve imported fixtures
                     // The updateFixtureDates method was overwriting real imported data with sample data
                 } else {
-                    // Fallback to old structure
-                    console.log('📋 No fixtures found in new structure, trying old structure...');
-                    const fixturesDoc = await this.db.collection('fixtures')
-                        .doc(`${currentEdition}_gw${currentGameweek}`)
-                        .get();
-                    
-                    if (fixturesDoc.exists) {
-                        const fixturesData = fixturesDoc.data();
-                        this.currentFixtures = fixturesData.fixtures || [];
-                        console.log(`✅ Loaded ${this.currentFixtures.length} fixtures from old structure`);
-                    } else {
-                        // Don't create sample fixtures - just show empty state
-                        console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
-                        this.currentFixtures = [];
-                        
-                        // Clean up any existing sample fixtures in old structure
-                        await this.cleanupSampleFixtures(currentEdition, currentGameweek);
-                    }
-                }
-            } catch (error) {
-                console.log('⚠️ Error loading from new structure, falling back to old structure:', error);
-                
-                // Fallback to old structure
-                const fixturesDoc = await this.db.collection('fixtures')
-                    .doc(`${currentEdition}_gw${currentGameweek}`)
-                    .get();
-                
-                if (fixturesDoc.exists) {
-                    const fixturesData = fixturesDoc.data();
-                    this.currentFixtures = fixturesData.fixtures || [];
-                    console.log(`✅ Loaded ${this.currentFixtures.length} fixtures from old structure`);
-                } else {
-                    // Don't create sample fixtures - just show empty state
+                    // No fixtures found - show empty state
                     console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
                     this.currentFixtures = [];
                     
                     // Clean up any existing sample fixtures in old structure
                     await this.cleanupSampleFixtures(currentEdition, currentGameweek);
                 }
+            } catch (error) {
+                console.log('⚠️ Error loading from new structure:', error);
+                
+                // Show empty state on error
+                console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
+                this.currentFixtures = [];
+                
+                // Clean up any existing sample fixtures in old structure
+                await this.cleanupSampleFixtures(currentEdition, currentGameweek);
             }
             
             // Check deadline
