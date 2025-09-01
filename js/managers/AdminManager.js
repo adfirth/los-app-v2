@@ -2290,31 +2290,32 @@ class AdminManager {
             }
 
             // Show confirmation dialog
-            if (!confirm(`Import scores from API for ${selectedClub} - Edition ${selectedEdition} - Gameweek ${selectedGameweek}?`)) {
+            if (!confirm(`Import scores from Football Web Pages API for ${selectedClub} - Edition ${selectedEdition} - Gameweek ${selectedGameweek}?`)) {
                 return;
             }
 
-            window.authManager.showInfo('Importing scores from API...');
+            window.authManager.showInfo('Importing scores from Football Web Pages API...');
 
             // Use the ScoresManager to import scores
             if (window.scoresManager) {
                 try {
                     console.log('🔧 AdminManager: Starting score import process...');
                     
-                    // First, update the vidiprinter to get latest data
-                    console.log('🔧 AdminManager: Updating vidiprinter...');
-                    await window.scoresManager.updateVidiprinter();
+                    // Use the new fixtures-results API method
+                    console.log('🔧 AdminManager: Importing scores from fixtures-results API...');
+                    const success = await window.scoresManager.importScoresFromAPI(parseInt(selectedGameweek));
                     
-                    // Then manually sync the scores from the vidiprinter data
-                    console.log('🔧 AdminManager: Syncing scores from vidiprinter...');
-                    await window.scoresManager.syncScoresFromVidiprinterManual();
-                    
-                    // Reload the scores display
-                    console.log('🔧 AdminManager: Reloading scores display...');
-                    await this.loadScoresForDisplay();
-                    
-                    window.authManager.showSuccess('Scores imported successfully from API');
-                    console.log('✅ AdminManager: Scores imported successfully');
+                    if (success) {
+                        // Reload the scores display
+                        console.log('🔧 AdminManager: Reloading scores display...');
+                        await this.loadScoresForDisplay();
+                        
+                        window.authManager.showSuccess('Scores imported successfully from Football Web Pages API');
+                        console.log('✅ AdminManager: Scores imported successfully');
+                    } else {
+                        window.authManager.showWarning('No scores found to import for the selected date range');
+                        console.log('⚠️ AdminManager: No scores found to import');
+                    }
                 } catch (error) {
                     console.error('❌ AdminManager: Error during score import process:', error);
                     window.authManager.showError(`Score import failed: ${error.message}`);

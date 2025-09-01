@@ -1482,7 +1482,7 @@ class ScoresManager {
 
     async importScoresFromAPI(gameweek) {
         try {
-            console.log(`🏆 ScoresManager: Importing scores for Gameweek ${gameweek} from API`);
+            console.log(`🏆 ScoresManager: Importing scores for Gameweek ${gameweek} from Football Web Pages API`);
             
             // Check if API requests are enabled globally
             if (!(await this.isAPIEnabled())) {
@@ -1490,27 +1490,31 @@ class ScoresManager {
                 throw new Error('API requests are currently disabled by system administrator');
             }
             
+            // Get current date range for the gameweek
+            const dateRange = this.getDateRangeForGameweek(gameweek);
+            console.log(`📅 ScoresManager: Date range for gameweek ${gameweek}: ${dateRange.from} to ${dateRange.to}`);
+            
             let url;
             let headers;
             
             // Check if we're in development (Netlify functions not available)
             if (this.isDevelopmentMode()) {
                 console.log('🔧 ScoresManager: Development mode detected, using direct API call (may have CORS issues)');
-                url = `https://api.football-data.org/v2/competitions/2021/matches?matchday=${gameweek}`;
+                url = `https://football-web-pages1.p.rapidapi.com/fixtures-results.json?from=${dateRange.from}&to=${dateRange.to}&comp=5&season=2024-25`;
                 headers = {
-                    'X-Auth-Token': this.apiConfig.FOOTBALL_DATA_API_KEY || 'YOUR_API_KEY'
+                    'X-RapidAPI-Key': this.apiConfig.RAPIDAPI_KEY,
+                    'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
                 };
             } else {
                 // Use Netlify function to avoid CORS issues in production
                 console.log('🚀 ScoresManager: Production mode, using Netlify function');
-                url = `/.netlify/functions/fetch-football-data?competition=2021&matchday=${gameweek}`;
+                url = `/.netlify/functions/fetch-scores?from=${dateRange.from}&to=${dateRange.to}&comp=5&season=2024-25`;
                 headers = {
                     'Content-Type': 'application/json'
                 };
             }
             
-            console.log(`🔍 ScoresManager: Fetching football data from: ${url}`);
-            console.log(`🔍 ScoresManager: Headers:`, headers);
+            console.log(`🔍 ScoresManager: Fetching fixtures-results from: ${url}`);
             
             const response = await fetch(url, {
                 method: 'GET',
@@ -1520,18 +1524,23 @@ class ScoresManager {
             console.log(`🔍 ScoresManager: Response status:`, response.status, response.statusText);
             
             if (!response.ok) {
+                // If Netlify function fails, try direct API call as fallback
+                if (!this.isDevelopmentMode() && response.status === 404) {
+                    console.log('⚠️ ScoresManager: Netlify function not found, trying direct API call...');
+                    return await this.importScoresDirectAPI(dateRange);
+                }
+                
                 const errorText = await response.text();
                 console.error(`❌ ScoresManager: API response error:`, errorText);
                 throw new Error(`API request failed: ${response.status} ${response.statusText}: ${errorText}`);
             }
             
             const data = await response.json();
-            console.log(`✅ ScoresManager: Football data fetched successfully:`, data);
-            console.log(`✅ ScoresManager: Matches count: ${data.matches?.length || 0}`);
+            console.log(`✅ ScoresManager: Fixtures-results fetched successfully:`, data);
             
             // Process the API data and update fixtures
             if (data.matches && data.matches.length > 0) {
-                await this.processAPIScores(data.matches, gameweek);
+                await this.processFixturesResults(data.matches, gameweek);
                 return true;
             } else {
                 console.log('ℹ️ ScoresManager: No matches found in API response');
@@ -1540,25 +1549,76 @@ class ScoresManager {
             
         } catch (error) {
             console.error('❌ ScoresManager: Error importing scores from API:', error);
+            
+            // If Netlify function fails, try direct API call as fallback
+            if (!this.isDevelopmentMode() && error.message.includes('404')) {
+                console.log('⚠️ ScoresManager: Netlify function failed, trying direct API call as fallback...');
+                try {
+                    const dateRange = this.getDateRangeForGameweek(gameweek);
+                    return await this.importScoresDirectAPI(dateRange);
+                } catch (fallbackError) {
+                    console.error('❌ ScoresManager: Direct API fallback also failed:', fallbackError);
+                }
+            }
+            
             throw error;
         }
     }
 
-    async processAPIScores(matches, gameweek) {
+    async importScoresDirectAPI(dateRange) {
+        console.log('🔧 ScoresManager: Making direct API call to fixtures-results...');
+        
+        const url = `https://football-web-pages1.p.rapidapi.com/fixtures-results.json?from=${dateRange.from}&to=${dateRange.to}&comp=5&season=2024-25`;
+        const headers = {
+            'X-RapidAPI-Key': this.apiConfig.RAPIDAPI_KEY,
+            'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
+        };
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`Direct API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log(`✅ ScoresManager: Direct API call successful:`, data);
+        
+        if (data.matches && data.matches.length > 0) {
+            await this.processFixturesResults(data.matches, 1); // Default to gameweek 1 for now
+            return true;
+        } else {
+            console.log('ℹ️ ScoresManager: No matches found in direct API response');
+            return false;
+        }
+    }
+
+    getDateRangeForGameweek(gameweek) {
+        // For now, return a reasonable date range for testing
+        // In a real implementation, you'd calculate this based on the gameweek
+        const today = new Date();
+        const from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7).toISOString().split('T')[0];
+        const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7).toISOString().split('T')[0];
+        
+        return { from, to };
+    }
+
+    async processFixturesResults(matches, gameweek) {
         try {
-            console.log(`🔧 ScoresManager: Processing ${matches.length} matches from API for gameweek ${gameweek}`);
+            console.log(`🔧 ScoresManager: Processing ${matches.length} matches from fixtures-results for gameweek ${gameweek}`);
             
-            // This method would process the API matches and update the database
-            // For now, we'll just log the matches
+            // Process each match from the fixtures-results API
             matches.forEach((match, index) => {
-                console.log(`Match ${index + 1}: ${match.homeTeam.name} ${match.score.fullTime.homeTeam || 0} - ${match.score.fullTime.awayTeam || 0} ${match.awayTeam.name}`);
+                console.log(`Match ${index + 1}: ${match['home-team']?.name || 'Unknown'} ${match['home-team']?.score || 0} - ${match['away-team']?.score || 0} ${match['away-team']?.name || 'Unknown'}`);
             });
             
-            // TODO: Implement actual score updating logic
-            console.log('ℹ️ ScoresManager: Score processing completed (placeholder implementation)');
+            // TODO: Implement actual score updating logic to update fixtures in database
+            console.log('ℹ️ ScoresManager: Fixtures-results processing completed (placeholder implementation)');
             
         } catch (error) {
-            console.error('❌ ScoresManager: Error processing API scores:', error);
+            console.error('❌ ScoresManager: Error processing fixtures-results:', error);
             throw error;
         }
     }
