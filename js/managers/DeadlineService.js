@@ -148,16 +148,30 @@ class DeadlineService {
 
     async assignAutoPicksForDeadline(gameweek) {
         try {
-            const currentEdition = window.editionService.getCurrentEdition();
+            // Get current club and edition from ClubService
+            const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
+            const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
             
-            // Get all users for current edition
-            const usersSnapshot = await this.db.collection('users')
-                .where('edition', '==', currentEdition)
+            if (!currentClubId || !currentEdition) {
+                console.log('⚠️ DeadlineService: No club or edition available for auto-pick');
+                throw new Error('No club or edition available for auto-pick');
+            }
+            
+            console.log(`🔧 DeadlineService: Assigning autopicks for club: ${currentClubId}, edition: ${currentEdition}, gameweek: ${gameweek}`);
+            
+            // Get all users for current edition from new multi-club structure
+            const usersSnapshot = await this.db.collection('clubs').doc(currentClubId)
+                .collection('editions').doc(currentEdition)
+                .collection('users')
                 .get();
             
-            // Get available teams for this gameweek
-            const fixturesDoc = await this.db.collection('fixtures')
-                .doc(`${currentEdition}_gw${gameweek}`)
+            console.log(`🔧 DeadlineService: Found ${usersSnapshot.size} users for autopick assignment`);
+            
+            // Get available teams for this gameweek from new multi-club structure
+            const fixturesDoc = await this.db.collection('clubs').doc(currentClubId)
+                .collection('editions').doc(currentEdition)
+                .collection('fixtures')
+                .doc(`gw${gameweek}`)
                 .get();
             
             if (!fixturesDoc.exists) {
@@ -178,15 +192,7 @@ class DeadlineService {
             
             for (const doc of usersSnapshot.docs) {
                 const userData = doc.data();
-                
-                // Get current club and edition from ClubService
-                const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
-                const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
-                
-                if (!currentClubId || !currentEdition) {
-                    console.log('⚠️ DeadlineService: No club or edition available for auto-pick');
-                    continue;
-                }
+                console.log(`🔧 DeadlineService: Processing user ${doc.id} (${userData.displayName || 'Unknown'}) for autopick`);
                 
                 // Check if user has already made a pick for this gameweek from multi-club structure
                 let hasPick = false;
@@ -204,6 +210,8 @@ class DeadlineService {
                 }
                 
                 if (!hasPick && userData.lives > 0) {
+                    console.log(`🔧 DeadlineService: User ${doc.id} needs autopick - lives: ${userData.lives}, hasPick: ${hasPick}`);
+                    
                     // Get existing picks for auto-pick logic from multi-club structure
                     let existingPicks = {};
                     try {
@@ -217,12 +225,15 @@ class DeadlineService {
                             const pickData = pickDoc.data();
                             existingPicks[`gw${pickData.gameweek}`] = pickData.teamPicked;
                         });
+                        
+                        console.log(`🔧 DeadlineService: User ${doc.id} existing picks:`, existingPicks);
                     } catch (error) {
                         console.error('Error loading existing picks for auto-pick:', error);
                     }
                     
                     // Assign auto-pick
                     const autoPick = this.getAutoPick(existingPicks, availableTeams, gameweek);
+                    console.log(`🔧 DeadlineService: Auto-pick algorithm result for user ${doc.id}: ${autoPick}`);
                     
                     if (autoPick) {
                         // Create pick record in multi-club structure
@@ -245,7 +256,11 @@ class DeadlineService {
                         
                         autoPicksAssigned++;
                         console.log(`✅ Auto-pick assigned: ${autoPick} for user ${doc.id} in gameweek ${gameweek}`);
+                    } else {
+                        console.log(`⚠️ DeadlineService: No auto-pick available for user ${doc.id} in gameweek ${gameweek}`);
                     }
+                } else {
+                    console.log(`🔧 DeadlineService: User ${doc.id} skipped - hasPick: ${hasPick}, lives: ${userData.lives}`);
                 }
             }
             
@@ -295,6 +310,21 @@ class DeadlineService {
         if (deadlineText) {
             deadlineText.textContent = 'Deadline: PASSED';
             deadlineText.style.color = '#dc3545';
+        }
+    }
+
+    // Manual method to trigger autopick assignment for testing
+    async manualAssignAutoPicks(gameweek = null) {
+        try {
+            if (!gameweek) {
+                gameweek = window.editionService.getCurrentGameweek();
+            }
+            
+            console.log(`🔧 DeadlineService: Manual autopick assignment triggered for gameweek ${gameweek}`);
+            await this.assignAutoPicksForDeadline(gameweek);
+            console.log('✅ Manual autopick assignment completed');
+        } catch (error) {
+            console.error('❌ Manual autopick assignment failed:', error);
         }
     }
 
@@ -662,4 +692,16 @@ class DeadlineService {
 // Initialize DeadlineService when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.deadlineService = new DeadlineService();
+    
+    // Add global helper functions for debugging
+    window.assignAutoPicks = (gameweek) => {
+        console.log('🔧 DeadlineService: Manual autopick assignment triggered from console...');
+        if (window.deadlineService) {
+            window.deadlineService.manualAssignAutoPicks(gameweek);
+        } else {
+            console.error('❌ DeadlineService not available');
+        }
+    };
+    
+    console.log('🔧 DeadlineService: Global helper function added: window.assignAutoPicks(gameweek)');
 });
