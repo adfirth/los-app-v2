@@ -368,26 +368,38 @@ class GameLogicManager {
             const fixtureData = fixtureDoc.data();
             console.log('🔍 GameLogicManager: Fixture data:', fixtureData);
             
-            // Check if fixture has scores and is finished
-            if (!fixtureData.homeScore || !fixtureData.awayScore || fixtureData.status !== 'finished') {
-                console.log('⚠️ GameLogicManager: Fixture not finished or missing scores:', fixtureData);
+            // Check if fixture is finished/completed and has scores
+            const isFinished = fixtureData.status === 'finished' || 
+                              fixtureData.status === 'completed' ||
+                              fixtureData.status?.full === 'Full Time' ||
+                              fixtureData.status?.short === 'FT';
+            
+            const hasScores = (fixtureData.homeScore !== null && fixtureData.awayScore !== null) ||
+                             (fixtureData['home-team']?.score !== undefined && fixtureData['away-team']?.score !== undefined);
+            
+            if (!isFinished || !hasScores) {
+                console.log('⚠️ GameLogicManager: Fixture not finished or missing scores:', { isFinished, hasScores });
                 return;
             }
             
-            // Determine the result
-            let homeTeamResult, awayTeamResult;
-            if (fixtureData.homeScore > fixtureData.awayScore) {
-                homeTeamResult = 'win';
-                awayTeamResult = 'loss';
-            } else if (fixtureData.homeScore < fixtureData.awayScore) {
-                homeTeamResult = 'loss';
-                awayTeamResult = 'win';
+            // Determine the result based on available score data
+            let homeScore, awayScore;
+            if (fixtureData.homeScore !== null && fixtureData.awayScore !== null) {
+                homeScore = fixtureData.homeScore;
+                awayScore = fixtureData.awayScore;
+            } else if (fixtureData['home-team']?.score !== undefined && fixtureData['away-team']?.score !== undefined) {
+                homeScore = fixtureData['home-team'].score;
+                awayScore = fixtureData['away-team'].score;
             } else {
-                homeTeamResult = 'draw';
-                awayTeamResult = 'draw';
+                console.log('⚠️ GameLogicManager: No valid score data found');
+                return;
             }
             
-            console.log('🔍 GameLogicManager: Fixture results - Home:', homeTeamResult, 'Away:', awayTeamResult);
+            // Determine home and away team names
+            const homeTeam = fixtureData.homeTeam || fixtureData['home-team']?.name;
+            const awayTeam = fixtureData.awayTeam || fixtureData['away-team']?.name;
+            
+            console.log('🔍 GameLogicManager: Fixture results - Home:', homeTeam, homeScore, 'Away:', awayTeam, awayScore);
             
             // Find all picks for this fixture and update their results
             const picksSnapshot = await this.db.collection('clubs')
@@ -403,23 +415,27 @@ class GameLogicManager {
             const batch = this.db.batch();
             let updatedCount = 0;
             
-            picksSnapshot.forEach(pickDoc => {
+            for (const pickDoc of picksSnapshot.docs) {
                 const pickData = pickDoc.data();
                 console.log('🔍 GameLogicManager: Processing pick:', pickData);
                 
                 // Determine the result for this pick
                 let pickResult;
-                if (pickData.teamPicked === fixtureData.homeTeam) {
-                    pickResult = homeTeamResult;
-                } else if (pickData.teamPicked === fixtureData.awayTeam) {
-                    pickResult = awayTeamResult;
+                if (pickData.teamPicked === homeTeam) {
+                    if (homeScore > awayScore) pickResult = 'win';
+                    else if (homeScore < awayScore) pickResult = 'loss';
+                    else pickResult = 'draw';
+                } else if (pickData.teamPicked === awayTeam) {
+                    if (awayScore > homeScore) pickResult = 'win';
+                    else if (awayScore < homeScore) pickResult = 'loss';
+                    else pickResult = 'draw';
                 } else {
                     console.log('⚠️ GameLogicManager: Pick team does not match fixture teams:', {
                         pickTeam: pickData.teamPicked,
-                        homeTeam: fixtureData.homeTeam,
-                        awayTeam: fixtureData.awayTeam
+                        homeTeam: homeTeam,
+                        awayTeam: awayTeam
                     });
-                    return;
+                    continue;
                 }
                 
                 // Update the pick result
@@ -437,7 +453,7 @@ class GameLogicManager {
                 
                 updatedCount++;
                 console.log(`🔍 GameLogicManager: Updated pick ${pickDoc.id} with result: ${pickResult}`);
-            });
+            }
             
             // Commit all updates
             if (updatedCount > 0) {
@@ -901,5 +917,46 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     console.log('🔧 Additional debug function added: window.debugAdamFirth()');
+    
+    // Add function to process existing fixtures and update pick results
+    window.processExistingFixtures = async () => {
+        console.log('🔧 Processing existing fixtures...');
+        
+        try {
+            const currentClub = 'altrincham-fc-juniors';
+            const currentEdition = '2025-26-national-league-1';
+            
+            // Get all fixtures for GW1 and GW2
+            const fixturesSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                .collection('editions').doc(currentEdition)
+                .collection('fixtures')
+                .where('gameWeek', 'in', [1, 2])
+                .get();
+            
+            console.log('🔍 Found fixtures:', fixturesSnapshot.size);
+            
+            // Process each fixture
+            for (const fixtureDoc of fixturesSnapshot.docs) {
+                const fixtureData = fixtureDoc.data();
+                console.log(`🔧 Processing fixture ${fixtureDoc.id}:`, fixtureData);
+                
+                await window.gameLogicManager.processFixtureResults(currentClub, currentEdition, fixtureDoc.id);
+            }
+            
+            console.log('✅ Processed all fixtures');
+            
+            // Refresh standings
+            await window.gameLogicManager.loadStandings();
+            console.log('✅ Standings refreshed');
+            
+            // Debug again to see the results
+            await window.debugAdamFirth();
+            
+        } catch (error) {
+            console.error('❌ Error processing fixtures:', error);
+        }
+    };
+    
+    console.log('🔧 Additional function added: window.processExistingFixtures()');
 });
 
