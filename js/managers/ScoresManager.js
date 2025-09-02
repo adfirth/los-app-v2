@@ -1133,11 +1133,23 @@ class ScoresManager {
 
             // Process vidiprinter events to update scores
             for (const event of this.vidiprinterData) {
+                // Debug: Log all event types to see what we're getting
+                if (event.type === 'Half-time' || event.type === 'Kick-off') {
+                    console.log('🔍 ScoresManager: Processing event:', {
+                        type: event.type,
+                        match: event.match,
+                        hasMatch: !!event.match,
+                        hasHomeTeam: !!(event.match && event.match['home-team']),
+                        hasAwayTeam: !!(event.match && event.match['away-team'])
+                    });
+                }
+                
                 if (event.match && (event.type === 'Full-time' || event.type === 'Goals' || event.type === 'Kick-off' || event.type === 'Half-time')) {
                     // Update scores and status for all relevant event types
                     const updatedFixture = this.updateFixtureFromVidiprinterEvent(fixtures, event);
                     if (updatedFixture) {
                         hasUpdates = true;
+                        console.log(`✅ ScoresManager: Updated fixture from ${event.type} event`);
                     }
                 }
             }
@@ -1177,6 +1189,12 @@ class ScoresManager {
 
     updateFixtureFromVidiprinterEvent(fixtures, event) {
         if (!event.match || !event.match['home-team'] || !event.match['away-team']) {
+            console.log('🔍 ScoresManager: Event missing match data:', {
+                type: event.type,
+                hasMatch: !!event.match,
+                hasHomeTeam: !!(event.match && event.match['home-team']),
+                hasAwayTeam: !!(event.match && event.match['away-team'])
+            });
             return false;
         }
 
@@ -1191,6 +1209,12 @@ class ScoresManager {
         );
 
         if (fixtureIndex === -1) {
+            console.log('🔍 ScoresManager: No matching fixture found for event:', {
+                type: event.type,
+                homeTeam: homeTeamName,
+                awayTeam: awayTeamName,
+                availableFixtures: fixtures.map(f => `${f.homeTeam} vs ${f.awayTeam}`)
+            });
             return false;
         }
 
@@ -1211,21 +1235,27 @@ class ScoresManager {
         // Update status based on event type
         if (event.type === 'Full-time') {
             if (fixture.status !== 'completed') {
+                console.log(`🔄 ScoresManager: Updating ${homeTeamName} vs ${awayTeamName} status from ${fixture.status} to completed`);
                 fixture.status = 'completed';
                 hasChanges = true;
             }
         } else if (event.type === 'Goals') {
             if (fixture.status !== 'live' && fixture.status !== 'completed') {
+                console.log(`🔄 ScoresManager: Updating ${homeTeamName} vs ${awayTeamName} status from ${fixture.status} to live`);
                 fixture.status = 'live';
                 hasChanges = true;
             }
         } else if (event.type === 'Half-time') {
             if (fixture.status !== 'half-time') {
+                console.log(`🔄 ScoresManager: Updating ${homeTeamName} vs ${awayTeamName} status from ${fixture.status} to half-time`);
                 fixture.status = 'half-time';
                 hasChanges = true;
+            } else {
+                console.log(`ℹ️ ScoresManager: ${homeTeamName} vs ${awayTeamName} already has half-time status`);
             }
         } else if (event.type === 'Kick-off') {
             if (fixture.status !== 'live') {
+                console.log(`🔄 ScoresManager: Updating ${homeTeamName} vs ${awayTeamName} status from ${fixture.status} to live`);
                 fixture.status = 'live';
                 hasChanges = true;
             }
