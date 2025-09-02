@@ -485,12 +485,21 @@ class EditionService {
         });
         
         // Remove active class from all tabs and content
-        document.querySelectorAll('.nav-tab').forEach(tab => {
+        const allTabs = document.querySelectorAll('.nav-tab');
+        const allContent = document.querySelectorAll('.tab-content');
+        
+        console.log(`🔍 Found ${allTabs.length} tabs and ${allContent.length} content areas`);
+        
+        allTabs.forEach((tab, index) => {
+            const wasActive = tab.classList.contains('active');
             tab.classList.remove('active');
+            console.log(`🔍 Tab ${index + 1} (${tab.getAttribute('data-tab')}): removed active class (was: ${wasActive})`);
         });
         
-        document.querySelectorAll('.tab-content').forEach(content => {
+        allContent.forEach((content, index) => {
+            const wasActive = content.classList.contains('active');
             content.classList.remove('active');
+            console.log(`🔍 Content ${index + 1} (${content.id}): removed active class (was: ${wasActive})`);
         });
 
         // Add active class to clicked tab
@@ -498,6 +507,8 @@ class EditionService {
         if (activeTab) {
             activeTab.classList.add('active');
             console.log(`✅ Active tab set to: ${targetTab}`);
+            console.log(`🔍 Tab element classes after activation:`, activeTab.className);
+            console.log(`🔍 Tab element HTML:`, activeTab.outerHTML);
         } else {
             console.log(`❌ Could not find tab with data-tab="${targetTab}"`);
         }
@@ -507,6 +518,8 @@ class EditionService {
         if (targetContent) {
             targetContent.classList.add('active');
             console.log(`✅ Content for ${targetTab} tab activated`);
+            console.log(`🔍 Content element classes after activation:`, targetContent.className);
+            console.log(`🔍 Content element display style:`, targetContent.style.display);
         } else {
             console.log(`❌ Could not find content element: ${targetTab}Tab`);
         }
@@ -514,6 +527,25 @@ class EditionService {
         // Load content based on tab
         console.log(`📋 Loading content for tab: ${targetTab}`);
         this.loadTabContent(targetTab);
+        
+        // Final verification of DOM state
+        setTimeout(() => {
+            console.log(`🔍 Final verification - Tab state after switch:`, {
+                activeTabs: Array.from(document.querySelectorAll('.nav-tab.active')).map(tab => tab.getAttribute('data-tab')),
+                activeContent: Array.from(document.querySelectorAll('.tab-content.active')).map(content => content.id),
+                allTabs: Array.from(document.querySelectorAll('.nav-tab')).map(tab => ({
+                    tab: tab.getAttribute('data-tab'),
+                    classes: tab.className,
+                    isActive: tab.classList.contains('active')
+                })),
+                allContent: Array.from(document.querySelectorAll('.tab-content')).map(content => ({
+                    id: content.id,
+                    classes: content.className,
+                    isActive: content.classList.contains('active'),
+                    display: content.style.display
+                }))
+            });
+        }, 100);
     }
 
     loadTabContent(tabName) {
