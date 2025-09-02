@@ -945,17 +945,25 @@ To set up sample clubs, run:
     // Navigate to current gameweek fixtures tab
     async navigateToCurrentGameweek() {
         try {
+            console.log('🎯 ClubService: navigateToCurrentGameweek called');
+            console.log('🎯 ClubService: Current club/edition:', this.currentClub, this.currentEdition);
+            
             // Calculate and set the current gameweek FIRST
             const currentGameweek = await this.calculateCurrentGameweek();
+            console.log('🎯 ClubService: Calculated current gameweek:', currentGameweek);
+            
             if (currentGameweek) {
+                console.log('🎯 ClubService: Setting current gameweek to:', currentGameweek);
                 this.setCurrentGameweek(currentGameweek);
             }
             
             // Then switch to fixtures tab (after gameweek is set)
+            console.log('🎯 ClubService: Switching to fixtures tab...');
             this.switchToFixturesTab();
             
             // Force reload fixtures for the new club/edition (with small delay to ensure change is processed)
             setTimeout(() => {
+                console.log('🎯 ClubService: Reloading fixtures for current club...');
                 this.reloadFixturesForCurrentClub();
             }, 500);
             
@@ -1000,24 +1008,35 @@ To set up sample clubs, run:
 
     // Set current gameweek
     setCurrentGameweek(gameweek) {
+        console.log('🎯 ClubService: setCurrentGameweek called with:', gameweek);
         
         // Update EditionService if available
         if (window.editionService && typeof window.editionService.setCurrentGameweek === 'function') {
+            console.log('🎯 ClubService: Updating EditionService gameweek to:', gameweek);
             window.editionService.setCurrentGameweek(gameweek);
+        } else {
+            console.log('🎯 ClubService: EditionService not available for gameweek update');
         }
         
         // Update gameweek display elements
         const currentGameweekSpan = document.getElementById('currentGameweek');
         if (currentGameweekSpan) {
+            console.log('🎯 ClubService: Updating currentGameweek span to:', gameweek);
             currentGameweekSpan.textContent = gameweek;
+        } else {
+            console.log('🎯 ClubService: currentGameweek span not found');
         }
         
         const gameweekSelect = document.getElementById('gameweekSelect');
         if (gameweekSelect) {
+            console.log('🎯 ClubService: Updating gameweekSelect to:', gameweek);
             gameweekSelect.value = gameweek;
+        } else {
+            console.log('🎯 ClubService: gameweekSelect not found');
         }
         
         // Update navigation buttons
+        console.log('🎯 ClubService: Updating gameweek navigation for:', gameweek);
         this.updateGameweekNavigation(gameweek);
     }
 

@@ -426,15 +426,23 @@ class EditionService {
     }
 
     setCurrentGameweek(gameweek) {
+        console.log('🎯 EditionService: setCurrentGameweek called with:', gameweek);
+        console.log('🎯 EditionService: Previous gameweek was:', this.currentGameweek);
+        
         this.currentGameweek = gameweek;
+        console.log('🎯 EditionService: Updated currentGameweek to:', this.currentGameweek);
+        
         this.updateGameweekDisplay();
         this.updateGameweekNavigation();
         
         // Reload fixtures for the new gameweek
+        console.log('🎯 EditionService: Reloading fixtures for gameweek:', gameweek);
         if (window.losApp?.managers?.fixtures) {
             window.losApp.managers.fixtures.loadFixtures();
         } else if (window.fixturesManager) {
             window.fixturesManager.loadFixtures();
+        } else {
+            console.log('🎯 EditionService: No fixtures manager available for reload');
         }
     }
 
