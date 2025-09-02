@@ -958,5 +958,53 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     console.log('🔧 Additional function added: window.processExistingFixtures()');
+        
+        // Add function to inspect fixtures collection
+        window.inspectFixtures = async () => {
+            console.log('🔍 Inspecting fixtures collection...');
+            
+            try {
+                const currentClub = 'altrincham-fc-juniors';
+                const currentEdition = '2025-26-national-league-1';
+                
+                // Get ALL fixtures (not just GW1 and GW2)
+                const allFixturesSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                    .collection('editions').doc(currentEdition)
+                    .collection('fixtures')
+                    .get();
+                
+                console.log('🔍 Total fixtures found:', allFixturesSnapshot.size);
+                
+                // Log each fixture
+                allFixturesSnapshot.forEach(doc => {
+                    const fixtureData = doc.data();
+                    console.log(`🔍 Fixture ${doc.id}:`, {
+                        gameWeek: fixtureData.gameWeek,
+                        gameweek: fixtureData.gameweek, // Check both spellings
+                        homeTeam: fixtureData.homeTeam || fixtureData['home-team']?.name,
+                        awayTeam: fixtureData.awayTeam || fixtureData['away-team']?.name,
+                        homeScore: fixtureData.homeScore || fixtureData['home-team']?.score,
+                        awayScore: fixtureData.awayScore || fixtureData['away-team']?.score,
+                        status: fixtureData.status,
+                        statusFull: fixtureData.status?.full,
+                        statusShort: fixtureData.status?.short,
+                        date: fixtureData.date,
+                        competition: fixtureData.competition?.name
+                    });
+                });
+                
+                // Also check if there are any fixtures with different field names
+                if (allFixturesSnapshot.size > 0) {
+                    const sampleFixture = allFixturesSnapshot.docs[0].data();
+                    console.log('🔍 Sample fixture all fields:', Object.keys(sampleFixture));
+                    console.log('🔍 Sample fixture full data:', sampleFixture);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error inspecting fixtures:', error);
+            }
+        };
+        
+        console.log('🔧 Additional function added: window.inspectFixtures()');
 });
 
