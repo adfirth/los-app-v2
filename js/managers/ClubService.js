@@ -84,6 +84,8 @@ class ClubService {
         // Set up event listeners for club selectors
         const clubSelect = document.getElementById('clubSelect');
         const headerClubSelect = document.getElementById('headerClubSelect');
+        const editionSelect = document.getElementById('editionSelect');
+        const headerEditionSelect = document.getElementById('headerEditionSelect');
         
         if (clubSelect) {
             clubSelect.addEventListener('change', (e) => {
@@ -94,6 +96,20 @@ class ClubService {
         if (headerClubSelect) {
             headerClubSelect.addEventListener('change', (e) => {
                 this.onClubChange(e.target.value);
+            });
+        }
+
+        // Add event listener for registration form edition selector
+        if (editionSelect) {
+            editionSelect.addEventListener('change', (e) => {
+                this.onEditionChange(e.target.value);
+            });
+        }
+
+        // Add event listener for header edition selector
+        if (headerEditionSelect) {
+            headerEditionSelect.addEventListener('change', (e) => {
+                this.onEditionChange(e.target.value);
             });
         }
     }
@@ -194,6 +210,9 @@ class ClubService {
                     const option = document.createElement('option');
                     option.value = clubId;
                     option.textContent = club.name;
+                    if (clubId === this.currentClub) {
+                        option.selected = true;
+                    }
                     clubSelect.appendChild(option);
                     console.log(`🔧 ClubService: Added option for ${clubId}: ${club.name}`);
                 }
@@ -226,13 +245,30 @@ class ClubService {
     }
 
     async onClubChange(clubId) {
+        console.log(`🔧 ClubService: onClubChange called with clubId: ${clubId}`);
+        
         if (!clubId) {
+            console.log('🔧 ClubService: No club selected, clearing edition selector');
+            this.currentClub = null;
+            this.currentEdition = null;
             this.clearEditionSelector();
             return;
         }
 
+        console.log(`🔧 ClubService: Setting current club to: ${clubId}`);
         this.currentClub = clubId;
+        
+        // Clear current edition when club changes
+        this.currentEdition = null;
+        
+        // Load and update edition selector for the selected club
+        console.log(`🔧 ClubService: About to load editions for club: ${clubId}`);
         await this.loadClubEditions(clubId);
+        
+        // Update the club selectors to show the selected club
+        this.updateClubSelectors();
+        
+        console.log(`🔧 ClubService: Club changed to: ${clubId}, editions loaded`);
     }
 
     async onEditionChange(editionId) {
@@ -258,37 +294,50 @@ class ClubService {
     }
 
     async loadClubEditions(clubId) {
+        console.log(`🔧 ClubService: loadClubEditions called for club: ${clubId}`);
+        console.log(`🔧 ClubService: Database reference available:`, !!this.db);
+        console.log(`🔧 ClubService: Database collection method available:`, !!(this.db && typeof this.db.collection === 'function'));
+        
         try {
             const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
                 .collection('editions').get();
             
+            console.log(`🔧 ClubService: Found ${editionsSnapshot.size} editions for club ${clubId}`);
+            
             const editions = [];
             editionsSnapshot.forEach(doc => {
                 const edition = doc.data();
-                if (edition.isActive) {
-                    editions.push({
-                        id: doc.id,
-                        ...edition
-                    });
-                }
+                console.log(`🔧 ClubService: Edition ${doc.id}:`, edition);
+                // Include all editions for now - we can filter by isActive later if needed
+                editions.push({
+                    id: doc.id,
+                    ...edition
+                });
             });
 
+            console.log(`🔧 ClubService: Loaded ${editions.length} editions:`, editions);
             this.updateEditionSelector(editions);
         } catch (error) {
             console.error('ClubService: Error loading editions:', error);
+            console.error('ClubService: Error details:', error.message, error.stack);
         }
     }
 
     updateEditionSelector(editions) {
+        console.log(`🔧 ClubService: updateEditionSelector called with ${editions.length} editions:`, editions);
+        
         const editionSelect = document.getElementById('editionSelect');
         if (editionSelect) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
             editions.forEach(edition => {
                 const option = document.createElement('option');
-                option.value = edition.editionId;
+                option.value = edition.id; // Use edition.id, not edition.editionId
                 option.textContent = edition.name;
                 editionSelect.appendChild(option);
             });
+            console.log(`🔧 ClubService: Registration form edition selector updated with ${editions.length} editions`);
+        } else {
+            console.log('🔧 ClubService: Registration form edition selector element not found');
         }
 
         // Update header edition selector
@@ -297,20 +346,16 @@ class ClubService {
             headerEditionSelect.innerHTML = '<option value="">Select Edition...</option>';
             editions.forEach(edition => {
                 const option = document.createElement('option');
-                option.value = edition.editionId;
+                option.value = edition.id; // Use edition.id, not edition.editionId
                 option.textContent = edition.name;
-                if (edition.editionId === this.currentEdition) {
+                if (edition.id === this.currentEdition) {
                     option.selected = true;
                 }
                 headerEditionSelect.appendChild(option);
             });
-        }
-
-        // Add event listener for header edition selector
-        if (headerEditionSelect) {
-            headerEditionSelect.addEventListener('change', (e) => {
-                this.onEditionChange(e.target.value);
-            });
+            console.log(`🔧 ClubService: Header edition selector updated with ${editions.length} editions`);
+        } else {
+            console.log('🔧 ClubService: Header edition selector element not found');
         }
     }
 
