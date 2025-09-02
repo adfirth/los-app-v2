@@ -53,7 +53,7 @@ class TeamBadgeDownloader {
     // Method to clean up old teams and download correct ones
     async cleanupAndRedownload() {
         try {
-            console.log('🧹 Cleaning up old team badges and downloading correct ones...');
+    
             
             // Step 1: Delete old incorrect teams
             const oldTeams = [
@@ -72,7 +72,7 @@ class TeamBadgeDownloader {
             });
             
             await batch.commit();
-            console.log('✅ Old teams removed from Firebase');
+    
             
             // Step 2: Download correct current season teams
             console.log('🏆 Downloading correct 2025/26 National League teams...');

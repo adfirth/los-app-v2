@@ -78,7 +78,7 @@ class ScoresManager {
         
         // Only set up basic structure, don't load data yet
         this.isInitialized = true;
-        console.log('ScoresManager basic initialization complete');
+
     }
 
     init() {
@@ -98,7 +98,7 @@ class ScoresManager {
         this.setupRealtimeListeners();
         this.startVidiprinterUpdates();
         this.dataLoaded = true;
-        console.log('ScoresManager full initialization complete');
+
     }
 
     initializeAPI() {
@@ -185,7 +185,7 @@ class ScoresManager {
     restoreFirebaseConnection() {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
-        console.log('ScoresManager Firebase connection restored');
+
         
         // Don't set up real-time listeners here - they will be set up by the main app
         // after Firebase is fully ready to prevent connection conflicts

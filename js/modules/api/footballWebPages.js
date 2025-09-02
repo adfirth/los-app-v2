@@ -16,7 +16,7 @@ class FootballWebPagesAPI {
 
     async initializeConfiguration() {
         try {
-            console.log('🔧 FootballWebPagesAPI: Initializing configuration...');
+    
             
             // Load configuration with multiple fallback strategies
             this.config = this.loadConfiguration();

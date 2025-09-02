@@ -86,7 +86,6 @@ class DeadlineService {
                 
                 // If still not available, try to get it from global
                 if (!this.db && window.firebaseDB) {
-                    console.log('🔧 DeadlineService: Getting database reference from global Firebase...');
                     this.db = window.firebaseDB;
                 }
                 
@@ -299,7 +298,6 @@ class DeadlineService {
                 
                 // If still not available, try to get it from global
                 if (!this.db && window.firebaseDB) {
-                    console.log('🔧 DeadlineService: Getting database reference from global Firebase...');
                     this.db = window.firebaseDB;
                 }
                 
@@ -495,7 +493,6 @@ class DeadlineService {
                 
                 // If still not available, try to get it from global
                 if (!this.db && window.firebaseDB) {
-                    console.log('🔧 DeadlineService: Getting database reference from global Firebase...');
                     this.db = window.firebaseDB;
                 }
                 
@@ -504,9 +501,7 @@ class DeadlineService {
                 }
             }
             
-            console.log('🔧 DeadlineService: Database connection verified, proceeding with autopick assignment...');
             await this.assignAutoPicksForDeadline(gameweek);
-            console.log('✅ Manual autopick assignment completed');
         } catch (error) {
             console.error('❌ Manual autopick assignment failed:', error);
         }

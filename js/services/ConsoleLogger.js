@@ -8,7 +8,6 @@
     function initConsoleLogger() {
         // Prevent multiple initializations
         if (window.consoleLogger) {
-            console.log('🔧 ConsoleLogger: Already initialized, skipping...');
             return;
         }
         
@@ -40,7 +39,7 @@
                         this.overrideConsoleMethod('info', 'info');
                         this.overrideConsoleMethod('debug', 'debug');
 
-                        console.log('🔧 ConsoleLogger: Console capture initialized');
+
                     } catch (error) {
                         console.error('🔧 ConsoleLogger: Error setting up console capture:', error);
                     }
@@ -113,13 +112,11 @@
                 // Start capturing
                 startCapture() {
                     this.isCapturing = true;
-                    console.log('🔧 ConsoleLogger: Console capture started');
                 }
 
                 // Stop capturing
                 stopCapture() {
                     this.isCapturing = false;
-                    console.log('🔧 ConsoleLogger: Console capture stopped');
                 }
 
                 // Get all captured logs
@@ -141,7 +138,6 @@
                 clearLogs() {
                     this.logs = [];
                     this.saveToLocalStorage();
-                    console.log('🔧 ConsoleLogger: Logs cleared');
                 }
 
                 // Save logs to localStorage

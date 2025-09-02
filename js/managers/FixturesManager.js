@@ -62,7 +62,7 @@ class FixturesManager {
                 
                 // Try to update our database reference if Firebase is ready but we don't have it
                 if (window.firebaseReady && window.firebaseDB && !this.db) {
-                    console.log('FixturesManager: Updating database reference from global Firebase...');
+            
                     this.db = window.firebaseDB;
                     // Re-attempt loading fixtures now that we have a database reference
                     setTimeout(() => this.loadFixtures(), 500);

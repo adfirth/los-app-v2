@@ -40,13 +40,13 @@ class EditionService {
         this.loadSettings();
         this.setupRealtimeListeners();
         this.settingsLoaded = true;
-        console.log('EditionService full initialization complete');
+
     }
 
     restoreFirebaseConnection() {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
-        console.log('EditionService Firebase connection restored');
+
         
         // Reset retry counters when Firebase connection is restored
         this.loadSettingsRetryCount = 0;

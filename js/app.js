@@ -1345,90 +1345,54 @@ window.LOSApp = LOSApp;
 
 // Simple cleanup function
 window.cleanupFirebase = async function() {
-    console.log('🧹 Starting Firebase cleanup...');
-    
     if (!window.firebaseDB) {
-        console.error('❌ Firebase database not available');
+        console.error('Firebase database not available');
         return;
     }
     
     const collectionsToDelete = ['users', 'picks', 'editions', 'fixtures', 'scores'];
-    console.log('🗑️ Collections to delete:', collectionsToDelete);
     
     for (const collectionName of collectionsToDelete) {
         try {
-            console.log(`🧹 Cleaning up collection: ${collectionName}`);
-            
             const snapshot = await window.firebaseDB.collection(collectionName).get();
             
-            if (snapshot.empty) {
-                console.log(`✅ Collection ${collectionName} is already empty`);
-                continue;
+            if (!snapshot.empty) {
+                const batch = window.firebaseDB.batch();
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
             }
-            
-            console.log(`📄 Found ${snapshot.size} documents in ${collectionName}`);
-            
-            const batch = window.firebaseDB.batch();
-            snapshot.docs.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            
-            await batch.commit();
-            console.log(`✅ Deleted ${snapshot.size} documents from ${collectionName}`);
-            
         } catch (error) {
-            console.error(`❌ Error cleaning up ${collectionName}:`, error);
+            console.error(`Error cleaning up ${collectionName}:`, error);
         }
     }
-    
-    console.log('🎉 Firebase cleanup completed!');
 };
 
 // Simple structure function
 window.showFirebaseStructure = async function() {
-    console.log('🏗️ Current database structure:');
-    
     if (!window.firebaseDB) {
-        console.error('❌ Firebase database not available');
+        console.error('Firebase database not available');
         return;
     }
     
     try {
         const clubsSnapshot = await window.firebaseDB.collection('clubs').get();
-        console.log(`📁 clubs: ${clubsSnapshot.size} clubs`);
+        console.log(`Found ${clubsSnapshot.size} clubs`);
         
         for (const clubDoc of clubsSnapshot.docs) {
-            const clubData = clubDoc.data();
-            console.log(`  🏟️ ${clubData.name || clubDoc.id}:`);
-            
             const editionsSnapshot = await clubDoc.ref.collection('editions').get();
-            console.log(`    📚 editions: ${editionsSnapshot.size} editions`);
-            
-            for (const editionDoc of editionsSnapshot.docs) {
-                const editionData = editionDoc.data();
-                console.log(`      📖 ${editionData.name || editionDoc.id}:`);
-                
-                const usersSnapshot = await editionDoc.ref.collection('users').get();
-                const fixturesSnapshot = await editionDoc.ref.collection('fixtures').get();
-                const picksSnapshot = await editionDoc.ref.collection('picks').get();
-                
-                console.log(`        👥 users: ${usersSnapshot.size}`);
-                console.log(`        ⚽ fixtures: ${fixturesSnapshot.size}`);
-                console.log(`        🎯 picks: ${picksSnapshot.size}`);
-            }
+            console.log(`Club ${clubDoc.id}: ${editionsSnapshot.size} editions`);
         }
-        
     } catch (error) {
-        console.error('❌ Error checking current structure:', error);
+        console.error('Error checking structure:', error);
     }
 };
 
 // Simple verify function
 window.verifyFirebaseCleanup = async function() {
-    console.log('🔍 Verifying cleanup...');
-    
     if (!window.firebaseDB) {
-        console.error('❌ Firebase database not available');
+        console.error('Firebase database not available');
         return;
     }
     
@@ -1437,13 +1401,11 @@ window.verifyFirebaseCleanup = async function() {
     for (const collectionName of collectionsToDelete) {
         try {
             const snapshot = await window.firebaseDB.collection(collectionName).limit(1).get();
-            if (snapshot.empty) {
-                console.log(`✅ ${collectionName}: Empty`);
-            } else {
-                console.log(`⚠️ ${collectionName}: Still has ${snapshot.size} documents`);
+            if (!snapshot.empty) {
+                console.log(`${collectionName}: Still has documents`);
             }
         } catch (error) {
-            console.log(`❌ ${collectionName}: Error checking - ${error.message}`);
+            console.log(`${collectionName}: Error checking - ${error.message}`);
         }
     }
 };

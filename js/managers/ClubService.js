@@ -1116,10 +1116,10 @@ To set up sample clubs, run:
         
         // Update EditionService if available
         if (window.editionService && typeof window.editionService.setCurrentGameweek === 'function') {
-            console.log('🎯 ClubService: Updating EditionService gameweek to:', gameweek);
+    
             window.editionService.setCurrentGameweek(gameweek);
         } else {
-            console.log('🎯 ClubService: EditionService not available for gameweek update');
+    
         }
         
         // Update gameweek display elements

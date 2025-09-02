@@ -198,7 +198,7 @@
             
             // Also listen for the ready event
             window.addEventListener('consoleLoggerReady', function(e) {
-                console.log('🔧 Console Dashboard: ConsoleLogger ready event received');
+        
                 if (e.detail.consoleLogger) {
                     window.consoleLogger = e.detail.consoleLogger;
                     updateConsoleLoggerStatus();
@@ -238,7 +238,7 @@
 
         // Initialize dashboard with ConsoleLogger
         function initializeDashboard() {
-            console.log('🔧 Console Dashboard: Initializing with ConsoleLogger');
+    
             
             // Hide loading indicator
             document.getElementById('loadingIndicator').style.display = 'none';
@@ -250,7 +250,7 @@
             // Only start auto-refresh if ConsoleLogger is working
             if (window.consoleLogger && typeof window.consoleLogger.getLogs === 'function') {
                 // Add a test log to verify ConsoleLogger is working
-                console.log('🔧 Console Dashboard: Testing ConsoleLogger - this should appear in the dashboard');
+        
                 console.warn('🔧 Console Dashboard: Test warning message');
                 console.error('🔧 Console Dashboard: Test error message');
                 

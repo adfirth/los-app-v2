@@ -18,7 +18,7 @@ class AuthManager {
         // Only set up basic structure, don't load data yet
         this.setupAuthListeners();
         this.isInitialized = true;
-        console.log('AuthManager basic initialization complete');
+
     }
 
     init() {
@@ -47,18 +47,18 @@ class AuthManager {
         });
 
         this.dataLoaded = true;
-        console.log('AuthManager full initialization complete');
+
     }
 
     restoreFirebaseConnection() {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
-        console.log('AuthManager Firebase connection restored');
+
     }
 
     clearListeners() {
         // Clear any existing Firebase listeners
-        console.log('AuthManager: Clearing listeners...');
+
         
         // Unregister from the main app's listener tracking if needed
         if (window.losApp) {

@@ -34,7 +34,7 @@
         // Wait for Firebase to be ready
         function waitForFirebase() {
             if (window.firebaseReady && window.firebaseDB) {
-                console.log('✅ Firebase ready, starting investigation...');
+        
                 return true;
             } else {
                 console.log('⏳ Waiting for Firebase...');
@@ -238,9 +238,8 @@
 
         // Auto-start when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🔍 Deployment investigation tool loaded');
             if (waitForFirebase()) {
-                console.log('✅ Firebase already ready');
+                // Firebase is ready
             }
         });
     </script>

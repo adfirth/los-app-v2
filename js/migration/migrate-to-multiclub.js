@@ -36,7 +36,7 @@ class MultiClubMigration {
             // Migration completed successfully!
             console.log('📋 Next steps:');
             console.log('1. Update your application code to use new paths');
-            console.log('2. Test the new structure');
+    
             console.log('3. Remove old collections when ready');
             
         } catch (error) {
