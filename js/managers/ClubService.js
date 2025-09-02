@@ -72,13 +72,7 @@ class ClubService {
         
         // Add function to check current state
         window.checkClubServiceState = () => {
-            console.log('🔍 ClubService: Current state:', {
-                currentClub: this.currentClub,
-                currentEdition: this.currentEdition,
-                availableClubs: this.availableClubs,
-                clubDataKeys: Object.keys(this.clubData),
-                isInitialized: this.isInitialized
-            });
+            // Current state logged
         };
         
         // Global helper functions available: window.fixClubService(), window.testClubChange(clubId), window.checkClubServiceState()
@@ -190,9 +184,7 @@ class ClubService {
             }
         }
 
-        console.log('🔍 ClubService: After loading all clubs, clubData keys:', Object.keys(this.clubData));
-        console.log('🔍 ClubService: After loading all clubs, availableClubs length:', this.availableClubs.length);
-        console.log('🔍 ClubService: After loading all clubs, isReady check:', this.isReady);
+        // Club loading completed
         
         // Use requestAnimationFrame to ensure DOM is ready
         requestAnimationFrame(() => {

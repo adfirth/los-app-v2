@@ -371,7 +371,7 @@ class EditionService {
         // Setting up tab navigation...
         
         const navTabs = document.querySelectorAll('.nav-tab');
-        console.log('🔍 Found navigation tabs:', navTabs.length);
+        // Found navigation tabs
         
         navTabs.forEach((tab, index) => {
             const tabName = tab.getAttribute('data-tab');
@@ -488,18 +488,18 @@ class EditionService {
         const allTabs = document.querySelectorAll('.nav-tab');
         const allContent = document.querySelectorAll('.tab-content');
         
-        console.log(`🔍 Found ${allTabs.length} tabs and ${allContent.length} content areas`);
+        // Found tabs and content areas
         
         allTabs.forEach((tab, index) => {
             const wasActive = tab.classList.contains('active');
             tab.classList.remove('active');
-            console.log(`🔍 Tab ${index + 1} (${tab.getAttribute('data-tab')}): removed active class (was: ${wasActive})`);
+            // Tab active class removed
         });
         
         allContent.forEach((content, index) => {
             const wasActive = content.classList.contains('active');
             content.classList.remove('active');
-            console.log(`🔍 Content ${index + 1} (${content.id}): removed active class (was: ${wasActive})`);
+            // Content active class removed
         });
 
         // Add active class to clicked tab
