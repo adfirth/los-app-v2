@@ -66,7 +66,31 @@ class ClubService {
             }
         };
         
-        console.log('🔧 ClubService: Global helper function added: window.fixClubService()');
+        // Add test function for club changes
+        window.testClubChange = (clubId) => {
+            console.log(`🧪 ClubService: Testing club change to: ${clubId}`);
+            if (this.onClubChange) {
+                this.onClubChange(clubId);
+            } else {
+                console.log('🧪 ClubService: onClubChange method not available');
+            }
+        };
+        
+        // Add function to check current state
+        window.checkClubServiceState = () => {
+            console.log('🔍 ClubService: Current state:', {
+                currentClub: this.currentClub,
+                currentEdition: this.currentEdition,
+                availableClubs: this.availableClubs,
+                clubDataKeys: Object.keys(this.clubData),
+                isInitialized: this.isInitialized
+            });
+        };
+        
+        console.log('🔧 ClubService: Global helper functions added:');
+        console.log('  - window.fixClubService()');
+        console.log('  - window.testClubChange(clubId)');
+        console.log('  - window.checkClubServiceState()');
     }
 
     setupBasicStructure() {
@@ -74,44 +98,77 @@ class ClubService {
         // This runs before Firebase is ready
         console.log('🔧 Setting up ClubService basic structure...');
         
+        // Check if DOM elements exist before setting up listeners
+        const clubSelect = document.getElementById('clubSelect');
+        const headerClubSelect = document.getElementById('headerClubSelect');
+        const editionSelect = document.getElementById('editionSelect');
+        const headerEditionSelect = document.getElementById('headerEditionSelect');
+        
+        console.log('🔧 ClubService: DOM elements check in setupBasicStructure:', {
+            clubSelect: !!clubSelect,
+            headerClubSelect: !!headerClubSelect,
+            editionSelect: !!editionSelect,
+            headerEditionSelect: !!headerEditionSelect
+        });
+        
         // Set up club selector event listeners
+        console.log('🔧 ClubService: About to call setupClubSelectorListeners');
         this.setupClubSelectorListeners();
         
         console.log('✅ ClubService basic structure setup complete');
     }
 
     setupClubSelectorListeners() {
+        console.log('🔧 ClubService: setupClubSelectorListeners called');
+        
         // Set up event listeners for club selectors
         const clubSelect = document.getElementById('clubSelect');
         const headerClubSelect = document.getElementById('headerClubSelect');
         const editionSelect = document.getElementById('editionSelect');
         const headerEditionSelect = document.getElementById('headerEditionSelect');
         
+        console.log('🔧 ClubService: DOM elements found:', {
+            clubSelect: !!clubSelect,
+            headerClubSelect: !!headerClubSelect,
+            editionSelect: !!editionSelect,
+            headerEditionSelect: !!headerEditionSelect
+        });
+        
         if (clubSelect) {
+            console.log('🔧 ClubService: Adding change listener to clubSelect');
             clubSelect.addEventListener('change', (e) => {
+                console.log('🔧 ClubService: clubSelect change event triggered with value:', e.target.value);
                 this.onClubChange(e.target.value);
             });
         }
         
         if (headerClubSelect) {
+            console.log('🔧 ClubService: Adding change listener to headerClubSelect');
             headerClubSelect.addEventListener('change', (e) => {
+                console.log('🔧 ClubService: headerClubSelect change event triggered with value:', e.target.value);
                 this.onClubChange(e.target.value);
             });
         }
 
         // Add event listener for registration form edition selector
         if (editionSelect) {
+            console.log('🔧 ClubService: Adding change listener to editionSelect');
             editionSelect.addEventListener('change', (e) => {
+                console.log('🔧 ClubService: editionSelect change event triggered with value:', e.target.value);
                 this.onEditionChange(e.target.value);
             });
         }
 
         // Add event listener for header edition selector
         if (headerEditionSelect) {
+            console.log('🔧 ClubService: Adding change listener to headerEditionSelect');
             headerEditionSelect.addEventListener('change', (e) => {
+                console.log('🔧 ClubService: headerEditionSelect change event triggered with value:', e.target.value);
                 this.onEditionChange(e.target.value);
             });
         }
+        
+        console.log('🔧 ClubService: setupClubSelectorListeners completed');
     }
 
     setupRealtimeListeners() {
@@ -246,6 +303,7 @@ class ClubService {
 
     async onClubChange(clubId) {
         console.log(`🔧 ClubService: onClubChange called with clubId: ${clubId}`);
+        console.log(`🔧 ClubService: Current state - currentClub: ${this.currentClub}, currentEdition: ${this.currentEdition}`);
         
         if (!clubId) {
             console.log('🔧 ClubService: No club selected, clearing edition selector');
@@ -260,12 +318,14 @@ class ClubService {
         
         // Clear current edition when club changes
         this.currentEdition = null;
+        console.log(`🔧 ClubService: Cleared current edition`);
         
         // Load and update edition selector for the selected club
         console.log(`🔧 ClubService: About to load editions for club: ${clubId}`);
         await this.loadClubEditions(clubId);
         
         // Update the club selectors to show the selected club
+        console.log(`🔧 ClubService: About to update club selectors`);
         this.updateClubSelectors();
         
         console.log(`🔧 ClubService: Club changed to: ${clubId}, editions loaded`);
@@ -360,14 +420,21 @@ class ClubService {
     }
 
     clearEditionSelector() {
+        console.log('🔧 ClubService: clearEditionSelector called');
         const editionSelect = document.getElementById('editionSelect');
         if (editionSelect) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
+            console.log('🔧 ClubService: Registration form edition selector cleared');
+        } else {
+            console.log('🔧 ClubService: Registration form edition selector element not found for clearing');
         }
 
         const headerEditionSelect = document.getElementById('headerEditionSelect');
         if (headerEditionSelect) {
             headerEditionSelect.innerHTML = '<option value="">Select Edition...</option>';
+            console.log('🔧 ClubService: Header edition selector cleared');
+        } else {
+            console.log('🔧 ClubService: Header edition selector element not found for clearing');
         }
     }
 
