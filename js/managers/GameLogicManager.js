@@ -1068,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const picksSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
                     .collection('editions').doc(currentEdition)
                     .collection('picks')
-                    .where('userId', '==', '0OPG5mi5H5fR5J188YKwtw8m1s2')
+                    .where('userId', '==', '0OPG5mi5H5fR5J188YKwtw8Wm1s2')
                     .where('gameweek', '==', 1)
                     .get();
                 
@@ -1098,7 +1098,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             result: pickData.result
                         });
                         
-                        if (pickData.userId === '0OPG5mi5H5fR5J188YKwtw8m1s2' && pickData.gameweek === 1) {
+                        // Debug the exact types
+                        console.log(`🔍 Type check - userId: "${pickData.userId}" (type: ${typeof pickData.userId}), gameweek: ${pickData.gameweek} (type: ${typeof pickData.gameweek})`);
+                        console.log(`🔍 Comparison check - userId match: ${pickData.userId === '0OPG5mi5H5fR5J188YKwtw8Wm1s2'}, gameweek match: ${pickData.gameweek === 1}`);
+                        
+                        if (pickData.userId === '0OPG5mi5H5fR5J188YKwtw8Wm1s2' && pickData.gameweek === 1) {
                             console.log('✅ Found matching pick!');
                             targetPick = pickData;
                             targetDoc = doc;
