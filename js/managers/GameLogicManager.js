@@ -1100,5 +1100,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('❌ Error fixing Adam Firth GW1 pick:', error);
             }
         };
+
+        // Add function to inspect Adam Firth's pick data structure
+        window.inspectAdamFirthPicks = async () => {
+            console.log('🔍 Inspecting Adam Firth pick data structure...');
+            
+            try {
+                const currentClub = 'altrincham-fc-juniors';
+                const currentEdition = '2025-26-national-league-1';
+                
+                // Get all picks for Adam Firth
+                const picksSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                    .collection('editions').doc(currentEdition)
+                    .collection('picks')
+                    .where('userId', '==', '0OPG5mi5H5fR5J188YKwtw8m1s2')
+                    .get();
+                
+                if (picksSnapshot.empty) {
+                    console.log('❌ No picks found for Adam Firth');
+                    return;
+                }
+                
+                console.log('🔍 Found picks:', picksSnapshot.size);
+                
+                picksSnapshot.forEach((doc, index) => {
+                    const pickData = doc.data();
+                    console.log(`🔍 Pick ${index + 1}:`, pickData);
+                    console.log(`🔍 Pick ${index + 1} fields:`, Object.keys(pickData));
+                    console.log(`🔍 Pick ${index + 1} gameweek field:`, {
+                        gameweek: pickData.gameweek,
+                        gameWeek: pickData.gameWeek,
+                        'game-week': pickData['game-week']
+                    });
+                });
+                
+            } catch (error) {
+                console.error('❌ Error inspecting picks:', error);
+            }
+        };
 });
 
