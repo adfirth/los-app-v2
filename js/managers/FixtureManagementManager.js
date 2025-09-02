@@ -822,6 +822,21 @@ class FixtureManagementManager {
                 });
             }
 
+            // Process fixture results to update pick results if fixture is finished
+            if (status === 'finished' && homeScore !== null && awayScore !== null) {
+                console.log('FixtureManagementManager: Processing fixture results after score update...');
+                if (window.gameLogicManager && window.gameLogicManager.processFixtureResults) {
+                    try {
+                        await window.gameLogicManager.processFixtureResults(clubId, editionId, fixtureId);
+                        console.log('FixtureManagementManager: Successfully processed fixture results');
+                    } catch (error) {
+                        console.error('FixtureManagementManager: Error processing fixture results:', error);
+                    }
+                } else {
+                    console.log('FixtureManagementManager: GameLogicManager not available for result processing');
+                }
+            }
+
             return true;
         } catch (error) {
             console.error('FixtureManagementManager: Error updating fixture score:', error);

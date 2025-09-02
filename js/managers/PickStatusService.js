@@ -281,8 +281,36 @@ class PickStatusService {
             };
         }
 
-        // For now, return pending for all picks
-        // In a real implementation, this would check against actual fixture results
+        // Check if the pick has a result
+        if (pick.result) {
+            switch (pick.result.toLowerCase()) {
+                case 'win':
+                case 'w':
+                    return {
+                        status: 'win',
+                        score: '✅ Win'
+                    };
+                case 'loss':
+                case 'l':
+                    return {
+                        status: 'loss',
+                        score: '❌ Loss'
+                    };
+                case 'draw':
+                case 'd':
+                    return {
+                        status: 'draw',
+                        score: '⚖️ Draw'
+                    };
+                default:
+                    return {
+                        status: 'pending',
+                        score: 'Result pending'
+                    };
+            }
+        }
+
+        // No result yet
         return {
             status: 'pending',
             score: 'Result pending'

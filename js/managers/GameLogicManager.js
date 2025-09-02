@@ -345,6 +345,147 @@ class GameLogicManager {
             this.standings.push(playerData);
         }
     }
+
+    // Process fixture results and update pick results
+    async processFixtureResults(clubId, editionId, fixtureId) {
+        try {
+            console.log('🔍 GameLogicManager: Processing fixture results for:', { clubId, editionId, fixtureId });
+            
+            // Get the fixture data
+            const fixtureDoc = await this.db.collection('clubs')
+                .doc(clubId)
+                .collection('editions')
+                .doc(editionId)
+                .collection('fixtures')
+                .doc(fixtureId)
+                .get();
+            
+            if (!fixtureDoc.exists) {
+                console.log('⚠️ GameLogicManager: Fixture not found:', fixtureId);
+                return;
+            }
+            
+            const fixtureData = fixtureDoc.data();
+            console.log('🔍 GameLogicManager: Fixture data:', fixtureData);
+            
+            // Check if fixture has scores and is finished
+            if (!fixtureData.homeScore || !fixtureData.awayScore || fixtureData.status !== 'finished') {
+                console.log('⚠️ GameLogicManager: Fixture not finished or missing scores:', fixtureData);
+                return;
+            }
+            
+            // Determine the result
+            let homeTeamResult, awayTeamResult;
+            if (fixtureData.homeScore > fixtureData.awayScore) {
+                homeTeamResult = 'win';
+                awayTeamResult = 'loss';
+            } else if (fixtureData.homeScore < fixtureData.awayScore) {
+                homeTeamResult = 'loss';
+                awayTeamResult = 'win';
+            } else {
+                homeTeamResult = 'draw';
+                awayTeamResult = 'draw';
+            }
+            
+            console.log('🔍 GameLogicManager: Fixture results - Home:', homeTeamResult, 'Away:', awayTeamResult);
+            
+            // Find all picks for this fixture and update their results
+            const picksSnapshot = await this.db.collection('clubs')
+                .doc(clubId)
+                .collection('editions')
+                .doc(editionId)
+                .collection('picks')
+                .where('fixtureId', '==', fixtureId)
+                .get();
+            
+            console.log('🔍 GameLogicManager: Found picks for fixture:', picksSnapshot.size);
+            
+            const batch = this.db.batch();
+            let updatedCount = 0;
+            
+            picksSnapshot.forEach(pickDoc => {
+                const pickData = pickDoc.data();
+                console.log('🔍 GameLogicManager: Processing pick:', pickData);
+                
+                // Determine the result for this pick
+                let pickResult;
+                if (pickData.teamPicked === fixtureData.homeTeam) {
+                    pickResult = homeTeamResult;
+                } else if (pickData.teamPicked === fixtureData.awayTeam) {
+                    pickResult = awayTeamResult;
+                } else {
+                    console.log('⚠️ GameLogicManager: Pick team does not match fixture teams:', {
+                        pickTeam: pickData.teamPicked,
+                        homeTeam: fixtureData.homeTeam,
+                        awayTeam: fixtureData.awayTeam
+                    });
+                    return;
+                }
+                
+                // Update the pick result
+                const pickRef = this.db.collection('clubs')
+                    .doc(clubId)
+                    .collection('editions')
+                    .doc(editionId)
+                    .collection('picks')
+                    .doc(pickDoc.id);
+                
+                batch.update(pickRef, {
+                    result: pickResult,
+                    updated_at: new Date()
+                });
+                
+                updatedCount++;
+                console.log(`🔍 GameLogicManager: Updated pick ${pickDoc.id} with result: ${pickResult}`);
+            });
+            
+            // Commit all updates
+            if (updatedCount > 0) {
+                await batch.commit();
+                console.log(`✅ GameLogicManager: Successfully updated ${updatedCount} picks with results`);
+                
+                // Refresh standings to reflect the new results
+                await this.loadStandings();
+            } else {
+                console.log('⚠️ GameLogicManager: No picks were updated');
+            }
+            
+        } catch (error) {
+            console.error('❌ GameLogicManager: Error processing fixture results:', error);
+        }
+    }
+
+    // Process all finished fixtures for a gameweek
+    async processGameweekResults(clubId, editionId, gameweek) {
+        try {
+            console.log('🔍 GameLogicManager: Processing results for gameweek:', gameweek);
+            
+            // Get all fixtures for this gameweek
+            const fixturesSnapshot = await this.db.collection('clubs')
+                .doc(clubId)
+                .collection('editions')
+                .doc(editionId)
+                .collection('fixtures')
+                .where('gameWeek', '==', gameweek)
+                .get();
+            
+            console.log('🔍 GameLogicManager: Found fixtures for gameweek:', fixturesSnapshot.size);
+            
+            // Process each finished fixture
+            for (const fixtureDoc of fixturesSnapshot.docs) {
+                const fixtureData = fixtureDoc.data();
+                if (fixtureData.status === 'finished' && fixtureData.homeScore !== null && fixtureData.awayScore !== null) {
+                    console.log('🔍 GameLogicManager: Processing finished fixture:', fixtureDoc.id);
+                    await this.processFixtureResults(clubId, editionId, fixtureDoc.id);
+                }
+            }
+            
+            console.log('✅ GameLogicManager: Finished processing gameweek results');
+            
+        } catch (error) {
+            console.error('❌ GameLogicManager: Error processing gameweek results:', error);
+        }
+    }
 }
 
 // Initialize GameLogicManager when DOM is loaded
@@ -415,6 +556,119 @@ document.addEventListener('DOMContentLoaded', () => {
                 
             } catch (error) {
                 console.error('❌ Error checking users:', error);
+            }
+        } else {
+            console.error('❌ GameLogicManager or database not available');
+        }
+    };
+
+    // Add helper functions for processing results
+    window.processAllGameweekResults = async (gameweek) => {
+        console.log('🔧 Processing all results for gameweek:', gameweek);
+        if (window.gameLogicManager) {
+            const currentClub = window.clubService?.getCurrentClub();
+            const currentEdition = window.clubService?.getCurrentEdition();
+            
+            if (currentClub && currentEdition) {
+                await window.gameLogicManager.processGameweekResults(currentClub, currentEdition, gameweek);
+            } else {
+                console.error('❌ No club or edition available');
+            }
+        } else {
+            console.error('❌ GameLogicManager not available');
+        }
+    };
+
+    window.processSpecificFixtureResults = async (fixtureId) => {
+        console.log('🔧 Processing results for specific fixture:', fixtureId);
+        if (window.gameLogicManager) {
+            const currentClub = window.clubService?.getCurrentClub();
+            const currentEdition = window.clubService?.getCurrentEdition();
+            
+            if (currentClub && currentEdition) {
+                await window.gameLogicManager.processFixtureResults(currentClub, currentEdition, fixtureId);
+            } else {
+                console.error('❌ No club or edition available');
+            }
+        } else {
+            console.error('❌ GameLogicManager not available');
+        }
+    };
+
+    window.debugUserPicks = async (userId) => {
+        console.log('🔍 Debugging picks for user:', userId);
+        if (window.gameLogicManager && window.gameLogicManager.db) {
+            try {
+                const currentClub = window.clubService?.getCurrentClub();
+                const currentEdition = window.clubService?.getCurrentEdition();
+                
+                if (currentClub && currentEdition) {
+                    const picksSnapshot = await window.gameLogicManager.db.collection('clubs')
+                        .doc(currentClub)
+                        .collection('editions')
+                        .doc(currentEdition)
+                        .collection('picks')
+                        .where('userId', '==', userId)
+                        .get();
+                    
+                    console.log('🔍 User picks:', picksSnapshot.size);
+                    picksSnapshot.forEach(pickDoc => {
+                        const pickData = pickDoc.data();
+                        console.log('🔍 Pick:', pickData);
+                    });
+                } else {
+                    console.error('❌ No club or edition available');
+                }
+            } catch (error) {
+                console.error('❌ Error debugging user picks:', error);
+            }
+        } else {
+            console.error('❌ GameLogicManager or database not available');
+        }
+    };
+
+    window.processSpecificFixtureResults = async (fixtureId) => {
+        console.log('🔧 Processing results for specific fixture:', fixtureId);
+        if (window.gameLogicManager) {
+            const currentClub = window.clubService?.getCurrentClub();
+            const currentEdition = window.clubService?.getCurrentEdition();
+            
+            if (currentClub && currentEdition) {
+                await window.gameLogicManager.processFixtureResults(currentClub, currentEdition, fixtureId);
+            } else {
+                console.error('❌ No club or edition available');
+            }
+        } else {
+            console.error('❌ GameLogicManager not available');
+        }
+    };
+
+    window.debugUserPicks = async (userId) => {
+        console.log('🔍 Debugging picks for user:', userId);
+        if (window.gameLogicManager && window.gameLogicManager.db) {
+            try {
+                const currentClub = window.clubService?.getCurrentClub();
+                const currentEdition = window.clubService?.getCurrentEdition();
+                
+                if (currentClub && currentEdition) {
+                    const picksSnapshot = await window.gameLogicManager.db.collection('clubs')
+                        .doc(currentClub)
+                        .collection('editions')
+                        .doc(currentEdition)
+                        .collection('picks')
+                        .where('userId', '==', userId)
+                        .get();
+                    
+                    console.log('🔍 User picks:', picksSnapshot.size);
+                    picksSnapshot.forEach(pickDoc => {
+                        const pickData = pickDoc.data();
+                        console.log('🔍 Pick:', pickData);
+                    });
+                } else {
+                    console.error('❌ No club or edition available');
+                }
+            } catch (error) {
+                console.error('❌ Error debugging user picks:', error);
             }
         } else {
             console.error('❌ GameLogicManager or database not available');
