@@ -1133,14 +1133,8 @@ class ScoresManager {
 
             // Process vidiprinter events to update scores
             for (const event of this.vidiprinterData) {
-                if (event.match && event.type === 'Full-time') {
-                    // Update final scores
-                    const updatedFixture = this.updateFixtureFromVidiprinterEvent(fixtures, event);
-                    if (updatedFixture) {
-                        hasUpdates = true;
-                    }
-                } else if (event.match && event.type === 'Goals') {
-                    // Update live scores
+                if (event.match && (event.type === 'Full-time' || event.type === 'Goals' || event.type === 'Kick-off' || event.type === 'Half-time')) {
+                    // Update scores and status for all relevant event types
                     const updatedFixture = this.updateFixtureFromVidiprinterEvent(fixtures, event);
                     if (updatedFixture) {
                         hasUpdates = true;
