@@ -896,6 +896,11 @@ To set up sample clubs, run:
                 this.setCurrentGameweek(currentGameweek);
             }
             
+            // Force reload fixtures for the new club/edition (with small delay to ensure change is processed)
+            setTimeout(() => {
+                this.reloadFixturesForCurrentClub();
+            }, 500);
+            
         } catch (error) {
             console.error('ClubService: Error navigating to current gameweek:', error);
         }
@@ -1057,6 +1062,45 @@ To set up sample clubs, run:
         } catch (error) {
             console.error('ClubService: Error calculating current gameweek:', error);
             return 1;
+        }
+    }
+
+    // Force reload fixtures for the current club/edition
+    reloadFixturesForCurrentClub() {
+        try {
+            console.log('🔄 ClubService: Force reloading fixtures for current club/edition...');
+            
+            if (!this.currentClub || !this.currentEdition) {
+                console.log('⚠️ ClubService: No club or edition set for fixture reload');
+                return;
+            }
+            
+            console.log(`🔄 ClubService: Reloading fixtures for ${this.currentClub}/${this.currentEdition}`);
+            
+            // Try to reload fixtures through FixturesManager
+            if (window.losApp?.managers?.fixtures) {
+                console.log('🔄 ClubService: Using losApp.managers.fixtures.loadFixtures()');
+                window.losApp.managers.fixtures.loadFixtures();
+            } else if (window.fixturesManager) {
+                console.log('🔄 ClubService: Using window.fixturesManager.loadFixtures()');
+                window.fixturesManager.loadFixtures();
+            } else {
+                console.log('⚠️ ClubService: No FixturesManager available for reload');
+            }
+            
+            // Also try to reload scores
+            if (window.losApp?.managers?.scores) {
+                console.log('🔄 ClubService: Using losApp.managers.scores.loadScores()');
+                window.losApp.managers.scores.loadScores();
+            } else if (window.scoresManager) {
+                console.log('🔄 ClubService: Using window.scoresManager.loadScores()');
+                window.scoresManager.loadScores();
+            }
+            
+            console.log('✅ ClubService: Fixture reload triggered');
+            
+        } catch (error) {
+            console.error('ClubService: Error reloading fixtures:', error);
         }
     }
 }
