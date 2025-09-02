@@ -757,6 +757,67 @@
         };
         
         console.log('🔍 Additional function added: investigatePicksCollection()');
+        
+        // 🧹 Clean up invalid picks with NULL teamPicked
+        window.cleanupInvalidPicks = async function() {
+            console.log('🧹 Cleaning up invalid picks with NULL teamPicked...');
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase database not available');
+                return;
+            }
+            
+            try {
+                const currentClubId = window.losApp?.managers?.club?.getCurrentClub() || 'altrincham-fc-juniors';
+                const currentEdition = window.losApp?.managers?.club?.getCurrentEdition() || '2025-26-national-league-1';
+                
+                console.log(`🔍 Looking for invalid picks in Club: ${currentClubId}, Edition: ${currentEdition}`);
+                
+                // Find all picks with NULL teamPicked
+                const nullTeamPicksSnapshot = await window.firebaseDB.collection('clubs').doc(currentClubId)
+                    .collection('editions').doc(currentEdition)
+                    .collection('picks')
+                    .where('teamPicked', '==', null)
+                    .get();
+                
+                if (nullTeamPicksSnapshot.empty) {
+                    console.log('✅ No invalid picks found to clean up');
+                    return;
+                }
+                
+                console.log(`⚠️ Found ${nullTeamPicksSnapshot.size} invalid picks to clean up:`);
+                
+                // Delete all invalid picks
+                const batch = window.firebaseDB.batch();
+                nullTeamPicksSnapshot.forEach(doc => {
+                    const pickData = doc.data();
+                    console.log(`  🗑️ Deleting pick ID: ${doc.id}`);
+                    console.log(`    User ID: ${pickData.userId}, Gameweek: ${pickData.gameweek}`);
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                console.log(`✅ Successfully deleted ${nullTeamPicksSnapshot.size} invalid picks`);
+                
+                // Verify cleanup
+                const verifySnapshot = await window.firebaseDB.collection('clubs').doc(currentClubId)
+                    .collection('editions').doc(currentEdition)
+                    .collection('picks')
+                    .where('teamPicked', '==', null)
+                    .get();
+                
+                if (verifySnapshot.empty) {
+                    console.log('✅ Verification: All invalid picks have been removed');
+                } else {
+                    console.log(`⚠️ Verification: Still found ${verifySnapshot.size} invalid picks`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error cleaning up invalid picks:', error);
+            }
+        };
+        
+        console.log('🧹 Additional function added: cleanupInvalidPicks()');
     </script>
     
     <!-- Development helper script -->
