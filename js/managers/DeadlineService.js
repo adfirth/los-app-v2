@@ -140,7 +140,7 @@ class DeadlineService {
                 }
             });
             
-            console.log(`🔧 DeadlineService: Checking deadlines for ${Object.keys(fixturesByGameweek).length} gameweeks`);
+            // Checking deadlines for gameweeks
             
             // Check each gameweek for deadlines
             for (const [gameweek, fixtures] of Object.entries(fixturesByGameweek)) {
@@ -192,11 +192,7 @@ class DeadlineService {
                 
                 const now = new Date();
                 
-                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Earliest fixture: ${earliestFixture.homeTeam} vs ${earliestFixture.awayTeam}`);
-                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Date: ${earliestFixture.date}, Time: ${earliestFixture.kickOffTime}`);
-                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Deadline time: ${deadlineTime.toISOString()}`);
-                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Current time: ${now.toISOString()}`);
-                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Time until deadline (ms): ${deadlineTime.getTime() - now.getTime()}`);
+                        // Processing deadline for gameweek
                 
                 // Check if deadline has passed
                 if (now >= deadlineTime) {

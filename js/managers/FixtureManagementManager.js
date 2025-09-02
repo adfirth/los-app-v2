@@ -17,18 +17,18 @@ class FixtureManagementManager {
     initBasic() {
         if (this.isInitialized) return;
         
-        console.log('⚽ FixtureManagementManager: Basic initialization...');
+        // Basic initialization...
         this.setupBasicStructure();
         console.log('✅ FixtureManagementManager: Basic initialization complete');
     }
 
     setupBasicStructure() {
-        console.log('🔧 Setting up FixtureManagementManager basic structure...');
+        // Setting up basic structure...
         
         // Set up API key from environment or config
         this.setupAPIKey();
         
-        console.log('✅ FixtureManagementManager basic structure setup complete');
+        // Basic structure setup complete
     }
 
     setupAPIKey() {

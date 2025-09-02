@@ -247,7 +247,7 @@ class TeamBadgeDownloader {
 
     async createLocalBadgeService() {
         try {
-            console.log('🔧 Creating local badge service...');
+            // Creating local badge service...
             
             // Get all badges from Firebase
             const badgesSnapshot = await this.db.collection('team-badges').get();
@@ -375,7 +375,7 @@ setTimeout(autoInitializeBadgeService, 2000);
 window.DEBUG_MODE = false;
 window.toggleDebugMode = () => {
     window.DEBUG_MODE = !window.DEBUG_MODE;
-    console.log(`🔧 Debug mode ${window.DEBUG_MODE ? 'enabled' : 'disabled'}`);
+            // Debug mode status
     return window.DEBUG_MODE;
 };
 
