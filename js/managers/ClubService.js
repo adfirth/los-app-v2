@@ -116,36 +116,50 @@ class ClubService {
     }
 
     setupClubSelectorListeners() {
+        // Set up event listeners for club selectors with retry mechanism
+        this.setupClubSelectorListenersWithRetry();
+    }
+
+    setupClubSelectorListenersWithRetry() {
         // Set up event listeners for club selectors
         const clubSelect = document.getElementById('clubSelect');
         const headerClubSelect = document.getElementById('headerClubSelect');
         const editionSelect = document.getElementById('editionSelect');
         const headerEditionSelect = document.getElementById('headerEditionSelect');
         
-        if (clubSelect) {
-            clubSelect.addEventListener('change', (e) => {
-                this.onClubChange(e.target.value);
-            });
-        }
-        
-        if (headerClubSelect) {
-            headerClubSelect.addEventListener('change', (e) => {
-                this.onClubChange(e.target.value);
-            });
-        }
+        // Check if all required elements are present
+        if (clubSelect && headerClubSelect && editionSelect && headerEditionSelect) {
+            if (clubSelect) {
+                clubSelect.addEventListener('change', (e) => {
+                    this.onClubChange(e.target.value);
+                });
+            }
+            
+            if (headerClubSelect) {
+                headerClubSelect.addEventListener('change', (e) => {
+                    this.onClubChange(e.target.value);
+                });
+            }
 
-        // Add event listener for registration form edition selector
-        if (editionSelect) {
-            editionSelect.addEventListener('change', (e) => {
-                this.onEditionChange(e.target.value);
-            });
-        }
+            // Add event listener for registration form edition selector
+            if (editionSelect) {
+                editionSelect.addEventListener('change', (e) => {
+                    this.onEditionChange(e.target.value);
+                });
+            }
 
-        // Add event listener for header edition selector
-        if (headerEditionSelect) {
-            headerEditionSelect.addEventListener('change', (e) => {
-                this.onEditionChange(e.target.value);
-            });
+            // Add event listener for header edition selector
+            if (headerEditionSelect) {
+                headerEditionSelect.addEventListener('change', (e) => {
+                    this.onEditionChange(e.target.value);
+                });
+            }
+            
+            console.log('✅ ClubService: All club selector listeners set up successfully');
+        } else {
+            // Retry after a short delay if elements not found
+            console.log('⏳ ClubService: Some club selectors not found, retrying in 100ms...');
+            setTimeout(() => this.setupClubSelectorListenersWithRetry(), 100);
         }
     }
 

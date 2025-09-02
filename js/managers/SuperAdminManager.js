@@ -47,19 +47,25 @@ class SuperAdminManager {
             toggle.style.display = 'none'; // Hidden by default
             toggle.addEventListener('click', () => this.toggleSuperAdminDashboard());
             
-            // Insert into the admin buttons container
-            const adminButtonsContainer = document.getElementById('adminButtonsContainer');
-            console.log('🔍 SuperAdminManager: Admin buttons container found:', !!adminButtonsContainer);
-            
-            if (adminButtonsContainer) {
-                // Insert the super admin toggle button
-                adminButtonsContainer.appendChild(toggle);
-                console.log('✅ SuperAdminManager: Toggle button inserted into admin buttons container');
-            } else {
-                console.error('❌ SuperAdminManager: Admin buttons container not found');
-            }
+            // Try to insert into the admin buttons container with retry mechanism
+            this.insertSuperAdminToggle(toggle);
         } else {
             console.log('ℹ️ SuperAdminManager: Toggle button already exists or header not found');
+        }
+    }
+
+    insertSuperAdminToggle(toggle) {
+        const adminButtonsContainer = document.getElementById('adminButtonsContainer');
+        console.log('🔍 SuperAdminManager: Admin buttons container found:', !!adminButtonsContainer);
+        
+        if (adminButtonsContainer) {
+            // Insert the super admin toggle button
+            adminButtonsContainer.appendChild(toggle);
+            console.log('✅ SuperAdminManager: Toggle button inserted into admin buttons container');
+        } else {
+            // Retry after a short delay if container not found
+            console.log('⏳ SuperAdminManager: Admin buttons container not found, retrying in 100ms...');
+            setTimeout(() => this.insertSuperAdminToggle(toggle), 100);
         }
     }
 

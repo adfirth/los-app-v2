@@ -179,9 +179,15 @@ class AdminManager {
 
     showAdminButton() {
         // Add admin button to header if not already present
+        if (!document.getElementById('adminBtn')) {
+            this.insertAdminButton();
+        }
+    }
+
+    insertAdminButton() {
         const adminButtonsContainer = document.getElementById('adminButtonsContainer');
         
-        if (adminButtonsContainer && !document.getElementById('adminBtn')) {
+        if (adminButtonsContainer) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'adminBtn';
             adminBtn.className = 'btn btn-primary'; // Changed to primary for better visibility
@@ -213,6 +219,10 @@ class AdminManager {
             });
             
             adminButtonsContainer.appendChild(adminBtn);
+        } else {
+            // Retry after a short delay if container not found
+            console.log('⏳ AdminManager: Admin buttons container not found, retrying in 100ms...');
+            setTimeout(() => this.insertAdminButton(), 100);
         }
     }
 
