@@ -2125,11 +2125,35 @@ class SuperAdminManager {
             
             console.log(`🚀 Starting fixture import for ${competitionName} (ID: ${competitionId})`);
             
-            // Show loading state
+            // Show loading state with progress
             const importButton = document.querySelector('.fixture-import-section button[onclick="window.losApp.managers.superAdmin.importFixturesFromAPI()"]'); // Changed selector
             const originalText = importButton.textContent;
             importButton.textContent = '⏳ Importing...';
             importButton.disabled = true;
+            
+            // Add progress indicator
+            const progressDiv = document.createElement('div');
+            progressDiv.id = 'importProgress';
+            progressDiv.className = 'alert alert-info mt-2';
+            progressDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>Importing fixtures from API... This may take several minutes due to rate limiting.</span>
+                </div>
+                <div class="progress mt-2" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%" 
+                         id="importProgressBar">0%</div>
+                </div>
+            `;
+            
+            // Insert progress after the button
+            importButton.parentNode.insertBefore(progressDiv, importButton.nextSibling);
+            
+            // Update progress to 25%
+            this.updateImportProgress(25, 'Connecting to API...');
             
             try {
                 // Get fixtures from API first
@@ -2198,12 +2222,38 @@ class SuperAdminManager {
                 console.log(`📊 Found ${fixturesArray.length} fixtures from API`);
                 console.log('🔍 First fixture example:', fixturesArray[0]);
                 
+                // Update progress to 75%
+                this.updateImportProgress(75, 'Processing fixtures...');
+                
+                // Update progress to 100%
+                this.updateImportProgress(100, `Found ${fixturesArray.length} fixtures!`);
+                
                 // Show fixture selection modal instead of importing all
                 this.showFixtureSelectionModal(fixturesArray, competitionId, clubId, editionId, competitionName);
                 
+                // Remove progress indicator after a delay
+                setTimeout(() => {
+                    const progressDiv = document.getElementById('importProgress');
+                    if (progressDiv && progressDiv.parentNode) {
+                        progressDiv.parentNode.removeChild(progressDiv);
+                    }
+                }, 2000);
+                
             } catch (error) {
                 console.error('❌ Error importing fixtures:', error);
-                alert(`❌ Error importing fixtures: ${error.message}`);
+                
+                // Update progress to show error
+                this.updateImportProgress(0, `Error: ${error.message}`);
+                
+                // Show error message
+                setTimeout(() => {
+                    alert(`❌ Error importing fixtures: ${error.message}`);
+                    // Remove progress indicator
+                    const progressDiv = document.getElementById('importProgress');
+                    if (progressDiv && progressDiv.parentNode) {
+                        progressDiv.parentNode.removeChild(progressDiv);
+                    }
+                }, 1000);
             } finally {
                 // Restore button state
                 importButton.textContent = originalText;
@@ -2213,6 +2263,32 @@ class SuperAdminManager {
         } catch (error) {
             console.error('❌ Error in importFixturesFromAPI:', error);
             alert(`❌ Unexpected error: ${error.message}`);
+        }
+    }
+
+    // Update import progress
+    updateImportProgress(percentage, message) {
+        const progressBar = document.getElementById('importProgressBar');
+        const progressDiv = document.getElementById('importProgress');
+        
+        if (progressBar && progressDiv) {
+            progressBar.style.width = `${percentage}%`;
+            progressBar.textContent = `${percentage}%`;
+            
+            // Update message
+            const messageSpan = progressDiv.querySelector('span');
+            if (messageSpan) {
+                messageSpan.textContent = message;
+            }
+            
+            // Change color based on percentage
+            if (percentage === 100) {
+                progressBar.className = 'progress-bar progress-bar-striped bg-success';
+                progressDiv.className = 'alert alert-success mt-2';
+            } else if (percentage === 0) {
+                progressBar.className = 'progress-bar progress-bar-striped bg-danger';
+                progressDiv.className = 'alert alert-danger mt-2';
+            }
         }
     }
 

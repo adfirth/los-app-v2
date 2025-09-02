@@ -52,7 +52,7 @@ class FixtureManagementManager {
             // Add delay to avoid rate limiting
             if (this.lastRequestTime) {
                 const timeSinceLastRequest = Date.now() - this.lastRequestTime;
-                const minDelay = 2000; // 2 second minimum delay to avoid rate limiting
+                const minDelay = 5000; // 5 second minimum delay for Football Web Pages API
                 if (timeSinceLastRequest < minDelay) {
                     const delay = minDelay - timeSinceLastRequest;
                     console.log(`⏳ Waiting ${delay}ms to avoid rate limiting...`);
@@ -73,9 +73,13 @@ class FixtureManagementManager {
 
             if (!response.ok) {
                 if (response.status === 429) {
-                    console.log('⚠️ Rate limited, waiting 10 seconds before retry...');
-                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    const waitTime = 15000; // 15 seconds for rate limiting
+                    console.log(`⚠️ Rate limited, waiting ${waitTime/1000} seconds before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
                     throw new Error(`API request failed: ${response.status} ${response.statusText} - Rate limited`);
+                } else if (response.status === 403) {
+                    console.log('⚠️ 403 Forbidden - endpoint may be blocked, trying next endpoint...');
+                    throw new Error(`API request failed: ${response.status} ${response.statusText} - Endpoint blocked`);
                 }
                 throw new Error(`API request failed: ${response.status} ${response.statusText}`);
             }
@@ -185,20 +189,33 @@ class FixtureManagementManager {
             const endpoint = endpoints[i];
             console.log(`🔍 Trying endpoint ${i + 1}/${endpoints.length}: ${endpoint.path} with params:`, endpoint.params);
             
-            try {
-                const url = new URL(`https://football-web-pages1.p.rapidapi.com/${endpoint.path}`);
-                
-                // Add parameters
-                Object.entries(endpoint.params).forEach(([key, value]) => {
-                    url.searchParams.set(key, value);
-                });
-                
-                const data = await this.makeAPIRequest(url);
-                console.log(`✅ Endpoint ${endpoint.path} successful:`, data);
-                console.log(`🔍 Full API response structure:`, JSON.stringify(data, null, 2));
-                return this.transformFixturesData(data, competitionId, season);
-            } catch (error) {
-                console.log(`❌ Endpoint ${endpoint.path} failed:`, error.message);
+            // Add exponential backoff retry for each endpoint
+            let retryCount = 0;
+            const maxRetries = 2;
+            
+            while (retryCount <= maxRetries) {
+                try {
+                    const url = new URL(`https://football-web-pages1.p.rapidapi.com/${endpoint.path}`);
+                    
+                    // Add parameters
+                    Object.entries(endpoint.params).forEach(([key, value]) => {
+                        url.searchParams.set(key, value);
+                    });
+                    
+                    const data = await this.makeAPIRequest(url);
+                    console.log(`✅ Endpoint ${endpoint.path} successful:`, data);
+                    console.log(`🔍 Full API response structure:`, JSON.stringify(data, null, 2));
+                    return this.transformFixturesData(data, competitionId, season);
+                } catch (error) {
+                    retryCount++;
+                    console.log(`❌ Endpoint ${endpoint.path} failed (attempt ${retryCount}/${maxRetries + 1}):`, error.message);
+                    
+                    if (retryCount <= maxRetries) {
+                        const backoffDelay = Math.pow(2, retryCount) * 5000; // 10s, 20s, 40s
+                        console.log(`⏳ Retrying in ${backoffDelay/1000} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                    }
+                }
             }
         }
         
