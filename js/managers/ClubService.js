@@ -120,7 +120,7 @@ class ClubService {
         this.setupClubSelectorListenersWithRetry();
     }
 
-    setupClubSelectorListenersWithRetry() {
+    setupClubSelectorListenersWithRetry(retryCount = 0) {
         // Set up event listeners for club selectors
         const clubSelect = document.getElementById('clubSelect');
         const headerClubSelect = document.getElementById('headerClubSelect');
@@ -156,10 +156,12 @@ class ClubService {
             }
             
             console.log('✅ ClubService: All club selector listeners set up successfully');
-        } else {
+        } else if (retryCount < 50) { // Max 50 retries (5 seconds)
             // Retry after a short delay if elements not found
-            console.log('⏳ ClubService: Some club selectors not found, retrying in 100ms...');
-            setTimeout(() => this.setupClubSelectorListenersWithRetry(), 100);
+            console.log('⏳ ClubService: Some club selectors not found, retrying in 100ms... (Attempt ' + (retryCount + 1) + '/50)');
+            setTimeout(() => this.setupClubSelectorListenersWithRetry(retryCount + 1), 100);
+        } else {
+            console.error('❌ ClubService: Failed to find all club selectors after 50 attempts');
         }
     }
 

@@ -184,7 +184,7 @@ class AdminManager {
         }
     }
 
-    insertAdminButton() {
+    insertAdminButton(retryCount = 0) {
         const adminButtonsContainer = document.getElementById('adminButtonsContainer');
         
         if (adminButtonsContainer) {
@@ -219,10 +219,13 @@ class AdminManager {
             });
             
             adminButtonsContainer.appendChild(adminBtn);
-        } else {
+            console.log('✅ AdminManager: Admin button inserted successfully');
+        } else if (retryCount < 50) { // Max 50 retries (5 seconds)
             // Retry after a short delay if container not found
-            console.log('⏳ AdminManager: Admin buttons container not found, retrying in 100ms...');
-            setTimeout(() => this.insertAdminButton(), 100);
+            console.log('⏳ AdminManager: Admin buttons container not found, retrying in 100ms... (Attempt ' + (retryCount + 1) + '/50)');
+            setTimeout(() => this.insertAdminButton(retryCount + 1), 100);
+        } else {
+            console.error('❌ AdminManager: Failed to find admin buttons container after 50 attempts');
         }
     }
 

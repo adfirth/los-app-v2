@@ -54,18 +54,30 @@ class SuperAdminManager {
         }
     }
 
-    insertSuperAdminToggle(toggle) {
+    insertSuperAdminToggle(toggle, retryCount = 0) {
         const adminButtonsContainer = document.getElementById('adminButtonsContainer');
-        console.log('🔍 SuperAdminManager: Admin buttons container found:', !!adminButtonsContainer);
+        console.log('🔍 SuperAdminManager: Admin buttons container found:', !!adminButtonsContainer, 'Retry:', retryCount);
         
         if (adminButtonsContainer) {
             // Insert the super admin toggle button
             adminButtonsContainer.appendChild(toggle);
             console.log('✅ SuperAdminManager: Toggle button inserted into admin buttons container');
-        } else {
+        } else if (retryCount < 50) { // Max 50 retries (5 seconds)
+            // Debug DOM state
+            if (retryCount === 0) {
+                console.log('🔍 SuperAdminManager: Debugging DOM state...');
+                console.log('🔍 SuperAdminManager: document.readyState:', document.readyState);
+                console.log('🔍 SuperAdminManager: document.body exists:', !!document.body);
+                console.log('🔍 SuperAdminManager: .app-header exists:', !!document.querySelector('.app-header'));
+                console.log('🔍 SuperAdminManager: .header-controls exists:', !!document.querySelector('.header-controls'));
+                console.log('🔍 SuperAdminManager: All elements with "admin" in ID:', Array.from(document.querySelectorAll('[id*="admin"]')).map(el => el.id));
+            }
+            
             // Retry after a short delay if container not found
-            console.log('⏳ SuperAdminManager: Admin buttons container not found, retrying in 100ms...');
-            setTimeout(() => this.insertSuperAdminToggle(toggle), 100);
+            console.log('⏳ SuperAdminManager: Admin buttons container not found, retrying in 100ms... (Attempt ' + (retryCount + 1) + '/50)');
+            setTimeout(() => this.insertSuperAdminToggle(toggle, retryCount + 1), 100);
+        } else {
+            console.error('❌ SuperAdminManager: Failed to find admin buttons container after 50 attempts');
         }
     }
 
