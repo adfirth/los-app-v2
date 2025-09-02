@@ -479,6 +479,10 @@ class EditionService {
 
     switchTab(targetTab) {
         console.log(`🔄 EditionService: Switching to tab: ${targetTab}`);
+        console.log(`🔍 EditionService: Current tab state before switch:`, {
+            activeTabs: Array.from(document.querySelectorAll('.nav-tab.active')).map(tab => tab.getAttribute('data-tab')),
+            activeContent: Array.from(document.querySelectorAll('.tab-content.active')).map(content => content.id)
+        });
         
         // Remove active class from all tabs and content
         document.querySelectorAll('.nav-tab').forEach(tab => {

@@ -620,8 +620,9 @@ class ClubService {
         if (clubId && editionId) {
             this.loadClubEditions(clubId);
             
-            // Automatically navigate to current gameweek fixtures tab
-            this.navigateToCurrentGameweek();
+                // Automatically navigate to current gameweek fixtures tab
+    console.log('🎯 ClubService: About to navigate to current gameweek after club/edition change...');
+    this.navigateToCurrentGameweek();
         }
     }
 
@@ -982,28 +983,40 @@ To set up sample clubs, run:
     switchToFixturesTab() {
         console.log('🎯 ClubService: Switching to fixtures tab...');
         
-        // Remove active class from all tabs
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        // Remove active class from all tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        
-        // Activate fixtures tab
-        const fixturesTab = document.querySelector('[data-tab="fixtures"]');
-        if (fixturesTab) {
-            fixturesTab.classList.add('active');
-            console.log('✅ Fixtures tab activated');
-        }
-        
-        // Activate fixtures content
-        const fixturesContent = document.getElementById('fixturesTab');
-        if (fixturesContent) {
-            fixturesContent.classList.add('active');
-            console.log('✅ Fixtures content activated');
+        // Use EditionService's tab switching system if available
+        if (window.losApp?.managers?.edition && typeof window.losApp.managers.edition.switchTab === 'function') {
+            console.log('✅ Using EditionService tab switching system');
+            window.losApp.managers.edition.switchTab('fixtures');
+        } else if (window.editionService && typeof window.editionService.switchTab === 'function') {
+            console.log('✅ Using EditionService tab switching system (legacy)');
+            window.editionService.switchTab('fixtures');
+        } else {
+            console.log('⚠️ EditionService not available, using manual tab switching');
+            
+            // Fallback to manual tab switching
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Activate fixtures tab
+            const fixturesTab = document.querySelector('[data-tab="fixtures"]');
+            if (fixturesTab) {
+                fixturesTab.classList.add('active');
+                console.log('✅ Fixtures tab activated');
+            }
+            
+            // Activate fixtures content
+            const fixturesContent = document.getElementById('fixturesTab');
+            if (fixturesContent) {
+                fixturesContent.classList.add('active');
+                console.log('✅ Fixtures content activated');
+            }
         }
     }
 
