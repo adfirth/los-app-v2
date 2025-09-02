@@ -1294,6 +1294,34 @@ To set up sample clubs, run:
             console.error('ClubService: Error reloading fixtures:', error);
         }
     }
+
+    // Helper method to format user lives display
+    formatLivesDisplay(lives) {
+        if (lives >= 2) {
+            // Show 2 hearts for 2+ lives
+            return `<i class="fas fa-heart heart"></i><i class="fas fa-heart heart"></i>`;
+        } else if (lives === 1) {
+            // Show yellow card for 1 life
+            return `<div class="yellow-card">Y</div>`;
+        } else {
+            // Show red card for 0 lives
+            return `<div class="red-card">R</div>`;
+        }
+    }
+
+    // Helper method to format lives display for standings
+    formatStandingsLives(lives) {
+        if (lives >= 2) {
+            // Show 2 hearts for 2+ lives
+            return `<div class="standings-lives"><i class="fas fa-heart heart"></i><i class="fas fa-heart heart"></i></div>`;
+        } else if (lives === 1) {
+            // Show yellow card for 1 life
+            return `<div class="standings-lives"><div class="yellow-card">Y</div></div>`;
+        } else {
+            // Show red card for 0 lives
+            return `<div class="standings-lives"><div class="red-card">R</div></div>`;
+        }
+    }
 }
 
 // Export for global use
