@@ -11,9 +11,9 @@ class GameLogicManager {
     initBasic() {
         if (this.isInitialized) return;
         
-        console.log('🎮 GameLogicManager: Basic initialization...');
+        // Basic initialization...
         // Basic initialization - just mark as ready for the app initialization flow
-        console.log('✅ GameLogicManager: Basic initialization complete');
+        // Basic initialization complete
     }
 
     async init() {
@@ -25,7 +25,7 @@ class GameLogicManager {
             this.setupRealtimeListeners();
             
             this.isInitialized = true;
-            console.log('✅ GameLogicManager: Initialization complete');
+            // Initialization complete
             
         } catch (error) {
             console.error('❌ GameLogicManager: Initialization failed:', error);
@@ -49,7 +49,7 @@ class GameLogicManager {
     setupRealtimeListeners() {
         // Set up real-time listener for users
         if (this.db && typeof this.db.collection === 'function') {
-            console.log('🔍 GameLogicManager: Setting up users real-time listener...');
+            // Setting up users real-time listener...
             // This will be called when standings are loaded
         }
     }

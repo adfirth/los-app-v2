@@ -24,19 +24,19 @@ class AuthManager {
     init() {
         if (this.isInitialized && this.dataLoaded) return;
         
-        console.log('🔐 AuthManager: init() called');
+        // init() called
         
         // Set up Firebase database reference
         this.db = window.firebaseDB;
-        console.log('🔐 AuthManager: Database reference set:', !!this.db);
+        // Database reference set
         
         // Listen for auth state changes
-        console.log('🔐 AuthManager: Setting up auth state listener...');
+        // Setting up auth state listener...
         this.auth.onAuthStateChanged((user) => {
             console.log('🔐 AuthManager: Auth state changed:', user ? `User: ${user.uid}` : 'No user');
             if (user) {
                 this.currentUser = user;
-                console.log('🔐 AuthManager: Loading user data for:', user.uid);
+                // Loading user data
                 this.loadUserData();
             } else {
                 this.currentUser = null;

@@ -48,7 +48,7 @@ class PickStatusService {
     }
 
     async loadUserPicks() {
-        console.log('🔍 PickStatusService: loadUserPicks() called');
+        // loadUserPicks() called
         try {
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
@@ -58,9 +58,9 @@ class PickStatusService {
             }
 
             const userId = window.authManager.getCurrentUserId();
-            console.log('🔍 PickStatusService: User ID:', userId);
+            // User ID retrieved
             if (!userId) {
-                console.log('🔍 PickStatusService: No user ID, returning early');
+                // No user ID, returning early
                 return;
             }
 
