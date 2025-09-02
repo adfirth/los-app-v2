@@ -632,9 +632,11 @@ body {
 }
 
 .nav-tab.active {
-    color: #007bff;
-    border-bottom-color: #007bff;
-    background: #f8f9fa;
+    color: #007bff !important;
+    border-bottom-color: #007bff !important;
+    background: #f8f9fa !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2) !important;
 }
 
 .nav-tab i {
@@ -644,11 +646,6 @@ body {
 
 .nav-tab:hover i {
     transform: scale(1.1);
-}
-
-.nav-tab.active {
-    color: #d32f2f;
-    border-bottom-color: #d32f2f;
 }
 
 .nav-tab i {
