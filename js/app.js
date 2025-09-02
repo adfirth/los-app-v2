@@ -927,14 +927,16 @@ class LOSApp {
     updateUserUI(userData) {
         // Update user information in the UI
         const userName = document.getElementById('userName');
-        const livesCount = document.getElementById('livesCount');
         const userLives = document.getElementById('userLives');
 
         if (userName) userName.textContent = userData.displayName || 'Player';
-        if (livesCount) livesCount.textContent = userData.lives || 0;
         
         if (userLives) {
-            if (userData.lives <= 0) {
+            // Use the new lives display system
+            const lives = userData.lives || 0;
+            userLives.innerHTML = window.ClubService.formatLivesDisplay(lives);
+            
+            if (lives <= 0) {
                 userLives.classList.add('eliminated');
             } else {
                 userLives.classList.remove('eliminated');

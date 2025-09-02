@@ -273,8 +273,7 @@ class GameLogicManager {
                     </div>
                     <div class="standings-cell pick-cell">${currentPick}</div>
                     <div class="standings-cell lives-cell">
-                        <span class="lives-count">${player.lives}</span>
-                        <span class="lives-icon">❤️</span>
+                        ${window.ClubService.formatStandingsLives(player.lives)}
                     </div>
                     <div class="standings-cell last-pick-cell">${lastPick}</div>
                 </div>
@@ -353,17 +352,15 @@ class GameLogicManager {
 
     // Update header with current user's lives
     updateHeaderUserLives(playerData) {
-        const livesCount = document.getElementById('livesCount');
         const userLives = document.getElementById('userLives');
         const userName = document.getElementById('userName');
         
-        if (livesCount) {
-            livesCount.textContent = playerData.lives;
-            console.log(`🔍 GameLogicManager: Updated header lives to: ${playerData.lives}`);
-        }
-        
         if (userLives) {
-            if (playerData.lives <= 0) {
+            const lives = playerData.lives || 0;
+            userLives.innerHTML = window.ClubService.formatLivesDisplay(lives);
+            console.log(`🔍 GameLogicManager: Updated header lives to: ${lives}`);
+            
+            if (lives <= 0) {
                 userLives.classList.add('eliminated');
             } else {
                 userLives.classList.remove('eliminated');

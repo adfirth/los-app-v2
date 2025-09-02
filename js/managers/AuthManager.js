@@ -404,9 +404,7 @@ updateUserDisplay() {
         userNameElement.textContent = this.currentUser.displayName || 'Player';
     }
     
-    if (livesCountElement && this.currentUser) {
-        livesCountElement.textContent = this.currentUser.lives || 2;
-    }
+    // Lives are now displayed using the new system in updateUserUI
 }
 
 
@@ -455,15 +453,16 @@ updateUserDisplay() {
 
     updateUserUI(userData) {
         const userName = document.getElementById('userName');
-        const livesCount = document.getElementById('livesCount');
         const userLives = document.getElementById('userLives');
 
         if (userName) userName.textContent = userData.displayName || 'Player';
-        if (livesCount) livesCount.textContent = userData.lives || 0;
         
-        // Update lives indicator styling
+        // Update lives indicator with new display system
         if (userLives) {
-            if (userData.lives <= 0) {
+            const lives = userData.lives || 0;
+            userLives.innerHTML = window.ClubService.formatLivesDisplay(lives);
+            
+            if (lives <= 0) {
                 userLives.classList.add('eliminated');
             } else {
                 userLives.classList.remove('eliminated');
