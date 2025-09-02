@@ -945,14 +945,14 @@ To set up sample clubs, run:
     // Navigate to current gameweek fixtures tab
     async navigateToCurrentGameweek() {
         try {
-            // Switch to fixtures tab first
-            this.switchToFixturesTab();
-            
-            // Calculate and set the current gameweek
+            // Calculate and set the current gameweek FIRST
             const currentGameweek = await this.calculateCurrentGameweek();
             if (currentGameweek) {
                 this.setCurrentGameweek(currentGameweek);
             }
+            
+            // Then switch to fixtures tab (after gameweek is set)
+            this.switchToFixturesTab();
             
             // Force reload fixtures for the new club/edition (with small delay to ensure change is processed)
             setTimeout(() => {
