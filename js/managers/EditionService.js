@@ -14,20 +14,20 @@ class EditionService {
     }
 
     initBasic() {
-        console.log('🚀 EditionService: initBasic() called');
+        // initBasic() called
         
         if (this.isInitialized) {
             console.log('⚠️ EditionService already initialized, skipping initBasic()');
             return;
         }
         
-        console.log('🔧 Setting up EditionService basic structure...');
+        // Setting up basic structure...
         
         // Only set up basic structure, don't load data yet
         this.setupTabNavigation();
         
         this.isInitialized = true;
-        console.log('✅ EditionService basic initialization complete');
+        // Basic initialization complete
     }
 
     init() {
@@ -368,7 +368,7 @@ class EditionService {
     }
 
     setupTabNavigation() {
-        console.log('🎯 EditionService: Setting up tab navigation...');
+        // Setting up tab navigation...
         
         const navTabs = document.querySelectorAll('.nav-tab');
         console.log('🔍 Found navigation tabs:', navTabs.length);
@@ -391,7 +391,7 @@ class EditionService {
     }
 
     setupGameweekNavigation() {
-        console.log('🎯 EditionService: Setting up gameweek navigation...');
+        // Setting up gameweek navigation...
         
         const prevButton = document.getElementById('prevGameweek');
         const nextButton = document.getElementById('nextGameweek');

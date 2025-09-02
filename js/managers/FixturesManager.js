@@ -421,7 +421,7 @@ class FixturesManager {
 
             const userId = window.authManager.getCurrentUserId();
             if (!userId) {
-                console.log('⚠️ FixturesManager: No user ID available for loading picks');
+                // No user ID available for loading picks
                 this.userPicks = {};
                 return;
             }

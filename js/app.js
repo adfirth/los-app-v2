@@ -185,7 +185,7 @@ class LOSApp {
         }
         
         this.listenerSetupInProgress = true;
-        console.log('Setting up real-time connections...');
+        // Setting up real-time connections...
         
         try {
             // Set up connection status monitoring
@@ -959,7 +959,7 @@ class LOSApp {
             return;
         }
         
-        console.log('Setting up periodic tasks after Firebase is ready...');
+        // Setting up periodic tasks after Firebase is ready...
         
         // Set up periodic tasks that need to run
         this.setupAutoRefresh();

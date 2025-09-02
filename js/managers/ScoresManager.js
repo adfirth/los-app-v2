@@ -107,7 +107,7 @@ class ScoresManager {
             this.apiConfig = this.loadAPIConfiguration();
             
             if (this.apiConfig && this.apiConfig.RAPIDAPI_KEY) {
-                console.log('✅ ScoresManager: API configuration loaded');
+                // API configuration loaded
             } else {
                 console.warn('⚠️ ScoresManager: No API configuration found');
             }
@@ -115,7 +115,7 @@ class ScoresManager {
             // Initialize Football Web Pages API if available
             if (window.FootballWebPagesAPI) {
                 this.footballWebPagesAPI = new window.FootballWebPagesAPI(this.db, window.editionService?.getCurrentEdition());
-                console.log('✅ ScoresManager: Football Web Pages API initialized');
+                // Football Web Pages API initialized
             } else {
                 console.warn('⚠️ ScoresManager: Football Web Pages API not available');
             }
@@ -166,7 +166,7 @@ class ScoresManager {
             if (window.TeamBadgeService) {
                 this.teamBadgeService = new window.TeamBadgeService();
                 this.teamBadgeService.initialize().then(() => {
-                    console.log('✅ ScoresManager: Team badge service initialized');
+                    // Team badge service initialized
                     // Preload badges for current fixtures if available
                     if (this.currentFixtures.length > 0) {
                         this.preloadTeamBadges();
@@ -282,7 +282,7 @@ class ScoresManager {
 
     async loadScores() {
         try {
-            console.log('🏆 ScoresManager: loadScores() called');
+            // loadScores() called
             
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
@@ -308,11 +308,7 @@ class ScoresManager {
             const currentGameweek = window.losApp?.managers?.edition?.getCurrentGameweek() || 1;
             const currentEdition = window.losApp?.managers?.edition?.getCurrentEdition() || '2025-26-national-league-1';
             
-            console.log('🏆 ScoresManager: Loading scores for:', {
-                club: currentClub,
-                edition: currentEdition,
-                gameweek: currentGameweek
-            });
+            // Loading scores for current club/edition/gameweek
             
             // Load scores for current gameweek from new club-based structure
             const fixturesSnapshot = await this.db.collection('clubs')
@@ -323,11 +319,7 @@ class ScoresManager {
                 .where('gameWeek', '==', currentGameweek)
                 .get();
             
-            console.log('🏆 ScoresManager: Database query result:', {
-                size: fixturesSnapshot.size,
-                empty: fixturesSnapshot.empty,
-                path: `clubs/${currentClub}/editions/${currentEdition}/fixtures`
-            });
+            // Database query completed
             
             const fixtures = [];
             fixturesSnapshot.forEach(doc => {
@@ -342,9 +334,7 @@ class ScoresManager {
             this.currentFixtures = fixtures; // Also set currentFixtures for display methods
             
             // Display scores
-            console.log('🏆 ScoresManager: About to display scores with', fixtures.length, 'fixtures');
             this.displayScores();
-            console.log('🏆 ScoresManager: Scores display completed');
             
         } catch (error) {
             console.error('Error loading scores:', error);
@@ -503,7 +493,7 @@ class ScoresManager {
             this.stopVidiprinterUpdates();
         }
 
-        console.log('🎯 ScoresManager: Starting vidiprinter updates...');
+        // Starting vidiprinter updates...
         
         // Initial load
         this.updateVidiprinter();
@@ -513,7 +503,7 @@ class ScoresManager {
             this.updateVidiprinter();
         }, this.vidiprinterUpdateFrequency);
         
-        console.log('✅ ScoresManager: Vidiprinter updates started');
+        // Vidiprinter updates started
     }
 
     stopVidiprinterUpdates() {

@@ -180,7 +180,7 @@ class EnvironmentLoader {
                 this.setupAPIConfig();
                 window.FIREBASE_READY = false;
             } else {
-                console.log(`⏳ EnvironmentLoader: Firebase SDK not ready, retrying... (${attempts}/${maxAttempts})`);
+                // Firebase SDK not ready, retrying...
                 setTimeout(checkFirebaseSDK, 100);
             }
         };
@@ -193,7 +193,7 @@ class EnvironmentLoader {
         try {
             if (!window.firebase.apps.length) {
                 window.firebase.initializeApp(window.firebaseConfig);
-                console.log('✅ EnvironmentLoader: Firebase initialized successfully');
+                // Firebase initialized successfully
                 
                 // Set up Firebase database reference
                 this.setupFirebaseDatabase();
