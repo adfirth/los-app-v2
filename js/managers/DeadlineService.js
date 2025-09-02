@@ -184,24 +184,30 @@ class DeadlineService {
             console.log(`🔧 DeadlineService: Found ${usersSnapshot.size} users for autopick assignment`);
             
             // Get available teams for this gameweek from new multi-club structure
-            const fixturesDoc = await this.db.collection('clubs').doc(currentClubId)
+            // Query for individual fixtures where gameWeek matches
+            const fixturesSnapshot = await this.db.collection('clubs').doc(currentClubId)
                 .collection('editions').doc(currentEdition)
                 .collection('fixtures')
-                .doc(`gw${gameweek}`)
+                .where('gameWeek', '==', gameweek)
                 .get();
             
-            if (!fixturesDoc.exists) {
-                throw new Error('No fixtures found for this gameweek');
+            if (fixturesSnapshot.empty) {
+                throw new Error(`No fixtures found for gameweek ${gameweek}`);
             }
             
-            const fixturesData = fixturesDoc.data();
-            const fixtures = fixturesData.fixtures || [];
+            console.log(`🔧 DeadlineService: Found ${fixturesSnapshot.size} fixtures for gameweek ${gameweek}`);
             
-            // Get all available teams
+            // Get all available teams from individual fixture documents
             const availableTeams = [];
-            fixtures.forEach(fixture => {
-                availableTeams.push(fixture.homeTeam, fixture.awayTeam);
+            fixturesSnapshot.forEach(doc => {
+                const fixtureData = doc.data();
+                if (fixtureData.homeTeam && fixtureData.awayTeam) {
+                    availableTeams.push(fixtureData.homeTeam, fixtureData.awayTeam);
+                    console.log(`🔧 DeadlineService: Fixture ${doc.id}: ${fixtureData.homeTeam} vs ${fixtureData.awayTeam}`);
+                }
             });
+            
+            console.log(`🔧 DeadlineService: Available teams for autopick:`, availableTeams);
             
             const batch = this.db.batch();
             let autoPicksAssigned = 0;
