@@ -597,10 +597,16 @@ class FixturesManager {
         const currentGameweek = window.editionService.getCurrentGameweek();
         const currentPick = this.userPicks[`gw${currentGameweek}`];
         
-        // Check if this specific team is picked (in current gameweek or any previous gameweek)
-        const isHomePicked = this.isTeamPickedInAnyGameweek(fixture.homeTeam);
-        const isAwayPicked = this.isTeamPickedInAnyGameweek(fixture.awayTeam);
-        const hasPicked = isHomePicked || isAwayPicked;
+        // Check if this specific team is picked in the current gameweek
+        const isHomePickedInCurrent = this.isTeamPickedInCurrentGameweek(fixture.homeTeam);
+        const isAwayPickedInCurrent = this.isTeamPickedInCurrentGameweek(fixture.awayTeam);
+        const hasPickInCurrentGameweek = isHomePickedInCurrent || isAwayPickedInCurrent;
+        
+        // Check if teams are picked in other gameweeks (for availability)
+        const isHomePickedInOther = this.isTeamPickedInOtherGameweek(fixture.homeTeam);
+        const isAwayPickedInOther = this.isTeamPickedInOtherGameweek(fixture.awayTeam);
+        
+        // Check if teams are unavailable (picked in previous gameweeks)
         const isHomeUnavailable = this.isTeamUnavailable(fixture.homeTeam);
         const isAwayUnavailable = this.isTeamUnavailable(fixture.awayTeam);
 
@@ -608,14 +614,16 @@ class FixturesManager {
         if (window.DEBUG_MODE) {
             console.log(`🔍 Button states for ${fixture.homeTeam} vs ${fixture.awayTeam}:`, {
                 currentPick,
-                homePicked: isHomePicked,
-                awayPicked: isAwayPicked,
-                hasPicked
+                homePickedInCurrent: isHomePickedInCurrent,
+                awayPickedInCurrent: isAwayPickedInCurrent,
+                homePickedInOther: isHomePickedInOther,
+                awayPickedInOther: isAwayPickedInOther,
+                hasPickInCurrentGameweek
             });
         }
 
-        // Add has-pick class if any team is picked
-        if (hasPicked) {
+        // Add has-pick class if any team is picked in current gameweek
+        if (hasPickInCurrentGameweek) {
             card.classList.add('has-pick');
         }
 
@@ -672,7 +680,7 @@ class FixturesManager {
                 </div>
             </div>
             
-            ${hasPicked ? `
+            ${hasPickInCurrentGameweek ? `
             <div class="pick-indicator">
                 <i class="fas fa-check-circle"></i>
                 <span>Pick made for Gameweek ${window.editionService.getCurrentGameweek()}</span>
