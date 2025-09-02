@@ -1306,14 +1306,12 @@ document.addEventListener('visibilitychange', () => {
 
 // Handle online/offline status
 window.addEventListener('online', () => {
-    console.log('App is online');
     if (window.losApp && typeof window.losApp.updateConnectionStatus === 'function') {
         window.losApp.updateConnectionStatus(true);
     }
 });
 
 window.addEventListener('offline', () => {
-    console.log('App is offline');
     if (window.losApp && typeof window.losApp.updateConnectionStatus === 'function') {
         window.losApp.updateConnectionStatus(false);
     }
@@ -1329,38 +1327,9 @@ window.addEventListener('beforeunload', () => {
 // Export for global access
 window.LOSApp = LOSApp;
 
-// Debug function for testing buttons
-window.debugButtons = function() {
-    console.log('🔍 === BUTTON DEBUG REPORT ===');
-    const buttons = document.querySelectorAll('.pick-btn');
-    console.log('Total pick buttons found:', buttons.length);
-    
-    buttons.forEach((button, index) => {
-        const isDisabled = button.disabled;
-        const hasUnavailableClass = button.classList.contains('unavailable');
-        const teamName = button.dataset.team;
-        const hasClickListener = button._hasClickListener || false;
-        
-        console.log(`Button ${index + 1}:`, {
-            team: teamName,
-            disabled: isDisabled,
-            unavailable: hasUnavailableClass,
-            visible: button.offsetWidth > 0 && button.offsetHeight > 0,
-            hasClickListener: hasClickListener
-        });
-        
-        // Test programmatic click
-        if (!isDisabled && !hasUnavailableClass) {
-            console.log(`🖱️ Testing programmatic click on ${teamName} button...`);
-            button.click();
-        }
-    });
-    
-    console.log('🔍 === END BUTTON DEBUG ===');
-};
+
 
 // Firebase cleanup functions (added directly to app.js to ensure they load)
-console.log('🧹 Adding Firebase cleanup functions to app.js...');
 
 // Simple cleanup function
 window.cleanupFirebase = async function() {

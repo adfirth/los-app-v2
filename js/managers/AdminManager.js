@@ -15,7 +15,6 @@ class AdminManager {
         
         // Only set up basic structure, don't load data yet
         this.isInitialized = true;
-        console.log('AdminManager basic initialization complete');
     }
 
     init() {
@@ -26,12 +25,9 @@ class AdminManager {
         
         // Ensure database reference is available
         if (!this.db) {
-            console.log('🔧 AdminManager: Waiting for Firebase database...');
             setTimeout(() => this.init(), 1000);
             return;
         }
-        
-        console.log('🔧 AdminManager: Database reference set:', !!this.db);
         
         // Quick check for super admin email to show admin button immediately
         this.quickSuperAdminCheck();
@@ -40,22 +36,18 @@ class AdminManager {
         this.checkAdminStatus();
         this.setupAdminPanel();
         this.dataLoaded = true;
-        console.log('AdminManager full initialization complete');
         
         // Additional checks with longer delays to catch late super admin initialization
         setTimeout(async () => {
-            console.log('🔧 AdminManager: Second delayed admin status check...');
             await this.checkAdminStatus();
         }, 5000);
 
         setTimeout(async () => {
-            console.log('🔧 AdminManager: Third delayed admin status check...');
             await this.checkAdminStatus();
         }, 10000);
 
         // Set up periodic admin status checks
         this.adminStatusInterval = setInterval(async () => {
-            console.log('🔧 AdminManager: Periodic admin status check...');
             await this.checkAdminStatus();
         }, 30000); // Check every 30 seconds
     }
@@ -68,43 +60,37 @@ class AdminManager {
                 if (currentUser && currentUser.email) {
                     const superAdminEmails = ['adfirth@gmail.com'];
                     if (superAdminEmails.includes(currentUser.email)) {
-                        console.log('🔧 AdminManager: Quick super admin check passed, showing admin button immediately');
                         this.showAdminButton();
                         this.currentUserIsSuperAdmin = true;
                     }
                 }
             }
         } catch (error) {
-            console.log('🔧 AdminManager: Quick super admin check failed:', error);
+            // Quick check failed, continue with normal flow
         }
     }
 
     restoreFirebaseConnection() {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
-        console.log('AdminManager Firebase connection restored');
         
         // Refresh database reference
         this.db = window.firebaseDB;
-        console.log('🔧 AdminManager: Database reference refreshed:', !!this.db);
     }
     
     refreshDatabaseReference() {
         // Manual method to refresh database reference
         this.db = window.firebaseDB;
-        console.log('🔧 AdminManager: Database reference manually refreshed:', !!this.db);
         return !!this.db;
     }
 
     clearListeners() {
         // Clear any existing Firebase listeners
-        console.log('AdminManager: Clearing listeners...');
         
         // Clear admin status interval
         if (this.adminStatusInterval) {
             clearInterval(this.adminStatusInterval);
             this.adminStatusInterval = null;
-            console.log('🔧 AdminManager: Admin status interval cleared');
         }
         
         // Unregister from the main app's listener tracking if needed
@@ -126,14 +112,13 @@ class AdminManager {
             const userId = window.authManager.getCurrentUserId();
             if (!userId) return;
 
-            console.log('🔧 AdminManager: checkAdminStatus called for user:', userId);
+
 
             // Check if user is a regular admin
             const userDoc = await this.db.collection('users').doc(userId).get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
                 this.isAdmin = userData.isAdmin || false;
-                console.log('🔧 AdminManager: Regular admin status:', this.isAdmin);
             }
 
             // Check if user is a super admin - multiple fallback strategies
@@ -142,7 +127,6 @@ class AdminManager {
             // Strategy 1: Check SuperAdminManager if available
             if (window.losApp?.managers?.superAdmin) {
                 isSuperAdmin = window.losApp.managers.superAdmin.isSuperAdmin;
-                console.log('🔧 AdminManager: SuperAdminManager.isSuperAdmin:', isSuperAdmin);
             }
 
             // Strategy 2: Check if SuperAdminManager exists but isn't ready yet
@@ -150,7 +134,6 @@ class AdminManager {
                 // Wait a bit for SuperAdminManager to initialize
                 await new Promise(resolve => setTimeout(resolve, 500));
                 isSuperAdmin = window.losApp.managers.superAdmin.isSuperAdmin;
-                console.log('🔧 AdminManager: SuperAdminManager.isSuperAdmin (after delay):', isSuperAdmin);
             }
 
             // Strategy 3: Email-based super admin fallback
@@ -160,7 +143,6 @@ class AdminManager {
                     const superAdminEmails = ['adfirth@gmail.com']; // Same list as in SuperAdminManager
                     if (superAdminEmails.includes(currentUser.email)) {
                         isSuperAdmin = true;
-                        console.log('🔧 AdminManager: Email-based super admin check passed:', currentUser.email);
                     }
                 }
             }
@@ -170,7 +152,6 @@ class AdminManager {
                 const storedSuperAdmin = localStorage.getItem('isSuperAdmin');
                 if (storedSuperAdmin === 'true') {
                     isSuperAdmin = true;
-                    console.log('🔧 AdminManager: localStorage super admin check passed');
                 }
             }
 
@@ -178,21 +159,16 @@ class AdminManager {
             if (!isSuperAdmin && userDoc.exists) {
                 const userData = userDoc.data();
                 isSuperAdmin = userData.isSuperAdmin || userData.role === 'super_admin' || false;
-                console.log('🔧 AdminManager: User document super admin check:', isSuperAdmin);
             }
-
-            console.log('🔧 AdminManager: Final admin status - isAdmin:', this.isAdmin, 'isSuperAdmin:', isSuperAdmin);
 
             // Show admin button if user is either admin or super admin
             if (this.isAdmin || isSuperAdmin) {
-                console.log('🔧 AdminManager: Showing admin button');
                 this.showAdminButton();
                 
                 // Store the admin status for future reference
                 this.currentUserIsAdmin = this.isAdmin;
                 this.currentUserIsSuperAdmin = isSuperAdmin;
             } else {
-                console.log('🔧 AdminManager: Not showing admin button - user is not admin or super admin');
                 this.currentUserIsAdmin = false;
                 this.currentUserIsSuperAdmin = false;
             }
@@ -202,14 +178,10 @@ class AdminManager {
     }
 
     showAdminButton() {
-        console.log('🔧 AdminManager: showAdminButton called');
-        
         // Add admin button to header if not already present
         const headerRight = document.querySelector('.header-right');
-        console.log('🔧 AdminManager: headerRight element found:', !!headerRight);
         
         if (headerRight && !document.getElementById('adminBtn')) {
-            console.log('🔧 AdminManager: Creating admin button...');
             const adminBtn = document.createElement('button');
             adminBtn.id = 'adminBtn';
             adminBtn.className = 'btn btn-primary'; // Changed to primary for better visibility
@@ -223,10 +195,6 @@ class AdminManager {
             adminBtn.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                console.log('🔧 AdminManager: Admin button clicked - event:', event);
-                console.log('🔧 AdminManager: Button element:', adminBtn);
-                console.log('🔧 AdminManager: Button disabled:', adminBtn.disabled);
-                console.log('🔧 AdminManager: Button pointer-events:', getComputedStyle(adminBtn).pointerEvents);
                 
                 try {
                     this.toggleAdminPanel();
@@ -237,56 +205,28 @@ class AdminManager {
             
             // Also add mousedown and touchstart for better interaction
             adminBtn.addEventListener('mousedown', (event) => {
-                console.log('🔧 AdminManager: Admin button mousedown');
+                // Mousedown event for better interaction
             });
             
             adminBtn.addEventListener('touchstart', (event) => {
-                console.log('🔧 AdminManager: Admin button touchstart');
+                // Touchstart event for better interaction
             });
             
             headerRight.insertBefore(adminBtn, headerRight.firstChild);
-            console.log('🔧 AdminManager: Admin button added to header');
-            
-            // Verify the button is properly added
-            const addedBtn = document.getElementById('adminBtn');
-            console.log('🔧 AdminManager: Button verification - exists:', !!addedBtn);
-            if (addedBtn) {
-                console.log('🔧 AdminManager: Button classes:', addedBtn.className);
-                console.log('🔧 AdminManager: Button styles:', {
-                    cursor: getComputedStyle(addedBtn).cursor,
-                    pointerEvents: getComputedStyle(addedBtn).pointerEvents,
-                    display: getComputedStyle(addedBtn).display
-                });
-            }
-        } else {
-            console.log('🔧 AdminManager: Admin button already exists or headerRight not found');
-            if (document.getElementById('adminBtn')) {
-                const existingBtn = document.getElementById('adminBtn');
-                console.log('🔧 AdminManager: Existing button found:', {
-                    id: existingBtn.id,
-                    className: existingBtn.className,
-                    disabled: existingBtn.disabled,
-                    pointerEvents: getComputedStyle(existingBtn).pointerEvents
-                });
-            }
         }
     }
 
     // Method to refresh admin status (can be called when super admin status changes)
     async refreshAdminStatus() {
-        console.log('🔧 AdminManager: refreshAdminStatus called');
         await this.checkAdminStatus();
     }
 
     // Force refresh admin status - useful for debugging
     async forceRefreshAdminStatus() {
-        console.log('🔧 AdminManager: forceRefreshAdminStatus called');
-        
         // Clear any existing admin button
         const existingBtn = document.getElementById('adminBtn');
         if (existingBtn) {
             existingBtn.remove();
-            console.log('🔧 AdminManager: Removed existing admin button');
         }
         
         // Force a fresh admin status check
@@ -295,7 +235,6 @@ class AdminManager {
 
     // Method to manually trigger admin button display (for debugging)
     forceShowAdminButton() {
-        console.log('🔧 AdminManager: forceShowAdminButton called');
         this.showAdminButton();
     }
 

@@ -6,46 +6,22 @@ class FixturesManager {
         this.userPicks = {}; // Initialize userPicks to prevent undefined errors
         this.db = null;
         
-        // Add global debug functions immediately
-        window.enableFixtureDebug = () => {
-            window.DEBUG_MODE = true;
-            console.log('🔧 Fixture debug mode enabled');
-        };
-        
-        window.debugFixtures = () => {
-            console.log('🔍 Debugging fixtures data...');
-            console.log('Current fixtures:', this.currentFixtures);
-            if (this.currentFixtures && this.currentFixtures.length > 0) {
-                this.currentFixtures.forEach((fixture, index) => {
-                    console.log(`Fixture ${index}: ${fixture.homeTeam} ${fixture.homeScore} - ${fixture.awayScore} ${fixture.awayTeam} (${fixture.status})`);
-                });
-            } else {
-                console.log('No fixtures loaded yet');
-            }
-        };
-        
-        console.log('🔧 FixturesManager: Global debug functions added: debugFixtures(), enableFixtureDebug()');
+
         
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
     }
 
     initBasic() {
-        console.log('🚀 FixturesManager: initBasic() called');
-        
         if (this.isInitialized) {
-            console.log('⚠️ FixturesManager already initialized, skipping initBasic()');
             return;
         }
-        
-        console.log('🔧 Setting up basic FixturesManager structure...');
         
         // Only set up basic structure, don't load data yet
         // Set up modal event listeners
         this.setupPickModal();
         
         this.isInitialized = true;
-        console.log('✅ FixturesManager basic initialization complete');
     }
 
     init() {
@@ -59,13 +35,11 @@ class FixturesManager {
             this.loadFixtures();
         });
         this.dataLoaded = true;
-        console.log('FixturesManager full initialization complete');
     }
 
     restoreFirebaseConnection() {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
-        console.log('FixturesManager Firebase connection restored');
         
         // Reset retry counters when Firebase connection is restored
         this.loadFixturesRetryCount = 0;
@@ -73,7 +47,6 @@ class FixturesManager {
 
     clearListeners() {
         // Clear any existing Firebase listeners
-        console.log('FixturesManager: Clearing listeners...');
         
         // Unregister from the main app's listener tracking if needed
         if (window.losApp) {
@@ -119,9 +92,7 @@ class FixturesManager {
             
             // If ClubService doesn't have an edition, fall back to EditionService
             if (!currentEdition) {
-                console.log('⚠️ FixturesManager: No edition from ClubService, falling back to EditionService');
                 currentEdition = window.editionService.getCurrentEdition();
-                console.log(`⚠️ FixturesManager: Using fallback edition: ${currentEdition}`);
             }
             
             // Show loading state
@@ -133,19 +104,10 @@ class FixturesManager {
             // Try to load fixtures from the new multi-club structure first
             const currentClubId = window.losApp?.managers?.club?.getCurrentClub() || 'default-club';
             
-            // Debug logging to see what club/edition we're using
-            console.log(`🔍 FixturesManager: Loading fixtures for club: ${currentClubId}, edition: ${currentEdition}, gameweek: ${currentGameweek}`);
-            console.log(`🔍 FixturesManager: ClubService currentClub: ${window.losApp?.managers?.club?.getCurrentClub()}`);
-            console.log(`🔍 FixturesManager: ClubService currentEdition: ${window.losApp?.managers?.club?.getCurrentEdition()}`);
-            console.log(`🔍 FixturesManager: EditionService currentEdition: ${window.editionService.getCurrentEdition()}`);
-            
-            // Check if we're using default values - allow loading from default club but log a warning
+            // Check if we're using default values - allow loading from default club
             if (currentClubId === 'default-club' || window.losApp?.managers?.club?.getCurrentClub() === 'default-club' || !window.losApp?.managers?.club?.getCurrentClub()) {
-                console.log('⚠️ FixturesManager: Using default club - this may not have fixtures loaded');
                 // Continue with loading instead of retrying indefinitely
             }
-            
-            console.log(`🔍 Loading fixtures for club: ${currentClubId}, edition: ${currentEdition}, gameweek: ${currentGameweek}`);
             
             try {
                 // Try new structure first - filter by gameweek
@@ -161,13 +123,7 @@ class FixturesManager {
                     fixturesSnapshot.forEach(doc => {
                         const fixtureData = doc.data();
                         
-                        if (window.DEBUG_MODE) {
-                            console.log(`🔍 Raw fixture data for ${fixtureData.homeTeam} vs ${fixtureData.awayTeam}:`, fixtureData);
-                            console.log(`🔍 Home score raw:`, fixtureData.homeScore, `(type: ${typeof fixtureData.homeScore})`);
-                            console.log(`🔍 Away score raw:`, fixtureData.awayScore, `(type: ${typeof fixtureData.awayScore})`);
-                            console.log(`🔍 Home score processed:`, this.getScoreValue(fixtureData.homeScore));
-                            console.log(`🔍 Away score processed:`, this.getScoreValue(fixtureData.awayScore));
-                        }
+
                         
                         // Create fixture object with processed scores
                         const fixture = {
@@ -180,23 +136,19 @@ class FixturesManager {
                         this.currentFixtures.push(fixture);
                     });
                     
-                    console.log(`✅ Loaded ${this.currentFixtures.length} fixtures from new structure`);
+
                     
                     // Note: Removed automatic date update logic to preserve imported fixtures
                     // The updateFixtureDates method was overwriting real imported data with sample data
                 } else {
                     // No fixtures found - show empty state
-                    console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
                     this.currentFixtures = [];
                     
                     // Clean up any existing sample fixtures in old structure
                     await this.cleanupSampleFixtures(currentEdition, currentGameweek);
                 }
             } catch (error) {
-                console.log('⚠️ Error loading from new structure:', error);
-                
                 // Show empty state on error
-                console.log(`ℹ️ No fixtures found for ${currentEdition} Gameweek ${currentGameweek} - showing empty state`);
                 this.currentFixtures = [];
                 
                 // Clean up any existing sample fixtures in old structure
@@ -502,9 +454,7 @@ class FixturesManager {
                 };
             });
             
-            console.log(`✅ Loaded ${picksSnapshot.size} picks from /clubs/${currentClubId}/editions/${currentEdition}/picks`);
-            console.log(`📊 userPicks:`, this.userPicks);
-            console.log(`🔍 FixturesManager: userPicks keys:`, Object.keys(this.userPicks));
+
         } catch (error) {
             console.error('Error loading user picks from multi-club structure:', error);
             this.userPicks = {};
@@ -515,7 +465,6 @@ class FixturesManager {
             // Handle Firebase connection errors with retry logic
             if (error.message.includes('Target ID already exists') && retryCount < 2) {
                 const delay = Math.min(2000 * Math.pow(2, retryCount), 8000);
-                console.log(`Fixtures picks loading conflict detected, retrying in ${delay/1000} seconds... (attempt ${retryCount + 1}/2)`);
                 setTimeout(() => {
                     this.loadUserPicks(retryCount + 1);
                 }, delay);
@@ -524,7 +473,6 @@ class FixturesManager {
             
             // If we've exhausted retries, try to reset connection
             if (retryCount >= 2 && window.losApp) {
-                console.log('Fixtures picks loading failed, attempting connection reset...');
                 window.losApp.resetFirebaseConnection();
                 return;
             }
@@ -532,12 +480,6 @@ class FixturesManager {
     }
 
     async displayFixtures() {
-        if (window.DEBUG_MODE) {
-            console.log('🔍 FixturesManager: displayFixtures() called');
-            console.log('🔍 Current fixtures count:', this.currentFixtures.length);
-            console.log('🔍 Database reference:', !!this.db);
-            console.log('🔍 Deadline passed:', this.deadlinePassed);
-        }
         
         const fixturesList = document.getElementById('fixturesList');
         if (!fixturesList) {
@@ -558,47 +500,22 @@ class FixturesManager {
             console.warn('⚠️ FixturesManager: Failed to preload team badges:', error);
         }
 
-        if (window.DEBUG_MODE) {
-            console.log('🗑️ Clearing fixturesList innerHTML');
-        }
+
         fixturesList.innerHTML = '';
 
         this.currentFixtures.forEach((fixture, index) => {
-            // Only log in debug mode
-            if (window.DEBUG_MODE) {
-                console.log(`📋 Creating fixture card ${index + 1}/${this.currentFixtures.length}:`, fixture.homeTeam, 'vs', fixture.awayTeam);
-            }
+
             const fixtureCard = this.createFixtureCard(fixture, index);
             fixturesList.appendChild(fixtureCard);
         });
         
-        if (window.DEBUG_MODE) {
-            console.log('✅ All fixture cards created and appended');
-        }
+
         
-        // Debug: Check button states after creation (only in development)
-        if (window.DEBUG_MODE) {
-            setTimeout(() => {
-                const allButtons = document.querySelectorAll('.team-btn');
-                console.log(`🔍 Debug: Found ${allButtons.length} team buttons after display refresh`);
-                allButtons.forEach((button, index) => {
-                    const teamName = button.dataset.team;
-                    const hasPickedClass = button.classList.contains('picked');
-                    const hasOtherPickedClass = button.classList.contains('other-picked');
-                    console.log(`   Button ${index + 1} (${teamName}): picked=${hasPickedClass}, other-picked=${hasOtherPickedClass}`);
-                });
-            }, 100);
-        }
+
     }
 
     createFixtureCard(fixture, index) {
-        // Debug logging for score display
-        if (window.DEBUG_MODE) {
-            console.log(`🔍 Fixture ${index}: ${fixture.homeTeam} vs ${fixture.awayTeam}`);
-            console.log(`🔍 Home score: ${fixture.homeScore} (type: ${typeof fixture.homeScore})`);
-            console.log(`🔍 Away score: ${fixture.awayScore} (type: ${typeof fixture.awayScore})`);
-            console.log(`🔍 Status: ${fixture.status} (type: ${typeof fixture.status})`);
-        }
+
 
         const card = document.createElement('div');
         card.className = 'fixture-card';

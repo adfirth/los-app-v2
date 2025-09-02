@@ -14,31 +14,22 @@ class ClubService {
             id: id,
             ...club
         })).filter(club => club.isActive);
-        console.log('🔍 ClubService.clubs getter called, returning:', clubs);
+
         return clubs;
     }
 
     // Check if service is ready with clubs data
     get isReady() {
-        console.log('🔍 ClubService.isReady getter called - START');
-        console.log('🔍 ClubService.isReady - this.isInitialized:', this.isInitialized);
-        console.log('🔍 ClubService.isReady - this.availableClubs:', this.availableClubs);
-        console.log('🔍 ClubService.isReady - this.clubData keys:', Object.keys(this.clubData));
-        
         // Be more lenient - just check if we're initialized and have attempted to load clubs
         // Don't require clubs to actually exist, as this might be a new setup
         const ready = this.isInitialized && this.globalSettingsListener !== null;
-        
-        console.log('🔍 ClubService.isReady getter result:', ready);
         return ready;
     }
 
     initBasic() {
         if (this.isInitialized) return;
         
-        console.log('🏟️ ClubService: Basic initialization...');
         this.setupBasicStructure();
-        console.log('✅ ClubService: Basic initialization complete');
     }
 
     init() {

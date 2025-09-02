@@ -19,7 +19,6 @@ class DevelopmentHelper {
 
     // Get mock fixtures for development testing
     getMockFixtures(competition, season, startDate, endDate) {
-        console.log('🔧 DevelopmentHelper: Using mock fixtures for development');
         
         const mockFixtures = [
             {
@@ -152,7 +151,6 @@ class DevelopmentHelper {
     // Test API connection with fallback
     async testConnection() {
         if (this.isDevMode()) {
-            console.log('🔧 DevelopmentHelper: Development mode detected, using mock connection test');
             return {
                 success: true,
                 message: 'Development mode - using mock data',
