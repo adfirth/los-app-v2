@@ -84,13 +84,13 @@ class TeamBadgeService {
 
     async _initialize() {
         try {
-            console.log('🏆 TeamBadgeService: Initializing...');
+            // Initializing...
             
             // Test API connection
             await this.testConnection();
             
             this.isInitialized = true;
-            console.log('✅ TeamBadgeService: Initialized successfully');
+            // Initialized successfully
             
             return this;
         } catch (error) {
@@ -151,7 +151,7 @@ class TeamBadgeService {
      */
     async getTeamBadge(teamName, size = 'small') {
         try {
-            console.log(`🏆 TeamBadgeService: Loading badge for ${teamName} (${size})`);
+            // Loading badge for team
             
             // First, try to get from local badge service
             if (window.getLocalTeamBadge) {

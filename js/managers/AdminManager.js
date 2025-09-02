@@ -297,7 +297,7 @@ class AdminManager {
     }
 
     setupAdminPanel() {
-        console.log('🔧 AdminManager: setupAdminPanel called');
+        // setupAdminPanel called
         
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
@@ -310,15 +310,15 @@ class AdminManager {
     }
 
     setupAdminPanelInternal() {
-        console.log('🔧 AdminManager: setupAdminPanelInternal called');
+        // setupAdminPanelInternal called
         
         this.adminPanel = document.getElementById('adminPanel');
-        console.log('🔧 AdminManager: adminPanel element found:', !!this.adminPanel);
+        // adminPanel element found
         
         if (this.adminPanel) {
             // Setup admin panel listeners
             this.setupAdminListeners();
-            console.log('🔧 AdminManager: Admin panel setup complete');
+            // Admin panel setup complete
         } else {
             console.error('❌ AdminManager: adminPanel element not found - retrying in 1 second');
             // Retry after a delay
@@ -329,7 +329,7 @@ class AdminManager {
     }
 
     setupAdminListeners() {
-        console.log('🔧 AdminManager: setupAdminListeners called');
+        // setupAdminListeners called
         
         // Close admin panel button
         const closeAdminBtn = document.getElementById('closeAdmin');
@@ -338,21 +338,21 @@ class AdminManager {
                 console.log('🔧 AdminManager: Close button clicked');
                 this.hideAdminPanel();
             });
-            console.log('🔧 AdminManager: Close button listener added');
+            // Close button listener added
         } else {
             console.warn('⚠️ AdminManager: Close button not found');
         }
 
         // Admin tab navigation
         const adminTabs = document.querySelectorAll('.admin-tab');
-        console.log('🔧 AdminManager: Found admin tabs:', adminTabs.length);
+        // Found admin tabs
         adminTabs.forEach((tab, index) => {
             tab.addEventListener('click', () => {
                 const targetTab = tab.getAttribute('data-admin-tab');
                 console.log('🔧 AdminManager: Admin tab clicked:', targetTab);
                 this.switchAdminTab(targetTab);
             });
-            console.log(`🔧 AdminManager: Tab ${index + 1} listener added for:`, tab.getAttribute('data-admin-tab'));
+            // Tab listener added
         });
     }
 

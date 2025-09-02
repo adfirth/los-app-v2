@@ -15,30 +15,30 @@ class SuperAdminManager {
     initBasic() {
         if (this.isInitialized) return;
         
-        console.log('👑 SuperAdminManager: Basic initialization...');
+        // Basic initialization...
         this.setupBasicStructure();
         this.isInitialized = true;
         console.log('✅ SuperAdminManager: Basic initialization complete');
     }
 
     setupBasicStructure() {
-        console.log('🔧 Setting up SuperAdminManager basic structure...');
+        // Setting up basic structure...
         
         // Set up super admin dashboard toggle
         this.setupSuperAdminToggle();
         
-        console.log('✅ SuperAdminManager basic structure setup complete');
+        // Basic structure setup complete
     }
 
     setupSuperAdminToggle() {
-        console.log('🔧 SuperAdminManager: Setting up super admin toggle...');
+        // Setting up super admin toggle...
         
         // Add super admin toggle to header if not already present
         const header = document.querySelector('.app-header');
-        console.log('🔍 SuperAdminManager: Header element found:', !!header);
+        // Header element found
         
         if (header && !document.getElementById('superAdminToggle')) {
-            console.log('🔧 SuperAdminManager: Creating super admin toggle button...');
+            // Creating super admin toggle button...
             
             const toggle = document.createElement('button');
             toggle.id = 'superAdminToggle';
