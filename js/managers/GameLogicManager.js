@@ -1087,13 +1087,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     let targetPick = null;
                     allPicksSnapshot.forEach(doc => {
                         const pickData = doc.data();
+                        console.log('🔍 Checking pick:', {
+                            userId: pickData.userId,
+                            gameweek: pickData.gameweek,
+                            teamPicked: pickData.teamPicked,
+                            result: pickData.result
+                        });
+                        
                         if (pickData.userId === '0OPG5mi5H5fR5J188YKwtw8m1s2' && pickData.gameweek === 1) {
+                            console.log('✅ Found matching pick!');
                             targetPick = { doc, data: pickData };
                         }
                     });
                     
                     if (!targetPick) {
                         console.log('❌ Still no GW1 pick found for Adam Firth');
+                        console.log('🔍 All picks data:');
+                        allPicksSnapshot.forEach((doc, index) => {
+                            const pickData = doc.data();
+                            console.log(`🔍 Pick ${index + 1}:`, pickData);
+                        });
                         return;
                     }
                     
