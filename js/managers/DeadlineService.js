@@ -912,7 +912,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // Add global helper function to rename time field to kickOffTime
+    window.renameTimeToKickOffTime = async () => {
+        console.log('🔧 DeadlineService: Renaming time field to kickOffTime for all fixtures...');
+        
+        const currentClub = window.losApp?.managers?.club?.getCurrentClub();
+        const currentEdition = window.editionService?.getCurrentEdition();
+        
+        if (!currentClub || !currentEdition) {
+            console.error('❌ No club or edition available');
+            return;
+        }
+        
+        try {
+            // Get all fixtures
+            const fixturesSnapshot = await window.firebaseDB.collection('clubs')
+                .doc(currentClub)
+                .collection('editions')
+                .doc(currentEdition)
+                .collection('fixtures')
+                .get();
+            
+            console.log(`🔍 Found ${fixturesSnapshot.size} fixtures to update`);
+            
+            // Update each fixture to rename 'time' to 'kickOffTime'
+            const batch = window.firebaseDB.batch();
+            let updatedCount = 0;
+            
+            fixturesSnapshot.docs.forEach(doc => {
+                const fixture = doc.data();
+                if (fixture.time && !fixture.kickOffTime) {
+                    // Create new fixture data with kickOffTime instead of time
+                    const updatedFixture = {
+                        ...fixture,
+                        kickOffTime: fixture.time,
+                        updated_at: new Date()
+                    };
+                    
+                    // Remove the old 'time' field
+                    delete updatedFixture.time;
+                    
+                    batch.update(doc.ref, updatedFixture);
+                    updatedCount++;
+                    console.log(`🔧 Will update: ${fixture.homeTeam} vs ${fixture.awayTeam} (GW${fixture.gameWeek}) - time: ${fixture.time} → kickOffTime: ${fixture.time}`);
+                }
+            });
+            
+            if (updatedCount > 0) {
+                await batch.commit();
+                console.log(`✅ Successfully updated ${updatedCount} fixtures`);
+                console.log('🔄 You may need to refresh the page for changes to take effect');
+            } else {
+                console.log('ℹ️ No fixtures need updating (all already have kickOffTime)');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error updating fixtures:', error);
+        }
+    };
+    
     console.log('🔧 DeadlineService: Global helper functions added:');
     console.log('  - window.assignAutoPicks(gameweek)');
     console.log('  - window.checkAllDeadlines()');
+    console.log('  - window.renameTimeToKickOffTime()');
 });
