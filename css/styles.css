@@ -856,8 +856,8 @@ body {
 }
 
 .pick-checkmark {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+    background: rgba(255, 255, 255, 0.9);
+    color: #28a745;
     border-radius: 50%;
     width: 20px;
     height: 20px;
@@ -867,14 +867,16 @@ body {
     font-size: 12px;
     font-weight: bold;
     animation: checkmarkAppear 0.3s ease-out 0.2s both;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 2px solid #28a745;
 }
 
 .team-btn:hover:not(:disabled):not(.picked) {
-    border-color: #d32f2f;
-    color: #d32f2f;
-    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+    border-color: #28a745;
+    color: #28a745;
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(211, 47, 47, 0.2);
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.2);
 }
 
 .team-btn:hover:not(:disabled):not(.picked)::before {
@@ -884,17 +886,17 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(211, 47, 47, 0.05) 0%, rgba(211, 47, 47, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(40, 167, 69, 0.1) 100%);
     border-radius: 12px;
     pointer-events: none;
 }
 
 .team-btn.picked {
-    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
     color: white !important;
-    border-color: #d32f2f !important;
+    border-color: #28a745 !important;
     transform: scale(1.02);
-    box-shadow: 0 8px 24px rgba(211, 47, 47, 0.4);
+    box-shadow: 0 8px 24px rgba(40, 167, 69, 0.4);
     position: relative;
     animation: pickSelected 0.4s cubic-bezier(0.4, 0, 0.2, 1), pickedPulse 2s ease-in-out infinite;
     font-weight: 700;
@@ -915,18 +917,18 @@ body {
 
 @keyframes pickedPulse {
     0%, 100% {
-        box-shadow: 0 6px 20px rgba(211, 47, 47, 0.3);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
     }
     50% {
-        box-shadow: 0 6px 25px rgba(211, 47, 47, 0.5);
+        box-shadow: 0 6px 25px rgba(40, 167, 69, 0.5);
     }
 }
 
 .team-btn.picked:hover {
-    background: #b71c1c !important;
-    border-color: #b71c1c !important;
+    background: #1e7e34 !important;
+    border-color: #1e7e34 !important;
     transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(183, 28, 28, 0.4);
+    box-shadow: 0 6px 20px rgba(30, 126, 52, 0.4);
 }
 
 @keyframes pickSelected {
@@ -936,11 +938,11 @@ body {
     }
     50% {
         transform: scale(1.05);
-        box-shadow: 0 8px 25px rgba(211, 47, 47, 0.4);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
     }
     100% {
         transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(211, 47, 47, 0.3);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
     }
 }
 
