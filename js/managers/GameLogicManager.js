@@ -1085,9 +1085,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('🔍 Total picks found:', allPicksSnapshot.size);
                     
                     let targetPick = null;
-                    allPicksSnapshot.forEach(doc => {
+                    let targetDoc = null;
+                    
+                    for (let i = 0; i < allPicksSnapshot.docs.length; i++) {
+                        const doc = allPicksSnapshot.docs[i];
                         const pickData = doc.data();
-                        console.log('🔍 Checking pick:', {
+                        
+                        console.log(`🔍 Checking pick ${i + 1}:`, {
                             userId: pickData.userId,
                             gameweek: pickData.gameweek,
                             teamPicked: pickData.teamPicked,
@@ -1096,9 +1100,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         if (pickData.userId === '0OPG5mi5H5fR5J188YKwtw8m1s2' && pickData.gameweek === 1) {
                             console.log('✅ Found matching pick!');
-                            targetPick = { doc, data: pickData };
+                            targetPick = pickData;
+                            targetDoc = doc;
+                            break;
                         }
-                    });
+                    }
                     
                     if (!targetPick) {
                         console.log('❌ Still no GW1 pick found for Adam Firth');
@@ -1110,11 +1116,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                     
-                    console.log('🔍 Found GW1 pick manually:', targetPick.data);
-                    console.log('🔍 Current result:', targetPick.data.result);
+                    console.log('🔍 Found GW1 pick manually:', targetPick);
+                    console.log('🔍 Current result:', targetPick.result);
                     
                     // Update the pick to show LOSS (Aldershot Town lost 2-3 to Altrincham)
-                    await targetPick.doc.ref.update({
+                    await targetDoc.ref.update({
                         result: 'loss',
                         processedAt: new Date()
                     });
