@@ -127,7 +127,7 @@ class FixturesManager {
             // Show loading state
             this.showLoadingState();
             
-            // Clear deadline display while loading new fixtures
+            // Clear deadline display while loading new fixtures (shows 'N/A')
             this.clearDeadlineDisplay();
             
             // Try to load fixtures from the new multi-club structure first
@@ -334,7 +334,7 @@ class FixturesManager {
         if (this.currentFixtures.length === 0) {
             console.log('⏰ No fixtures, setting deadlinePassed = false');
             this.deadlinePassed = false;
-            // Clear deadline display when there are no fixtures
+            // Clear deadline display when there are no fixtures (shows 'N/A')
             this.clearDeadlineDisplay();
             return;
         }
@@ -402,7 +402,7 @@ class FixturesManager {
     clearDeadlineDisplay() {
         const deadlineText = document.getElementById('deadlineText');
         if (deadlineText) {
-            deadlineText.textContent = 'Deadline: Loading...';
+            deadlineText.textContent = 'Deadline: N/A';
             deadlineText.style.color = '#6c757d';
         }
     }
