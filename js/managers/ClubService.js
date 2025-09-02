@@ -53,11 +53,7 @@ class ClubService {
         // Add global helper function for debugging
         window.fixClubService = () => {
             console.log('🔧 ClubService: Manual fix triggered...');
-            if (this.forceFixClubLoading) {
-                this.forceFixClubLoading();
-            } else {
-                console.log('🔧 ClubService: forceFixClubLoading method not available');
-            }
+            this.forceFixClubLoading();
         };
         
         // Add test function for club changes
@@ -68,6 +64,32 @@ class ClubService {
             } else {
                 console.log('🧪 ClubService: onClubChange method not available');
             }
+        };
+        
+        // Add debugging function to check club selector state
+        window.checkClubSelectors = () => {
+            console.log('🔍 ClubService: Checking club selector state...');
+            const clubSelect = document.getElementById('clubSelect');
+            const headerClubSelect = document.getElementById('headerClubSelect');
+            
+            console.log('🔍 Club selectors found:', {
+                clubSelect: !!clubSelect,
+                headerClubSelect: !!headerClubSelect
+            });
+            
+            if (clubSelect) {
+                console.log('🔍 Registration club selector options:', Array.from(clubSelect.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+            }
+            
+            if (headerClubSelect) {
+                console.log('🔍 Header club selector options:', Array.from(headerClubSelect.options).map(opt => ({ value: opt.value, text: opt.textContent })));
+            }
+            
+            console.log('🔍 ClubService state:', {
+                availableClubs: this.availableClubs,
+                clubData: this.clubData,
+                currentClub: this.currentClub
+            });
         };
         
         // Add function to check current state
@@ -830,6 +852,48 @@ To set up sample clubs, run:
         if (this.currentClub) {
             this.applyClubStyling(this.currentClub);
         }
+    }
+    
+    // Force fix club loading (useful for debugging)
+    async forceFixClubLoading() {
+        console.log('🔧 ClubService: Force fixing club loading...');
+        console.log('🔧 ClubService: Current state:', {
+            isInitialized: this.isInitialized,
+            hasDb: !!this.db,
+            availableClubs: this.availableClubs,
+            clubData: this.clubData,
+            globalSettingsListener: !!this.globalSettingsListener
+        });
+        
+        // Try to restore Firebase connection
+        if (!this.db && window.firebaseDB) {
+            console.log('🔧 ClubService: Restoring database connection...');
+            this.db = window.firebaseDB;
+        }
+        
+        // Force reload global settings
+        if (this.db) {
+            try {
+                console.log('🔧 ClubService: Force loading global settings...');
+                const globalSettingsDoc = await this.db.collection('global-settings').doc('system').get();
+                if (globalSettingsDoc.exists) {
+                    const data = globalSettingsDoc.data();
+                    console.log('🔧 ClubService: Global settings data:', data);
+                    this.availableClubs = data.activeClubs || [];
+                    await this.loadClubData();
+                } else {
+                    console.log('🔧 ClubService: No global settings found, creating default...');
+                    await this.createDefaultGlobalSettings();
+                }
+            } catch (error) {
+                console.error('🔧 ClubService: Error force loading settings:', error);
+            }
+        } else {
+            console.log('🔧 ClubService: No database connection available');
+        }
+        
+        // Force update selectors
+        this.updateClubSelectors();
     }
     
     // Check if clubs are loaded and reload if needed
