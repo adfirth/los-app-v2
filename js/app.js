@@ -934,7 +934,7 @@ class LOSApp {
         if (userLives) {
             // Use the new lives display system
             const lives = userData.lives || 0;
-            userLives.innerHTML = window.ClubService.formatLivesDisplay(lives);
+            userLives.innerHTML = window.clubService.formatLivesDisplay(lives);
             
             if (lives <= 0) {
                 userLives.classList.add('eliminated');

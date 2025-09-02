@@ -273,7 +273,10 @@ class GameLogicManager {
                     </div>
                     <div class="standings-cell pick-cell">${currentPick}</div>
                     <div class="standings-cell lives-cell">
-                        ${window.ClubService.formatStandingsLives(player.lives)}
+                        ${window.clubService && window.clubService.formatStandingsLives ? 
+                            window.clubService.formatStandingsLives(player.lives) : 
+                            `<span class="lives-count">${player.lives}</span>`
+                        }
                     </div>
                     <div class="standings-cell last-pick-cell">${lastPick}</div>
                 </div>
@@ -357,7 +360,12 @@ class GameLogicManager {
         
         if (userLives) {
             const lives = playerData.lives || 0;
-            userLives.innerHTML = window.ClubService.formatLivesDisplay(lives);
+            if (window.clubService && window.clubService.formatLivesDisplay) {
+                userLives.innerHTML = window.clubService.formatLivesDisplay(lives);
+            } else {
+                // Fallback to simple text if ClubService not available
+                userLives.textContent = lives;
+            }
             console.log(`🔍 GameLogicManager: Updated header lives to: ${lives}`);
             
             if (lives <= 0) {

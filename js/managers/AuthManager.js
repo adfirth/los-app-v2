@@ -460,7 +460,12 @@ updateUserDisplay() {
         // Update lives indicator with new display system
         if (userLives) {
             const lives = userData.lives || 0;
-            userLives.innerHTML = window.ClubService.formatLivesDisplay(lives);
+            if (window.clubService && window.clubService.formatLivesDisplay) {
+                userLives.innerHTML = window.clubService.formatLivesDisplay(lives);
+            } else {
+                // Fallback to simple text if ClubService not available
+                userLives.textContent = lives;
+            }
             
             if (lives <= 0) {
                 userLives.classList.add('eliminated');
