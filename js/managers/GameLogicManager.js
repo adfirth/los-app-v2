@@ -1055,5 +1055,50 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         console.log('🔧 Additional function added: window.inspectFixtures()');
+
+        // Add function to manually fix Adam Firth's GW1 pick
+        window.fixAdamFirthGW1 = async () => {
+            console.log('🔧 Manually fixing Adam Firth GW1 pick...');
+            
+            try {
+                const currentClub = 'altrincham-fc-juniors';
+                const currentEdition = '2025-26-national-league-1';
+                
+                // Get Adam Firth's GW1 pick
+                const picksSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                    .collection('editions').doc(currentEdition)
+                    .collection('picks')
+                    .where('userId', '==', '0OPG5mi5H5fR5J188YKwtw8m1s2')
+                    .where('gameweek', '==', 1)
+                    .get();
+                
+                if (picksSnapshot.empty) {
+                    console.log('❌ No GW1 pick found for Adam Firth');
+                    return;
+                }
+                
+                const pickDoc = picksSnapshot.docs[0];
+                const pickData = pickDoc.data();
+                
+                console.log('🔍 Current GW1 pick data:', pickData);
+                console.log('🔍 Current result:', pickData.result);
+                
+                // Update the pick to show LOSS (Aldershot Town lost 2-3 to Altrincham)
+                await pickDoc.ref.update({
+                    result: 'loss',
+                    processedAt: new Date()
+                });
+                
+                console.log('✅ Updated Adam Firth GW1 pick from "win" to "loss"');
+                
+                // Refresh standings
+                await window.gameLogicManager.loadStandings();
+                
+                console.log('✅ Standings refreshed - Adam Firth should now show 0 lives!');
+                
+            } catch (error) {
+                console.error('❌ Error fixing Adam Firth GW1 pick:', error);
+            }
+        };
 });
 
