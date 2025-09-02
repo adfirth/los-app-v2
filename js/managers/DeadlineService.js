@@ -77,6 +77,86 @@ class DeadlineService {
         }
     }
 
+    async checkAllDeadlines() {
+        try {
+            const currentEdition = window.editionService.getCurrentEdition();
+            const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
+            
+            if (!currentClubId || !currentEdition) {
+                console.log('⚠️ DeadlineService: No club or edition available for deadline check');
+                return;
+            }
+            
+            // Get all fixtures for the current edition to check all gameweeks
+            const allFixturesSnapshot = await this.db.collection('clubs').doc(currentClubId)
+                .collection('editions').doc(currentEdition)
+                .collection('fixtures')
+                .get();
+            
+            if (allFixturesSnapshot.empty) {
+                console.log('ℹ️ DeadlineService: No fixtures found for deadline check');
+                return;
+            }
+            
+            // Group fixtures by gameweek
+            const fixturesByGameweek = {};
+            allFixturesSnapshot.docs.forEach(doc => {
+                const fixture = doc.data();
+                const gameweek = fixture.gameWeek;
+                if (!fixturesByGameweek[gameweek]) {
+                    fixturesByGameweek[gameweek] = [];
+                }
+                fixturesByGameweek[gameweek].push(fixture);
+            });
+            
+            console.log(`🔧 DeadlineService: Checking deadlines for ${Object.keys(fixturesByGameweek).length} gameweeks`);
+            
+            // Check each gameweek for deadlines
+            for (const [gameweek, fixtures] of Object.entries(fixturesByGameweek)) {
+                if (fixtures.length === 0) continue;
+                
+                // Find the earliest kick-off time for this gameweek
+                const earliestFixture = fixtures.reduce((earliest, fixture) => {
+                    const fixtureTime = new Date(`${fixture.date}T${fixture.kickOffTime}`);
+                    const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime}`);
+                    return fixtureTime < earliestTime ? fixture : earliest;
+                });
+                
+                const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime}`);
+                const now = new Date();
+                
+                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Earliest fixture: ${earliestFixture.homeTeam} vs ${earliestFixture.awayTeam}`);
+                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Deadline time: ${deadlineTime.toISOString()}`);
+                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Current time: ${now.toISOString()}`);
+                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Time until deadline (ms): ${deadlineTime.getTime() - now.getTime()}`);
+                
+                // Check if deadline has passed
+                if (now >= deadlineTime) {
+                    console.log(`⏰ DeadlineService: Deadline has passed for Gameweek ${gameweek}`);
+                    
+                    // Check if we've already processed this deadline
+                    const deadlineKey = `deadline_${gameweek}`;
+                    if (!this.processedDeadlines) {
+                        this.processedDeadlines = {};
+                    }
+                    
+                    if (!this.processedDeadlines[deadlineKey]) {
+                        console.log(`🔧 DeadlineService: Processing deadline for Gameweek ${gameweek} for the first time`);
+                        this.processedDeadlines[deadlineKey] = true;
+                        await this.handleDeadlinePassed(parseInt(gameweek));
+                    } else {
+                        console.log(`ℹ️ DeadlineService: Deadline for Gameweek ${gameweek} already processed`);
+                    }
+                } else {
+                    console.log(`⏰ DeadlineService: Deadline not yet passed for Gameweek ${gameweek}`);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error checking all deadlines:', error);
+        }
+    }
+
     async checkDeadlines() {
         try {
             const currentGameweek = window.editionService.getCurrentGameweek();
@@ -743,5 +823,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 DeadlineService: Global helper function added: window.assignAutoPicks(gameweek)');
+    // Add global helper function to check all deadlines
+    window.checkAllDeadlines = () => {
+        console.log('🔧 DeadlineService: Manual deadline check triggered from console...');
+        if (window.deadlineService) {
+            window.deadlineService.checkAllDeadlines();
+        } else {
+            console.error('❌ DeadlineService not available');
+        }
+    };
+    
+    console.log('🔧 DeadlineService: Global helper functions added:');
+    console.log('  - window.assignAutoPicks(gameweek)');
+    console.log('  - window.checkAllDeadlines()');
 });

@@ -969,40 +969,56 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add function to process existing fixtures and update pick results
     window.processExistingFixtures = async () => {
-        console.log('🔧 Processing existing fixtures...');
-        
-        try {
-            const currentClub = 'altrincham-fc-juniors';
-            const currentEdition = '2025-26-national-league-1';
-            
-            // Get all fixtures for GW1 and GW2
-            const fixturesSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
-                .collection('editions').doc(currentEdition)
-                .collection('fixtures')
-                .where('gameWeek', 'in', [1, 2])
-                .get();
-            
-            console.log('🔍 Found fixtures:', fixturesSnapshot.size);
-            
-            // Process each fixture
-            for (const fixtureDoc of fixturesSnapshot.docs) {
-                const fixtureData = fixtureDoc.data();
-                console.log(`🔧 Processing fixture ${fixtureDoc.id}:`, fixtureData);
+        console.log('🔄 Processing existing fixtures for all gameweeks...');
+        if (window.gameLogicManager && window.gameLogicManager.db) {
+            try {
+                const currentClub = window.losApp?.managers?.club?.getCurrentClub();
+                const currentEdition = window.editionService?.getCurrentEdition();
                 
-                await window.gameLogicManager.processFixtureResults(currentClub, currentEdition, fixtureDoc.id);
+                if (!currentClub || !currentEdition) {
+                    console.error('❌ No club or edition available');
+                    return;
+                }
+                
+                console.log('🔍 Processing fixtures for club:', currentClub, 'edition:', currentEdition);
+                
+                // Get all fixtures for the current edition
+                const allFixturesSnapshot = await window.gameLogicManager.db.collection('clubs')
+                    .doc(currentClub)
+                    .collection('editions')
+                    .doc(currentEdition)
+                    .collection('fixtures')
+                    .get();
+                
+                console.log('🔍 Found fixtures:', allFixturesSnapshot.size);
+                
+                // Group fixtures by gameweek
+                const fixturesByGameweek = {};
+                allFixturesSnapshot.docs.forEach(doc => {
+                    const fixture = doc.data();
+                    const gameweek = fixture.gameWeek;
+                    if (!fixturesByGameweek[gameweek]) {
+                        fixturesByGameweek[gameweek] = [];
+                    }
+                    fixturesByGameweek[gameweek].push({ id: doc.id, ...fixture });
+                });
+                
+                // Process each gameweek
+                for (const [gameweek, fixtures] of Object.entries(fixturesByGameweek)) {
+                    console.log(`🔍 Processing Gameweek ${gameweek} with ${fixtures.length} fixtures`);
+                    await window.gameLogicManager.processGameweekResults(currentClub, currentEdition, parseInt(gameweek));
+                }
+                
+                console.log('✅ Finished processing all gameweek results');
+                
+                // Refresh standings
+                await window.gameLogicManager.loadStandings();
+                
+            } catch (error) {
+                console.error('❌ Error processing existing fixtures:', error);
             }
-            
-            console.log('✅ Processed all fixtures');
-            
-            // Refresh standings
-            await window.gameLogicManager.loadStandings();
-            console.log('✅ Standings refreshed');
-            
-            // Debug again to see the results
-            await window.debugAdamFirth();
-            
-        } catch (error) {
-            console.error('❌ Error processing fixtures:', error);
+        } else {
+            console.error('❌ GameLogicManager not available');
         }
     };
     
