@@ -581,6 +581,9 @@ class ClubService {
         // Load and update edition selector for the current club
         if (clubId && editionId) {
             this.loadClubEditions(clubId);
+            
+            // Automatically navigate to current gameweek fixtures tab
+            this.navigateToCurrentGameweek();
         }
     }
 
@@ -599,6 +602,11 @@ class ClubService {
             
             // Load and update edition selector for the stored club
             this.loadClubEditions(storedClub);
+            
+            // Automatically navigate to current gameweek fixtures tab
+            setTimeout(() => {
+                this.navigateToCurrentGameweek();
+            }, 1000); // Small delay to ensure everything is loaded
             
             return true;
         }
@@ -870,6 +878,185 @@ To set up sample clubs, run:
         if (this.currentClub) {
             console.log('🎨 ClubService: Applying styling for current club:', this.currentClub);
             this.applyClubStyling(this.currentClub);
+        }
+    }
+
+    // Navigate to current gameweek fixtures tab
+    async navigateToCurrentGameweek() {
+        try {
+            console.log('🎯 ClubService: Navigating to current gameweek fixtures tab...');
+            
+            // Switch to fixtures tab first
+            this.switchToFixturesTab();
+            
+            // Calculate and set the current gameweek
+            const currentGameweek = await this.calculateCurrentGameweek();
+            if (currentGameweek) {
+                console.log(`🎯 ClubService: Setting current gameweek to ${currentGameweek}`);
+                this.setCurrentGameweek(currentGameweek);
+            }
+            
+        } catch (error) {
+            console.error('ClubService: Error navigating to current gameweek:', error);
+        }
+    }
+
+    // Switch to fixtures tab
+    switchToFixturesTab() {
+        console.log('🎯 ClubService: Switching to fixtures tab...');
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Remove active class from all tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Activate fixtures tab
+        const fixturesTab = document.querySelector('[data-tab="fixtures"]');
+        if (fixturesTab) {
+            fixturesTab.classList.add('active');
+            console.log('✅ Fixtures tab activated');
+        }
+        
+        // Activate fixtures content
+        const fixturesContent = document.getElementById('fixturesTab');
+        if (fixturesContent) {
+            fixturesContent.classList.add('active');
+            console.log('✅ Fixtures content activated');
+        }
+    }
+
+    // Set current gameweek
+    setCurrentGameweek(gameweek) {
+        console.log(`🎯 ClubService: Setting current gameweek to ${gameweek}`);
+        
+        // Update EditionService if available
+        if (window.editionService && typeof window.editionService.setCurrentGameweek === 'function') {
+            window.editionService.setCurrentGameweek(gameweek);
+        }
+        
+        // Update gameweek display elements
+        const currentGameweekSpan = document.getElementById('currentGameweek');
+        if (currentGameweekSpan) {
+            currentGameweekSpan.textContent = gameweek;
+        }
+        
+        const gameweekSelect = document.getElementById('gameweekSelect');
+        if (gameweekSelect) {
+            gameweekSelect.value = gameweek;
+        }
+        
+        // Update navigation buttons
+        this.updateGameweekNavigation(gameweek);
+    }
+
+    // Update gameweek navigation
+    updateGameweekNavigation(currentGameweek) {
+        const prevButton = document.getElementById('prevGameweek');
+        const nextButton = document.getElementById('nextGameweek');
+        
+        if (prevButton) {
+            prevButton.disabled = currentGameweek <= 1;
+            prevButton.style.opacity = currentGameweek <= 1 ? '0.5' : '1';
+        }
+        
+        if (nextButton) {
+            // We'll need to get total gameweeks from somewhere
+            // For now, assume 10 gameweeks
+            const totalGameweeks = 10;
+            nextButton.disabled = currentGameweek >= totalGameweeks;
+            nextButton.style.opacity = currentGameweek >= totalGameweeks ? '0.5' : '1';
+        }
+    }
+
+    // Calculate current gameweek based on deadlines
+    async calculateCurrentGameweek() {
+        try {
+            if (!this.currentClub || !this.currentEdition) {
+                console.log('⚠️ ClubService: No club or edition set for gameweek calculation');
+                return 1;
+            }
+            
+            console.log(`🎯 ClubService: Calculating current gameweek for ${this.currentClub}/${this.currentEdition}`);
+            
+            // Get all fixtures for the current edition
+            const fixturesSnapshot = await this.db.collection('clubs').doc(this.currentClub)
+                .collection('editions').doc(this.currentEdition)
+                .collection('fixtures')
+                .get();
+            
+            if (fixturesSnapshot.empty) {
+                console.log('ℹ️ ClubService: No fixtures found, defaulting to gameweek 1');
+                return 1;
+            }
+            
+            const now = new Date();
+            let currentGameweek = 1;
+            
+            // Group fixtures by gameweek and check deadlines
+            const fixturesByGameweek = {};
+            fixturesSnapshot.docs.forEach(doc => {
+                const fixture = doc.data();
+                const gameweek = fixture.gameWeek || fixture.gameweek;
+                if (!fixturesByGameweek[gameweek]) {
+                    fixturesByGameweek[gameweek] = [];
+                }
+                fixturesByGameweek[gameweek].push(fixture);
+            });
+            
+            // Sort gameweeks and find the first one where deadline hasn't passed
+            const sortedGameweeks = Object.keys(fixturesByGameweek).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            for (const gameweek of sortedGameweeks) {
+                const fixtures = fixturesByGameweek[gameweek];
+                if (fixtures.length === 0) continue;
+                
+                // Find the earliest kick-off time for this gameweek
+                const earliestFixture = fixtures.reduce((earliest, fixture) => {
+                    try {
+                        const fixtureTime = new Date(`${fixture.date}T${fixture.kickOffTime || fixture.time}`);
+                        const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime || earliest.time}`);
+                        
+                        if (isNaN(fixtureTime.getTime())) return earliest;
+                        if (isNaN(earliestTime.getTime())) return fixture;
+                        
+                        return fixtureTime < earliestTime ? fixture : earliest;
+                    } catch (error) {
+                        return earliest;
+                    }
+                });
+                
+                const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime || earliestFixture.time}`);
+                if (isNaN(deadlineTime.getTime())) continue;
+                
+                // Check if deadline has passed (with 1 day buffer for same-day deadlines)
+                const deadlineBuffer = new Date(deadlineTime);
+                deadlineBuffer.setDate(deadlineBuffer.getDate() - 1);
+                
+                if (now < deadlineBuffer) {
+                    currentGameweek = parseInt(gameweek);
+                    console.log(`🎯 ClubService: Found current gameweek ${currentGameweek} - deadline not yet passed`);
+                    break;
+                } else if (now < deadlineTime) {
+                    // Same day deadline - still allow picks
+                    currentGameweek = parseInt(gameweek);
+                    console.log(`🎯 ClubService: Found current gameweek ${currentGameweek} - same day deadline`);
+                    break;
+                } else {
+                    console.log(`🎯 ClubService: Gameweek ${gameweek} deadline has passed`);
+                }
+            }
+            
+            console.log(`🎯 ClubService: Calculated current gameweek: ${currentGameweek}`);
+            return currentGameweek;
+            
+        } catch (error) {
+            console.error('ClubService: Error calculating current gameweek:', error);
+            return 1;
         }
     }
 }
