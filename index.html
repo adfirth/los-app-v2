@@ -109,12 +109,13 @@
                             <span id="livesCount">2</span>
                         </span>
                     </div>
-                    <!-- Connection Status Indicator -->
-                    <div id="connectionStatus" class="connection-status">
+                    <!-- Connection Status Indicator - Hidden by default, shown only when needed -->
+                    <div id="connectionStatus" class="connection-status hidden">
                         <i class="fas fa-circle"></i>
                         <span id="connectionText">Connecting...</span>
                     </div>
-                    <button id="resetConnectionBtn" class="btn btn-warning btn-sm" title="Reset Firebase Connection" style="margin-right: 10px;">
+                    <!-- Refresh button - Hidden by default, shown only when needed -->
+                    <button id="resetConnectionBtn" class="btn btn-warning btn-sm hidden" title="Reset Firebase Connection">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                     <button id="logoutBtn" class="btn btn-secondary">

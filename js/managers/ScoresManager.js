@@ -1203,10 +1203,32 @@ class ScoresManager {
         const homeScore = event.match['home-team'].score;
         const awayScore = event.match['away-team'].score;
 
-        // Find matching fixture
-        const fixtureIndex = fixtures.findIndex(fixture => 
-            fixture.homeTeam === homeTeamName && fixture.awayTeam === awayTeamName
-        );
+        // Find matching fixture with flexible team name matching
+        const fixtureIndex = fixtures.findIndex(fixture => {
+            // Try exact match first
+            if (fixture.homeTeam === homeTeamName && fixture.awayTeam === awayTeamName) {
+                return true;
+            }
+            
+            // Try case-insensitive match
+            if (fixture.homeTeam.toLowerCase() === homeTeamName.toLowerCase() && 
+                fixture.awayTeam.toLowerCase() === awayTeamName.toLowerCase()) {
+                return true;
+            }
+            
+            // Try partial match (in case of slight naming differences)
+            const homeMatch = fixture.homeTeam.toLowerCase().includes(homeTeamName.toLowerCase()) || 
+                             homeTeamName.toLowerCase().includes(fixture.homeTeam.toLowerCase());
+            const awayMatch = fixture.awayTeam.toLowerCase().includes(awayTeamName.toLowerCase()) || 
+                             awayTeamName.toLowerCase().includes(fixture.awayTeam.toLowerCase());
+            
+            if (homeMatch && awayMatch) {
+                console.log(`🔍 ScoresManager: Found partial match: "${fixture.homeTeam}" vs "${fixture.awayTeam}" for event "${homeTeamName}" vs "${awayTeamName}"`);
+                return true;
+            }
+            
+            return false;
+        });
 
         if (fixtureIndex === -1) {
             console.log('🔍 ScoresManager: No matching fixture found for event:', {

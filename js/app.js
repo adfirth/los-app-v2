@@ -907,9 +907,19 @@ class LOSApp {
         } else {
             // Fallback to direct DOM manipulation
             const statusIndicator = document.getElementById('connectionStatus');
+            const resetBtn = document.getElementById('resetConnectionBtn');
+            
             if (statusIndicator) {
-                statusIndicator.className = `connection-status ${isOnline ? 'connected' : 'disconnected'}`;
-                statusIndicator.textContent = isOnline ? 'Connected' : 'Disconnected';
+                if (isOnline) {
+                    // Hide connection status and reset button when connected
+                    statusIndicator.classList.add('hidden');
+                    if (resetBtn) resetBtn.classList.add('hidden');
+                } else {
+                    // Show connection status and reset button when disconnected
+                    statusIndicator.classList.remove('hidden');
+                    statusIndicator.className = 'connection-status disconnected';
+                    if (resetBtn) resetBtn.classList.remove('hidden');
+                }
             }
         }
     }

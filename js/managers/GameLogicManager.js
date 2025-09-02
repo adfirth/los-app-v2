@@ -343,6 +343,35 @@ class GameLogicManager {
             
             console.log('🔍 GameLogicManager: Adding player to standings (new):', playerData);
             this.standings.push(playerData);
+            
+            // Update header with current user's lives
+            if (playerData.isCurrentUser) {
+                this.updateHeaderUserLives(playerData);
+            }
+        }
+    }
+
+    // Update header with current user's lives
+    updateHeaderUserLives(playerData) {
+        const livesCount = document.getElementById('livesCount');
+        const userLives = document.getElementById('userLives');
+        const userName = document.getElementById('userName');
+        
+        if (livesCount) {
+            livesCount.textContent = playerData.lives;
+            console.log(`🔍 GameLogicManager: Updated header lives to: ${playerData.lives}`);
+        }
+        
+        if (userLives) {
+            if (playerData.lives <= 0) {
+                userLives.classList.add('eliminated');
+            } else {
+                userLives.classList.remove('eliminated');
+            }
+        }
+        
+        if (userName && playerData.displayName) {
+            userName.textContent = playerData.displayName;
         }
     }
 

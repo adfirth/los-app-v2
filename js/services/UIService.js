@@ -34,23 +34,35 @@ class UIService {
         // Remove all status classes
         this.connectionStatus.classList.remove('connected', 'disconnected', 'connecting');
         
-        // Add appropriate class and update text
+        // Show/hide connection status based on status
+        const resetBtn = document.getElementById('resetConnectionBtn');
+        
         switch (status) {
             case 'connected':
-                this.connectionStatus.classList.add('connected');
-                this.connectionText.textContent = message || 'Connected';
+                // Hide connection status and reset button when connected
+                this.connectionStatus.classList.add('hidden');
+                if (resetBtn) resetBtn.classList.add('hidden');
                 break;
             case 'disconnected':
+                // Show connection status and reset button when disconnected
+                this.connectionStatus.classList.remove('hidden');
                 this.connectionStatus.classList.add('disconnected');
                 this.connectionText.textContent = message || 'Disconnected';
+                if (resetBtn) resetBtn.classList.remove('hidden');
                 break;
             case 'connecting':
+                // Show connection status when connecting
+                this.connectionStatus.classList.remove('hidden');
                 this.connectionStatus.classList.add('connecting');
                 this.connectionText.textContent = message || 'Connecting...';
+                if (resetBtn) resetBtn.classList.add('hidden');
                 break;
             default:
+                // Show connection status for unknown states
+                this.connectionStatus.classList.remove('hidden');
                 this.connectionStatus.classList.add('connecting');
                 this.connectionText.textContent = message || 'Unknown';
+                if (resetBtn) resetBtn.classList.add('hidden');
         }
     }
 

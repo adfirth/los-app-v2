@@ -210,8 +210,11 @@ class ClubService {
         });
     }
 
-    updateClubSelectors() {
+    async updateClubSelectors() {
         // Updating club selectors...
+        
+        // Get user's registered clubs and editions
+        const userClubs = await this.getUserRegisteredClubs();
         
         // Update registration form club selector
         const clubSelect = document.getElementById('clubSelect');
@@ -220,7 +223,7 @@ class ClubService {
             clubSelect.innerHTML = '<option value="">Choose a club...</option>';
             this.availableClubs.forEach(clubId => {
                 const club = this.clubData[clubId];
-                if (club) {
+                if (club && this.shouldShowClub(clubId, userClubs)) {
                     const option = document.createElement('option');
                     option.value = clubId;
                     option.textContent = club.name;
@@ -241,7 +244,7 @@ class ClubService {
             headerClubSelect.innerHTML = '<option value="">Select Club...</option>';
             this.availableClubs.forEach(clubId => {
                 const club = this.clubData[clubId];
-                if (club) {
+                if (club && this.shouldShowClub(clubId, userClubs)) {
                     const option = document.createElement('option');
                     option.value = clubId;
                     option.textContent = club.name;
@@ -332,14 +335,22 @@ class ClubService {
         }
     }
 
-    updateEditionSelector(editions) {
+    async updateEditionSelector(editions) {
         // Check if user is Super Admin
         const isSuperAdmin = window.losApp?.managers?.superAdmin?.isSuperAdmin;
+        
+        // Get user's registered clubs and editions
+        const userClubs = await this.getUserRegisteredClubs();
         
         const editionSelect = document.getElementById('editionSelect');
         if (editionSelect) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
             editions.forEach(edition => {
+                // Check if edition should be shown to current user
+                if (!this.shouldShowEdition(edition.id, userClubs, this.currentClub)) {
+                    return;
+                }
+                
                 const option = document.createElement('option');
                 option.value = edition.id; // Use edition.id, not edition.editionId
                 
@@ -369,6 +380,11 @@ class ClubService {
         if (headerEditionSelect) {
             headerEditionSelect.innerHTML = '<option value="">Select Edition...</option>';
             editions.forEach(edition => {
+                // Check if edition should be shown to current user
+                if (!this.shouldShowEdition(edition.id, userClubs, this.currentClub)) {
+                    return;
+                }
+                
                 const option = document.createElement('option');
                 option.value = edition.id; // Use edition.id, not edition.editionId
                 
@@ -582,6 +598,78 @@ class ClubService {
         }
         
         return false;
+    }
+
+    // Get user's registered clubs and editions
+    async getUserRegisteredClubs() {
+        try {
+            const userId = window.losApp?.managers?.auth?.getCurrentUserId();
+            if (!userId || !this.db) {
+                return {};
+            }
+
+            const userClubs = {};
+            
+            // Check each available club for user registration
+            for (const clubId of this.availableClubs) {
+                try {
+                    const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
+                        .collection('editions').get();
+                    
+                    const userEditions = [];
+                    for (const editionDoc of editionsSnapshot.docs) {
+                        const userDoc = await this.db.collection('clubs').doc(clubId)
+                            .collection('editions').doc(editionDoc.id)
+                            .collection('users').doc(userId).get();
+                        
+                        if (userDoc.exists) {
+                            userEditions.push(editionDoc.id);
+                        }
+                    }
+                    
+                    if (userEditions.length > 0) {
+                        userClubs[clubId] = userEditions;
+                    }
+                } catch (error) {
+                    console.error(`Error checking user registration for club ${clubId}:`, error);
+                }
+            }
+            
+            return userClubs;
+        } catch (error) {
+            console.error('Error getting user registered clubs:', error);
+            return {};
+        }
+    }
+
+    // Check if a club should be shown to the current user
+    shouldShowClub(clubId, userClubs) {
+        // Check if user is admin or super admin
+        const isAdmin = window.losApp?.managers?.admin?.isAdmin;
+        const isSuperAdmin = window.losApp?.managers?.superAdmin?.isSuperAdmin;
+        
+        // Admin and super admin can see all clubs
+        if (isAdmin || isSuperAdmin) {
+            return true;
+        }
+        
+        // Regular users can only see clubs they're registered for
+        return userClubs && userClubs[clubId] && userClubs[clubId].length > 0;
+    }
+
+    // Check if an edition should be shown to the current user
+    shouldShowEdition(editionId, userClubs, clubId) {
+        // Check if user is admin or super admin
+        const isAdmin = window.losApp?.managers?.admin?.isAdmin;
+        const isSuperAdmin = window.losApp?.managers?.superAdmin?.isSuperAdmin;
+        
+        // Admin and super admin can see all editions
+        if (isAdmin || isSuperAdmin) {
+            return true;
+        }
+        
+        // Regular users can only see editions they're registered for
+        return userClubs && userClubs[clubId] && userClubs[clubId].includes(editionId);
     }
 
     // Check if user is admin for a specific club
@@ -1062,7 +1150,11 @@ To set up sample clubs, run:
     // Calculate current gameweek based on deadlines
     async calculateCurrentGameweek() {
         try {
+            console.log('🎯 ClubService: calculateCurrentGameweek called');
+            console.log('🎯 ClubService: Current club:', this.currentClub, 'Current edition:', this.currentEdition);
+            
             if (!this.currentClub || !this.currentEdition) {
+                console.log('🎯 ClubService: Missing club or edition, returning 1');
                 return 1;
             }
             
@@ -1072,7 +1164,10 @@ To set up sample clubs, run:
                 .collection('fixtures')
                 .get();
             
+            console.log('🎯 ClubService: Found', fixturesSnapshot.size, 'fixtures for edition', this.currentEdition);
+            
             if (fixturesSnapshot.empty) {
+                console.log('🎯 ClubService: No fixtures found, returning 1');
                 return 1;
             }
             
