@@ -390,6 +390,12 @@ body {
     padding: 8px 0;
 }
 
+#adminButtonsContainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 /* Removed duplicate header-right definition */
 
 .club-selector {

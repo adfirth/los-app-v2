@@ -47,25 +47,16 @@ class SuperAdminManager {
             toggle.style.display = 'none'; // Hidden by default
             toggle.addEventListener('click', () => this.toggleSuperAdminDashboard());
             
-            // Insert into the header-right section, after the club selector
-            const headerRight = header.querySelector('.header-right');
-            console.log('🔍 SuperAdminManager: Header-right element found:', !!headerRight);
+            // Insert into the admin buttons container
+            const adminButtonsContainer = document.getElementById('adminButtonsContainer');
+            console.log('🔍 SuperAdminManager: Admin buttons container found:', !!adminButtonsContainer);
             
-            if (headerRight) {
-                // Insert after the club selector but before the user info
-                const clubSelector = headerRight.querySelector('.club-selector');
-                console.log('🔍 SuperAdminManager: Club selector found:', !!clubSelector);
-                
-                if (clubSelector) {
-                    clubSelector.parentNode.insertBefore(toggle, clubSelector.nextSibling);
-                    console.log('✅ SuperAdminManager: Toggle button inserted after club selector');
-                } else {
-                    // Fallback: insert at the beginning of header-right
-                    headerRight.insertBefore(toggle, headerRight.firstChild);
-                    console.log('✅ SuperAdminManager: Toggle button inserted at beginning of header-right');
-                }
+            if (adminButtonsContainer) {
+                // Insert the super admin toggle button
+                adminButtonsContainer.appendChild(toggle);
+                console.log('✅ SuperAdminManager: Toggle button inserted into admin buttons container');
             } else {
-                console.error('❌ SuperAdminManager: Header-right element not found');
+                console.error('❌ SuperAdminManager: Admin buttons container not found');
             }
         } else {
             console.log('ℹ️ SuperAdminManager: Toggle button already exists or header not found');

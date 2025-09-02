@@ -179,9 +179,9 @@ class AdminManager {
 
     showAdminButton() {
         // Add admin button to header if not already present
-        const headerRight = document.querySelector('.header-right');
+        const adminButtonsContainer = document.getElementById('adminButtonsContainer');
         
-        if (headerRight && !document.getElementById('adminBtn')) {
+        if (adminButtonsContainer && !document.getElementById('adminBtn')) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'adminBtn';
             adminBtn.className = 'btn btn-primary'; // Changed to primary for better visibility
@@ -212,7 +212,7 @@ class AdminManager {
                 // Touchstart event for better interaction
             });
             
-            headerRight.insertBefore(adminBtn, headerRight.firstChild);
+            adminButtonsContainer.appendChild(adminBtn);
         }
     }
 
