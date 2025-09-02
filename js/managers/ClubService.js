@@ -170,6 +170,11 @@ class ClubService {
         // Use requestAnimationFrame to ensure DOM is ready
         requestAnimationFrame(() => {
             this.updateClubSelectors();
+            
+            // Also try again after a short delay to handle any late DOM rendering
+            setTimeout(() => {
+                this.updateClubSelectors();
+            }, 100);
         });
     }
 

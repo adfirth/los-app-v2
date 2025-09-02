@@ -777,6 +777,14 @@ class AdminManager {
             const currentEdition = window.losApp?.managers?.club?.currentEdition;
             const currentGameweek = window.editionService.getCurrentGameweek();
             
+            // Check if there are already loaded scores to preserve
+            const existingScoresList = document.getElementById('scoresList');
+            let existingScoresContent = '';
+            if (existingScoresList && existingScoresList.innerHTML && !existingScoresList.innerHTML.includes('No Scores Loaded')) {
+                existingScoresContent = existingScoresList.innerHTML;
+                console.log('🔧 AdminManager: Preserving existing scores content');
+            }
+            
             adminContent.innerHTML = `
                 <div class="admin-section">
                     <div class="admin-section-header">
@@ -829,11 +837,13 @@ class AdminManager {
                     
                     <div class="scores-display">
                         <div id="scoresList" class="scores-list">
-                            <div class="empty-state">
-                                <i class="fas fa-futbol"></i>
-                                <h4>No Scores Loaded</h4>
-                                <p>Select a club, edition, and gameweek to view and update scores</p>
-                            </div>
+                            ${existingScoresContent || `
+                                <div class="empty-state">
+                                    <i class="fas fa-futbol"></i>
+                                    <h4>No Scores Loaded</h4>
+                                    <p>Select a club, edition, and gameweek to view and update scores</p>
+                                </div>
+                            `}
                         </div>
                     </div>
                     
@@ -2076,6 +2086,22 @@ class AdminManager {
 
             scoresList.innerHTML = scoresHTML;
             console.log('🔧 AdminManager: Scores displayed successfully');
+            console.log('🔧 AdminManager: scoresList innerHTML length:', scoresList.innerHTML.length);
+            console.log('🔧 AdminManager: scoresList children count:', scoresList.children.length);
+            
+            // Force a re-render by triggering a DOM update
+            scoresList.style.display = 'none';
+            scoresList.offsetHeight; // Force reflow
+            scoresList.style.display = 'block';
+            
+            // Add a marker to verify the content was updated
+            const marker = document.createElement('div');
+            marker.id = 'scoresUpdatedMarker';
+            marker.style.cssText = 'background: #4CAF50; color: white; padding: 5px; margin: 5px 0; border-radius: 3px; font-size: 12px;';
+            marker.textContent = `✅ Scores updated at ${new Date().toLocaleTimeString()} - ${fixtures.length} fixtures loaded`;
+            scoresList.appendChild(marker);
+            
+            console.log('🔧 AdminManager: Added update marker to scoresList');
 
         } catch (error) {
             console.error('❌ AdminManager: Error loading scores for display:', error);
