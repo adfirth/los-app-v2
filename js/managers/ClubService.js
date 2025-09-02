@@ -55,6 +55,18 @@ class ClubService {
         this.setupRealtimeListeners();
         this.isInitialized = true;
         console.log('✅ ClubService: Full initialization complete');
+        
+        // Add global helper function for debugging
+        window.fixClubService = () => {
+            console.log('🔧 ClubService: Manual fix triggered...');
+            if (this.forceFixClubLoading) {
+                this.forceFixClubLoading();
+            } else {
+                console.log('🔧 ClubService: forceFixClubLoading method not available');
+            }
+        };
+        
+        console.log('🔧 ClubService: Global helper function added: window.fixClubService()');
     }
 
     setupBasicStructure() {
