@@ -369,19 +369,39 @@ class GameLogicManager {
             let homeScore = fixtureData.homeScore;
             let awayScore = fixtureData.awayScore;
             
+            console.log('🔍 GameLogicManager: Initial score check:', { 
+                homeScore: fixtureData.homeScore, 
+                awayScore: fixtureData.awayScore,
+                hasApiData: !!fixtureData.apiData
+            });
+            
             // If main score fields are null, check apiData
             if (homeScore === null || awayScore === null) {
                 if (fixtureData.apiData) {
+                    console.log('🔍 GameLogicManager: Checking apiData for scores:', fixtureData.apiData);
+                    
                     // Check apiData for scores
                     if (fixtureData.apiData['home-team'] && fixtureData.apiData['away-team']) {
-                        homeScore = homeScore || fixtureData.apiData['home-team'].score;
-                        awayScore = awayScore || fixtureData.apiData['away-team'].score;
+                        const apiHomeScore = fixtureData.apiData['home-team'].score;
+                        const apiAwayScore = fixtureData.apiData['away-team'].score;
+                        console.log('🔍 GameLogicManager: Found scores in apiData:', { apiHomeScore, apiAwayScore });
+                        
+                        homeScore = homeScore || apiHomeScore;
+                        awayScore = awayScore || apiAwayScore;
                     }
                     // Also check for direct score fields in apiData
-                    if (fixtureData.apiData.homeScore !== undefined) homeScore = homeScore || fixtureData.apiData.homeScore;
-                    if (fixtureData.apiData.awayScore !== undefined) awayScore = awayScore || fixtureData.apiData.awayScore;
+                    if (fixtureData.apiData.homeScore !== undefined) {
+                        console.log('🔍 GameLogicManager: Found homeScore in apiData:', fixtureData.apiData.homeScore);
+                        homeScore = homeScore || fixtureData.apiData.homeScore;
+                    }
+                    if (fixtureData.apiData.awayScore !== undefined) {
+                        console.log('🔍 GameLogicManager: Found awayScore in apiData:', fixtureData.apiData.awayScore);
+                        awayScore = awayScore || fixtureData.apiData.awayScore;
+                    }
                 }
             }
+            
+            console.log('🔍 GameLogicManager: Final score values:', { homeScore, awayScore });
             
             // Check if fixture is finished
             const isFinished = fixtureData.status === 'finished' || 
