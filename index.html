@@ -89,43 +89,52 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <div class="header-left">
-                    <img src="images/Logo Round1.png" alt="Altrincham FC" class="header-logo header-logo-left">
-                    <h1>Last One Standing</h1>
-                </div>
-                <div class="header-center">
-                    <!-- Center content can be added here if needed -->
-                </div>
-                <div class="header-right">
-                    <img src="images/Logo Round1.png" alt="Altrincham FC" class="header-logo header-logo-right">
-                    <div class="club-selector">
-                        <select id="headerClubSelect" class="club-select">
-                            <option value="">Select Club...</option>
-                        </select>
-                        <select id="headerEditionSelect" class="edition-select">
-                            <option value="">Select Edition...</option>
-                        </select>
+                <!-- Left Logo - spans both rows -->
+                <img src="images/Logo Round1.png" alt="Altrincham FC" class="header-logo header-logo-left">
+                
+                <!-- Main Content Area -->
+                <div class="header-main">
+                    <!-- First Row: Title -->
+                    <div class="header-row header-row-top">
+                        <h1>Last One Standing</h1>
                     </div>
-                    <div class="user-info">
-                        <span id="userName">Player</span>
-                        <span id="userLives" class="lives-indicator">
-                            <i class="fas fa-heart"></i>
-                            <span id="livesCount">2</span>
-                        </span>
+                    
+                    <!-- Second Row: Controls -->
+                    <div class="header-row header-row-bottom">
+                        <div class="header-controls">
+                            <div class="club-selector">
+                                <select id="headerClubSelect" class="club-select">
+                                    <option value="">Select Club...</option>
+                                </select>
+                                <select id="headerEditionSelect" class="edition-select">
+                                    <option value="">Select Edition...</option>
+                                </select>
+                            </div>
+                            <div class="user-info">
+                                <span id="userName">Player</span>
+                                <span id="userLives" class="lives-indicator">
+                                    <i class="fas fa-heart"></i>
+                                    <span id="livesCount">2</span>
+                                </span>
+                            </div>
+                            <!-- Connection Status Indicator - Hidden by default, shown only when needed -->
+                            <div id="connectionStatus" class="connection-status hidden">
+                                <i class="fas fa-circle"></i>
+                                <span id="connectionText">Connecting...</span>
+                            </div>
+                            <!-- Refresh button - Hidden by default, shown only when needed -->
+                            <button id="resetConnectionBtn" class="btn btn-warning btn-sm hidden" title="Reset Firebase Connection">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button id="logoutBtn" class="btn btn-secondary">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
                     </div>
-                    <!-- Connection Status Indicator - Hidden by default, shown only when needed -->
-                    <div id="connectionStatus" class="connection-status hidden">
-                        <i class="fas fa-circle"></i>
-                        <span id="connectionText">Connecting...</span>
-                    </div>
-                    <!-- Refresh button - Hidden by default, shown only when needed -->
-                    <button id="resetConnectionBtn" class="btn btn-warning btn-sm hidden" title="Reset Firebase Connection">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <button id="logoutBtn" class="btn btn-secondary">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
                 </div>
+                
+                <!-- Right Logo - spans both rows -->
+                <img src="images/Logo Round1.png" alt="Altrincham FC" class="header-logo header-logo-right">
             </div>
         </header>
 
