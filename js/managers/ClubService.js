@@ -163,19 +163,24 @@ class ClubService {
             }
         }
 
-        // Also discover and load any additional clubs that might exist in the database
-        await this.discoverAllClubs();
-
         console.log('🔍 ClubService: After loading all clubs, clubData keys:', Object.keys(this.clubData));
         console.log('🔍 ClubService: After loading all clubs, availableClubs length:', this.availableClubs.length);
         console.log('🔍 ClubService: After loading all clubs, isReady check:', this.isReady);
         
-        this.updateClubSelectors();
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+            this.updateClubSelectors();
+        });
     }
 
     updateClubSelectors() {
+        console.log('🔧 ClubService: updateClubSelectors called');
+        console.log('🔧 ClubService: availableClubs:', this.availableClubs);
+        console.log('🔧 ClubService: clubData keys:', Object.keys(this.clubData));
+        
         // Update registration form club selector
         const clubSelect = document.getElementById('clubSelect');
+        console.log('🔧 ClubService: clubSelect element found:', !!clubSelect);
         if (clubSelect) {
             clubSelect.innerHTML = '<option value="">Choose a club...</option>';
             this.availableClubs.forEach(clubId => {
@@ -185,12 +190,15 @@ class ClubService {
                     option.value = clubId;
                     option.textContent = club.name;
                     clubSelect.appendChild(option);
+                    console.log(`🔧 ClubService: Added option for ${clubId}: ${club.name}`);
                 }
             });
+            console.log(`🔧 ClubService: Registration form club selector updated with ${this.availableClubs.length} clubs`);
         }
 
         // Update header club selector
         const headerClubSelect = document.getElementById('headerClubSelect');
+        console.log('🔧 ClubService: headerClubSelect element found:', !!headerClubSelect);
         if (headerClubSelect) {
             headerClubSelect.innerHTML = '<option value="">Select Club...</option>';
             this.availableClubs.forEach(clubId => {
@@ -203,8 +211,12 @@ class ClubService {
                         option.selected = true;
                     }
                     headerClubSelect.appendChild(option);
+                    console.log(`🔧 ClubService: Added header option for ${clubId}: ${club.name}`);
                 }
             });
+            console.log(`🔧 ClubService: Header club selector updated with ${this.availableClubs.length} clubs`);
+        } else {
+            console.log('🔧 ClubService: Header club selector element not found');
         }
     }
 
