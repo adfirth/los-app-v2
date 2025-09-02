@@ -1185,12 +1185,17 @@ To set up sample clubs, run:
                 fixturesByGameweek[gameweek].push(fixture);
             });
             
+            console.log('🎯 ClubService: Fixtures grouped by gameweek:', Object.keys(fixturesByGameweek).map(gw => `${gw}: ${fixturesByGameweek[gw].length} fixtures`));
+            
             // Sort gameweeks and find the first one where deadline hasn't passed
             const sortedGameweeks = Object.keys(fixturesByGameweek).sort((a, b) => parseInt(a) - parseInt(b));
+            console.log('🎯 ClubService: Sorted gameweeks:', sortedGameweeks);
             
             for (const gameweek of sortedGameweeks) {
                 const fixtures = fixturesByGameweek[gameweek];
                 if (fixtures.length === 0) continue;
+                
+                console.log(`🎯 ClubService: Checking gameweek ${gameweek} with ${fixtures.length} fixtures`);
                 
                 // Find the earliest kick-off time for this gameweek
                 const earliestFixture = fixtures.reduce((earliest, fixture) => {
@@ -1208,19 +1213,28 @@ To set up sample clubs, run:
                 });
                 
                 const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime || earliestFixture.time}`);
-                if (isNaN(deadlineTime.getTime())) continue;
+                if (isNaN(deadlineTime.getTime())) {
+                    console.log(`🎯 ClubService: Invalid deadline time for gameweek ${gameweek}, skipping`);
+                    continue;
+                }
                 
                 // Check if deadline has passed (with 1 day buffer for same-day deadlines)
                 const deadlineBuffer = new Date(deadlineTime);
                 deadlineBuffer.setDate(deadlineBuffer.getDate() - 1);
                 
+                console.log(`🎯 ClubService: Gameweek ${gameweek} - Now: ${now.toISOString()}, Deadline: ${deadlineTime.toISOString()}, Buffer: ${deadlineBuffer.toISOString()}`);
+                
                 if (now < deadlineBuffer) {
+                    console.log(`🎯 ClubService: Gameweek ${gameweek} deadline hasn't passed (with buffer), setting as current`);
                     currentGameweek = parseInt(gameweek);
                     break;
                 } else if (now < deadlineTime) {
+                    console.log(`🎯 ClubService: Gameweek ${gameweek} same-day deadline, setting as current`);
                     // Same day deadline - still allow picks
                     currentGameweek = parseInt(gameweek);
                     break;
+                } else {
+                    console.log(`🎯 ClubService: Gameweek ${gameweek} deadline has passed, checking next gameweek`);
                 }
             }
             
