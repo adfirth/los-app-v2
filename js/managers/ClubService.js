@@ -1238,6 +1238,13 @@ To set up sample clubs, run:
                 }
             }
             
+            // If all deadlines have passed, return the highest available gameweek
+            if (currentGameweek === 1 && sortedGameweeks.length > 0) {
+                const highestGameweek = Math.max(...sortedGameweeks.map(gw => parseInt(gw)));
+                console.log(`🎯 ClubService: All deadlines passed, returning highest gameweek: ${highestGameweek}`);
+                return highestGameweek;
+            }
+            
             return currentGameweek;
             
         } catch (error) {
