@@ -26,7 +26,7 @@ class FootballWebPagesAPI {
             }
             
             this.isInitialized = true;
-            console.log('✅ FootballWebPagesAPI: Configuration initialized successfully');
+            // Configuration initialized successfully
             
             return true;
         } catch (error) {
@@ -50,7 +50,7 @@ class FootballWebPagesAPI {
             try {
                 const config = source();
                 if (config && config.RAPIDAPI_KEY && config.RAPIDAPI_KEY !== 'YOUR_RAPIDAPI_KEY_HERE') {
-                    console.log('✅ FootballWebPagesAPI: Configuration loaded from source');
+                    // Configuration loaded from source
                     return {
                         BASE_URL: config.BASE_URL || 'https://football-web-pages1.p.rapidapi.com',
                         RAPIDAPI_KEY: config.RAPIDAPI_KEY,

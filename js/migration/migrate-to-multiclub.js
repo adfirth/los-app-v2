@@ -33,7 +33,7 @@ class MultiClubMigration {
             // Step 7: Create global settings
             await this.createGlobalSettings();
             
-            console.log('✅ Migration completed successfully!');
+            // Migration completed successfully!
             console.log('📋 Next steps:');
             console.log('1. Update your application code to use new paths');
             console.log('2. Test the new structure');
@@ -62,7 +62,7 @@ class MultiClubMigration {
         };
         
         await this.db.collection('clubs').doc(this.sourceClubId).set(clubInfo);
-        console.log('✅ Club info created');
+        // Club info created
     }
 
     async createEditionStructure() {
@@ -89,7 +89,7 @@ class MultiClubMigration {
         
         await this.db.collection('clubs').doc(this.sourceClubId)
             .collection('editions').doc(this.sourceEditionId).set(editionData);
-        console.log('✅ Edition structure created');
+        // Edition structure created
     }
 
     async migrateUsers() {

@@ -22,7 +22,7 @@ class SampleClubSetup {
             // Update global settings
             await this.updateGlobalSettings();
             
-            console.log('✅ Sample clubs setup completed!');
+            // Sample clubs setup completed!
             console.log('📋 Created clubs:');
             console.log('- Altrincham FC Juniors (4 editions for 25/26 National League)');
             console.log('- Timperley FC (3 editions for 25/26 Premier League)');
@@ -139,7 +139,7 @@ class SampleClubSetup {
             await this.createDefaultEditionSettings(clubId, edition.editionId);
         }
         
-        console.log('✅ Altrincham FC Juniors setup completed');
+        // Altrincham FC Juniors setup completed
     }
 
     async setupTimperleyFC() {
@@ -231,7 +231,7 @@ class SampleClubSetup {
             await this.createDefaultEditionSettings(clubId, edition.editionId);
         }
         
-        console.log('✅ Timperley FC setup completed');
+        // Timperley FC setup completed
     }
 
     async setupDefaultClub() {
@@ -283,7 +283,7 @@ class SampleClubSetup {
         // Create default settings for the edition
         await this.createDefaultEditionSettings(clubId, defaultEdition.editionId);
         
-        console.log('✅ Default Club setup completed');
+        // Default Club setup completed
     }
 
     async createDefaultEditionSettings(clubId, editionId) {
