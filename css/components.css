@@ -1760,6 +1760,36 @@ input:checked + .slider:before {
     margin-right: 8px;
 }
 
+/* Previous pick indicator (padlock) for teams picked in other gameweeks */
+.fixture-card .previous-pick-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    color: #6c757d;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.fixture-card .previous-pick-indicator:hover {
+    color: #495057;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    transform: scale(1.1);
+}
+
+/* Ensure team buttons have relative positioning for absolute positioning of indicators */
+.fixture-card .team-btn {
+    position: relative;
+}
+
 /* Team badge in admin panels */
 .admin-panel .team-badge {
     margin-right: 6px;

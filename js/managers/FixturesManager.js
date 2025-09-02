@@ -697,6 +697,7 @@ class FixturesManager {
                     ${this.createTeamWithBadgeHTML(fixture.homeTeam, 'small')}
                     ${fixture.homeScore !== null && fixture.homeScore !== undefined ? `<span class="team-score">${this.getScoreValue(fixture.homeScore)}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
+                    ${this.isTeamPickedInOtherGameweek(fixture.homeTeam) ? `<span class="previous-pick-indicator" title="Picked in Gameweek ${this.getTeamPickGameweek(fixture.homeTeam)}">🔒</span>` : ''}
                 </button>
                 
                 <div class="vs-container">
@@ -712,6 +713,7 @@ class FixturesManager {
                     ${this.createTeamWithBadgeHTML(fixture.awayTeam, 'small')}
                     ${fixture.awayScore !== null && fixture.awayScore !== undefined ? `<span class="team-score">${this.getScoreValue(fixture.awayScore)}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
+                    ${this.isTeamPickedInOtherGameweek(fixture.awayTeam) ? `<span class="previous-pick-indicator" title="Picked in Gameweek ${this.getTeamPickGameweek(fixture.awayTeam)}">🔒</span>` : ''}
                 </button>
             </div>
         `;
@@ -1328,6 +1330,37 @@ class FixturesManager {
         } catch (error) {
             console.error('Error cleaning up sample fixtures:', error);
         }
+    }
+
+    /**
+     * Get the gameweek number where a team was picked
+     * @param {string} teamName - The name of the team
+     * @returns {number|null} - The gameweek number where the team was picked, or null if not found
+     */
+    getTeamPickGameweek(teamName) {
+        // Ensure userPicks is initialized
+        if (!this.userPicks) {
+            return null;
+        }
+        
+        // Check all gameweeks to see where this team was picked
+        for (const [gameweekKey, pick] of Object.entries(this.userPicks)) {
+            if (typeof pick === 'string') {
+                // Old format: direct string
+                if (pick === teamName) {
+                    // Extract gameweek number from key (e.g., "gw1" -> 1)
+                    return parseInt(gameweekKey.replace('gw', ''));
+                }
+            } else if (pick && pick.teamPicked) {
+                // New format: object with teamPicked property
+                if (pick.teamPicked === teamName) {
+                    // Extract gameweek number from key (e.g., "gw1" -> 1)
+                    return parseInt(gameweekKey.replace('gw', ''));
+                }
+            }
+        }
+        
+        return null;
     }
 }
 
