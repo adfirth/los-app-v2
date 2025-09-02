@@ -123,6 +123,21 @@ class DeadlineService {
                     fixturesByGameweek[gameweek] = [];
                 }
                 fixturesByGameweek[gameweek].push(fixture);
+                
+                // Debug: Log the first fixture of each gameweek to see the data structure
+                if (fixturesByGameweek[gameweek].length === 1) {
+                    console.log(`🔍 DeadlineService: Sample fixture data for GW${gameweek}:`, {
+                        id: doc.id,
+                        homeTeam: fixture.homeTeam,
+                        awayTeam: fixture.awayTeam,
+                        date: fixture.date,
+                        kickOffTime: fixture.kickOffTime,
+                        dateType: typeof fixture.date,
+                        timeType: typeof fixture.kickOffTime,
+                        hasDate: !!fixture.date,
+                        hasTime: !!fixture.kickOffTime
+                    });
+                }
             });
             
             console.log(`🔧 DeadlineService: Checking deadlines for ${Object.keys(fixturesByGameweek).length} gameweeks`);
@@ -133,15 +148,52 @@ class DeadlineService {
                 
                 // Find the earliest kick-off time for this gameweek
                 const earliestFixture = fixtures.reduce((earliest, fixture) => {
-                    const fixtureTime = new Date(`${fixture.date}T${fixture.kickOffTime}`);
-                    const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime}`);
-                    return fixtureTime < earliestTime ? fixture : earliest;
+                    try {
+                        const fixtureTime = new Date(`${fixture.date}T${fixture.kickOffTime}`);
+                        const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime}`);
+                        
+                        // Validate dates
+                        if (isNaN(fixtureTime.getTime())) {
+                            console.warn(`⚠️ DeadlineService: Invalid fixture date/time for ${fixture.homeTeam} vs ${fixture.awayTeam}:`, {
+                                date: fixture.date,
+                                kickOffTime: fixture.kickOffTime,
+                                combined: `${fixture.date}T${fixture.kickOffTime}`
+                            });
+                            return earliest;
+                        }
+                        
+                        if (isNaN(earliestTime.getTime())) {
+                            console.warn(`⚠️ DeadlineService: Invalid earliest fixture date/time:`, {
+                                date: earliest.date,
+                                kickOffTime: earliest.kickOffTime,
+                                combined: `${earliest.date}T${earliest.kickOffTime}`
+                            });
+                            return fixture;
+                        }
+                        
+                        return fixtureTime < earliestTime ? fixture : earliest;
+                    } catch (dateError) {
+                        console.warn(`⚠️ DeadlineService: Error parsing fixture date/time:`, dateError);
+                        return earliest;
+                    }
                 });
                 
+                // Validate the earliest fixture date/time
                 const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime}`);
+                if (isNaN(deadlineTime.getTime())) {
+                    console.warn(`⚠️ DeadlineService: Skipping Gameweek ${gameweek} - invalid date/time for earliest fixture:`, {
+                        fixture: `${earliestFixture.homeTeam} vs ${earliestFixture.awayTeam}`,
+                        date: earliestFixture.date,
+                        kickOffTime: earliestFixture.kickOffTime,
+                        combined: `${earliestFixture.date}T${earliestFixture.kickOffTime}`
+                    });
+                    continue;
+                }
+                
                 const now = new Date();
                 
                 console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Earliest fixture: ${earliestFixture.homeTeam} vs ${earliestFixture.awayTeam}`);
+                console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Date: ${earliestFixture.date}, Time: ${earliestFixture.kickOffTime}`);
                 console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Deadline time: ${deadlineTime.toISOString()}`);
                 console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Current time: ${now.toISOString()}`);
                 console.log(`🔧 DeadlineService: Gameweek ${gameweek} - Time until deadline (ms): ${deadlineTime.getTime() - now.getTime()}`);
