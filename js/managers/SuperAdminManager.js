@@ -71,6 +71,20 @@ class SuperAdminManager {
                 console.log('🔍 SuperAdminManager: .app-header exists:', !!document.querySelector('.app-header'));
                 console.log('🔍 SuperAdminManager: .header-controls exists:', !!document.querySelector('.header-controls'));
                 console.log('🔍 SuperAdminManager: All elements with "admin" in ID:', Array.from(document.querySelectorAll('[id*="admin"]')).map(el => el.id));
+                
+                // More detailed debugging
+                const appHeader = document.querySelector('.app-header');
+                if (appHeader) {
+                    console.log('🔍 SuperAdminManager: .app-header HTML structure:', appHeader.innerHTML.substring(0, 500) + '...');
+                    console.log('🔍 SuperAdminManager: .app-header children:', Array.from(appHeader.children).map(child => ({ tagName: child.tagName, className: child.className, id: child.id })));
+                }
+                
+                // Check if the element exists but is hidden
+                const headerControls = document.querySelector('.header-controls');
+                if (headerControls) {
+                    console.log('🔍 SuperAdminManager: .header-controls computed style:', window.getComputedStyle(headerControls).display);
+                    console.log('🔍 SuperAdminManager: .header-controls visibility:', window.getComputedStyle(headerControls).visibility);
+                }
             }
             
             // Retry after a short delay if container not found
