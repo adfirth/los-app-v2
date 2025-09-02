@@ -52,6 +52,9 @@ class ClubService {
             this.db = window.firebaseDB;
         }
         
+        // Set up basic structure first (this includes event listeners)
+        this.setupBasicStructure();
+        
         this.setupRealtimeListeners();
         this.isInitialized = true;
         console.log('✅ ClubService: Full initialization complete');
