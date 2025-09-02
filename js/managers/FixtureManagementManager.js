@@ -49,7 +49,20 @@ class FixtureManagementManager {
         }
 
         try {
+            // Add delay to avoid rate limiting
+            if (this.lastRequestTime) {
+                const timeSinceLastRequest = Date.now() - this.lastRequestTime;
+                const minDelay = 2000; // 2 second minimum delay to avoid rate limiting
+                if (timeSinceLastRequest < minDelay) {
+                    const delay = minDelay - timeSinceLastRequest;
+                    console.log(`⏳ Waiting ${delay}ms to avoid rate limiting...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            
+            this.lastRequestTime = Date.now();
             console.log(`🔍 Making API request to: ${url.toString()}`);
+            
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -59,6 +72,11 @@ class FixtureManagementManager {
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    console.log('⚠️ Rate limited, waiting 10 seconds before retry...');
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                    throw new Error(`API request failed: ${response.status} ${response.statusText} - Rate limited`);
+                }
                 throw new Error(`API request failed: ${response.status} ${response.statusText}`);
             }
 

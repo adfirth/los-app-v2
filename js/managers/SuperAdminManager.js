@@ -1156,6 +1156,11 @@ class SuperAdminManager {
                                         <i class="fas fa-search"></i> Load Fixtures
                                     </button>
                                 </div>
+                                <div>
+                                    <button onclick="window.losApp.managers.superAdmin.toggleEditionStatus(document.getElementById('currentFixturesClubSelect').value, document.getElementById('currentFixturesEditionSelect').value)" class="btn btn-warning" style="width: 100%; padding: 8px;" id="toggleEditionStatusBtn">
+                                        <i class="fas fa-toggle-on"></i> Toggle Edition Status
+                                    </button>
+                                </div>
                             </div>
                             
                             <!-- Delete All Fixtures Option -->
@@ -1543,6 +1548,45 @@ class SuperAdminManager {
     onCurrentFixturesEditionChange() {
         // This method can be used for additional logic when edition changes
         console.log('🔧 Current fixtures edition changed');
+    }
+
+    // Toggle edition active status
+    async toggleEditionStatus(clubId, editionId) {
+        try {
+            console.log(`🔧 SuperAdmin: Toggling edition status for ${clubId}/${editionId}`);
+            
+            // Get current edition data
+            const editionRef = this.db.collection('clubs').doc(clubId)
+                .collection('editions').doc(editionId);
+            
+            const editionDoc = await editionRef.get();
+            if (!editionDoc.exists) {
+                throw new Error('Edition not found');
+            }
+            
+            const currentStatus = editionDoc.data().isActive;
+            const newStatus = !currentStatus;
+            
+            // Update the edition status
+            await editionRef.update({
+                isActive: newStatus,
+                updated_at: new Date()
+            });
+            
+            console.log(`✅ SuperAdmin: Edition ${editionId} ${newStatus ? 'activated' : 'deactivated'}`);
+            
+            // Refresh the editions dropdown to show updated status
+            if (clubId === document.getElementById('currentFixturesClubSelect')?.value) {
+                this.loadEditionsForCurrentFixtures(clubId);
+            }
+            
+            // Show success message
+            alert(`Edition ${editionId} has been ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+            
+        } catch (error) {
+            console.error('❌ Error toggling edition status:', error);
+            alert(`Error toggling edition status: ${error.message}`);
+        }
     }
 
     async loadCurrentFixtures() {
