@@ -1138,5 +1138,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('❌ Error inspecting picks:', error);
             }
         };
+
+        // Add function to inspect all picks in the collection
+        window.inspectAllPicks = async () => {
+            console.log('🔍 Inspecting all picks in collection...');
+            
+            try {
+                const currentClub = 'altrincham-fc-juniors';
+                const currentEdition = '2025-26-national-league-1';
+                
+                // Get ALL picks (no filters)
+                const picksSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                    .collection('editions').doc(currentEdition)
+                    .collection('picks')
+                    .get();
+                
+                if (picksSnapshot.empty) {
+                    console.log('❌ No picks found in collection');
+                    return;
+                }
+                
+                console.log('🔍 Total picks in collection:', picksSnapshot.size);
+                
+                picksSnapshot.forEach((doc, index) => {
+                    const pickData = doc.data();
+                    console.log(`🔍 Pick ${index + 1} (ID: ${doc.id}):`, pickData);
+                    console.log(`🔍 Pick ${index + 1} fields:`, Object.keys(pickData));
+                    
+                    // Check for user identification fields
+                    const userFields = {
+                        userId: pickData.userId,
+                        uid: pickData.uid,
+                        user: pickData.user,
+                        'user-id': pickData['user-id']
+                    };
+                    console.log(`🔍 Pick ${index + 1} user fields:`, userFields);
+                    
+                    // Check for gameweek fields
+                    const gameweekFields = {
+                        gameweek: pickData.gameweek,
+                        gameWeek: pickData.gameWeek,
+                        'game-week': pickData['game-week'],
+                        week: pickData.week
+                    };
+                    console.log(`🔍 Pick ${index + 1} gameweek fields:`, gameweekFields);
+                });
+                
+            } catch (error) {
+                console.error('❌ Error inspecting all picks:', error);
+            }
+        };
 });
 
