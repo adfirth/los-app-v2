@@ -971,8 +971,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 DeadlineService: Global helper functions added:');
-    console.log('  - window.assignAutoPicks(gameweek)');
-    console.log('  - window.checkAllDeadlines()');
-    console.log('  - window.renameTimeToKickOffTime()');
+    // Global helper functions available: window.assignAutoPicks(gameweek), window.checkAllDeadlines(), window.renameTimeToKickOffTime()
 });

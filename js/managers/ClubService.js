@@ -81,10 +81,7 @@ class ClubService {
             });
         };
         
-        console.log('🔧 ClubService: Global helper functions added:');
-        console.log('  - window.fixClubService()');
-        console.log('  - window.testClubChange(clubId)');
-        console.log('  - window.checkClubServiceState()');
+        // Global helper functions available: window.fixClubService(), window.testClubChange(clubId), window.checkClubServiceState()
     }
 
     setupBasicStructure() {
@@ -246,13 +243,11 @@ class ClubService {
     }
 
     updateClubSelectors() {
-        console.log('🔧 ClubService: updateClubSelectors called');
-        console.log('🔧 ClubService: availableClubs:', this.availableClubs);
-        console.log('🔧 ClubService: clubData keys:', Object.keys(this.clubData));
+        // Updating club selectors...
         
         // Update registration form club selector
         const clubSelect = document.getElementById('clubSelect');
-        console.log('🔧 ClubService: clubSelect element found:', !!clubSelect);
+
         if (clubSelect) {
             clubSelect.innerHTML = '<option value="">Choose a club...</option>';
             this.availableClubs.forEach(clubId => {
@@ -265,15 +260,15 @@ class ClubService {
                         option.selected = true;
                     }
                     clubSelect.appendChild(option);
-                    console.log(`🔧 ClubService: Added option for ${clubId}: ${club.name}`);
+    
                 }
             });
-            console.log(`🔧 ClubService: Registration form club selector updated with ${this.availableClubs.length} clubs`);
+
         }
 
         // Update header club selector
         const headerClubSelect = document.getElementById('headerClubSelect');
-        console.log('🔧 ClubService: headerClubSelect element found:', !!headerClubSelect);
+
         if (headerClubSelect) {
             headerClubSelect.innerHTML = '<option value="">Select Club...</option>';
             this.availableClubs.forEach(clubId => {
@@ -286,12 +281,9 @@ class ClubService {
                         option.selected = true;
                     }
                     headerClubSelect.appendChild(option);
-                    console.log(`🔧 ClubService: Added header option for ${clubId}: ${club.name}`);
+    
                 }
             });
-            console.log(`🔧 ClubService: Header club selector updated with ${this.availableClubs.length} clubs`);
-        } else {
-            console.log('🔧 ClubService: Header club selector element not found');
         }
     }
 

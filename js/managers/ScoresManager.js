@@ -2153,5 +2153,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 ScoresManager: Global helper functions added: testScoreImport(gameweek), reloadAPIConfig(), debugAPIConfig()');
+    // Global helper functions available: testScoreImport(gameweek), reloadAPIConfig(), debugAPIConfig()
 });

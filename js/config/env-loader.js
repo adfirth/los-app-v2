@@ -10,11 +10,11 @@ class EnvironmentLoader {
     // Load environment variables from .env file or Netlify
     async loadEnvironment() {
         try {
-            console.log('🔧 EnvironmentLoader: Loading environment variables...');
+            // Loading environment variables...
             
             // Check if we're in Netlify (production)
             if (window.location.hostname.includes('netlify.app')) {
-                console.log('🚀 EnvironmentLoader: Netlify environment detected');
+                // Netlify environment detected
                 this.loadNetlifyEnvironment();
             } else {
                 console.log('🏠 EnvironmentLoader: Local environment detected');
@@ -241,7 +241,7 @@ class EnvironmentLoader {
 
     // Set up API configuration for compatibility
     setupAPIConfig() {
-        console.log('🔧 EnvironmentLoader: Setting up API configuration...');
+        // Setting up API configuration...
         
         // Create APIConfig object that the app expects
         window.APIConfig = {

@@ -303,16 +303,4 @@ class MultiClubMigration {
 // Export for use in console
 window.MultiClubMigration = MultiClubMigration;
 
-// Usage instructions
-console.log(`
-🚀 Multi-Club Migration Script Loaded!
-
-To migrate your database:
-
-1. Ensure Firebase is initialized
-2. Run: const migration = new MultiClubMigration();
-3. Run: await migration.migrateDatabase();
-4. Verify: await migration.verifyMigration();
-
-⚠️  IMPORTANT: Backup your data before running this migration!
-`);
+// Usage instructions - available in console: window.MultiClubMigration

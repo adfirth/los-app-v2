@@ -377,19 +377,4 @@ class SampleClubSetup {
 // Export for use in console
 window.SampleClubSetup = SampleClubSetup;
 
-// Usage instructions
-console.log(`
-🏟️ Sample Club Setup Script Loaded!
-
-To set up sample clubs:
-
-1. Ensure Firebase is initialized
-2. Run: const setup = new SampleClubSetup();
-3. Run: await setup.setupSampleClubs();
-4. Verify: await setup.verifyClubSetup();
-
-This will create:
-- Altrincham FC Juniors (4 editions for 25/26 National League)
-- Timperley FC (3 editions for 25/26 Premier League)
-- Default Club (1 edition for existing data)
-`);
+// Usage instructions - available in console: window.SampleClubSetup

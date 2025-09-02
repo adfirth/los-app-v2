@@ -171,23 +171,4 @@ class SampleFixturesSetup {
 // Export for use in console
 window.SampleFixturesSetup = SampleFixturesSetup;
 
-// Usage instructions
-console.log(`
-🏆 Sample Fixtures Setup Script Loaded!
-
-To add sample GW1 fixtures:
-
-1. Ensure Firebase is initialized
-2. Run: const fixturesSetup = new SampleFixturesSetup();
-3. Run: await fixturesSetup.addSampleFixtures();
-4. Verify: await fixturesSetup.verifyFixtures();
-
-This will create 5 sample fixtures with popular teams:
-- Arsenal vs Chelsea
-- Liverpool vs Manchester United  
-- Manchester City vs Tottenham
-- Newcastle vs Aston Villa
-- West Ham vs Brighton
-
-Perfect for testing team badges! 🎯
-`);
+// Usage instructions - available in console: window.SampleFixturesSetup

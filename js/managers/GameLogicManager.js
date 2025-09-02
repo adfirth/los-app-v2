@@ -885,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings(), checkUsersInDatabase(), checkDatabaseStructure(), fixLoginLoop(), checkClubServiceStatus()');
+    // Global helper functions available: testStandings(), debugStandings(), forceRefreshStandings(), checkUsersInDatabase(), checkDatabaseStructure(), fixLoginLoop(), checkClubServiceStatus()
     
     // Add specific debug function for Adam Firth's issue
     window.debugAdamFirth = async () => {
@@ -985,7 +985,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 Additional debug function added: window.debugAdamFirth()');
+    // Additional debug function available: window.debugAdamFirth()
     
     // Add function to process existing fixtures and update pick results
     window.processExistingFixtures = async () => {
@@ -1042,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    console.log('🔧 Additional function added: window.processExistingFixtures()');
+    // Additional function available: window.processExistingFixtures()
         
         // Add function to inspect fixtures collection
         window.inspectFixtures = async () => {
@@ -1090,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         
-        console.log('🔧 Additional function added: window.inspectFixtures()');
+        // Additional function available: window.inspectFixtures()
 
         // Add function to manually fix Adam Firth's GW1 pick
         window.fixAdamFirthGW1 = async () => {

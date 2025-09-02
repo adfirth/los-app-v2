@@ -2697,13 +2697,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-            console.log('🔧 AdminManager: Global debug functions added:');
-        console.log('- debugAdminAccess() - Debug admin access issues');
-        console.log('- forceInitAdmin() - Force initialize admin panel');
-        console.log('- testAdminButton() - Test admin button functionality');
-        console.log('- testScoreImport() - Test score import process');
-        console.log('- refreshAdminDB() - Refresh admin database reference');
-        console.log('- fixAdminDB() - Fix admin database reference issues');
+            // Global debug functions available: debugAdminAccess(), forceInitAdmin(), testAdminButton(), testScoreImport(), refreshAdminDB(), fixAdminDB()
         
         // Add global helper function to refresh admin database
         window.refreshAdminDB = () => {

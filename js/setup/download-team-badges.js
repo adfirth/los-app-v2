@@ -329,27 +329,16 @@ window.TeamBadgeDownloader = TeamBadgeDownloader;
 // Ensure the class is available globally
 if (typeof window !== 'undefined') {
     window.TeamBadgeDownloader = TeamBadgeDownloader;
-    console.log('✅ TeamBadgeDownloader class loaded and available globally');
 }
 
-// Usage instructions (only show once)
+// Usage instructions - available in console: window.TeamBadgeDownloader
 if (!window.BADGE_DOWNLOADER_LOADED) {
-    console.log(`
-🏆 Team Badge Downloader Script Loaded!
-
-To download and save team badges:
-1. const downloader = new TeamBadgeDownloader();
-2. await downloader.downloadAndSave('national');
-3. Use: window.getLocalTeamBadge('Team Name', 'size')
-`);
     window.BADGE_DOWNLOADER_LOADED = true;
 }
 
 // Test if the class is available
 setTimeout(() => {
-    if (window.TeamBadgeDownloader) {
-        console.log('✅ TeamBadgeDownloader is ready to use!');
-    } else {
+    if (!window.TeamBadgeDownloader) {
         console.error('❌ TeamBadgeDownloader not found - please refresh the page');
     }
 }, 1000);
@@ -390,9 +379,4 @@ window.toggleDebugMode = () => {
     return window.DEBUG_MODE;
 };
 
-console.log(`
-🔧 Debug Mode Control:
-- Enable: window.toggleDebugMode() or window.DEBUG_MODE = true
-- Disable: window.DEBUG_MODE = false
-- Current: ${window.DEBUG_MODE ? 'enabled' : 'disabled'}
-`);
+// Debug mode control available: window.toggleDebugMode() or window.DEBUG_MODE

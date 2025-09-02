@@ -1436,5 +1436,4 @@ window.verifyFirebaseCleanup = async function() {
     }
 };
 
-console.log('✅ Firebase cleanup functions added to app.js');
-console.log('Available functions: cleanupFirebase(), showFirebaseStructure(), verifyFirebaseCleanup()');
+// Firebase cleanup functions available: cleanupFirebase(), showFirebaseStructure(), verifyFirebaseCleanup()
