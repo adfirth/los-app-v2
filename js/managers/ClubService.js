@@ -354,6 +354,10 @@ class ClubService {
         }
         
         console.log(`✅ Switched to club: ${this.currentClub}, edition: ${editionId}`);
+        
+        // Automatically navigate to current gameweek fixtures tab when edition changes
+        console.log(`🎯 ClubService: About to navigate to current gameweek after edition change...`);
+        this.navigateToCurrentGameweek();
     }
 
     async loadClubEditions(clubId) {
