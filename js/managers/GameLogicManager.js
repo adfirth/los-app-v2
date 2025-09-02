@@ -467,6 +467,22 @@ class GameLogicManager {
                 const pickData = pickDoc.data();
                 const pickedTeam = pickData.teamPicked;
                 
+                // CRITICAL FIX: Only process picks that match this specific fixture
+                // Check if the pick's gameweek matches the fixture's gameweek
+                const pickGameweek = pickData.gameweek || pickData.gameWeek;
+                const fixtureGameweek = fixtureData.gameWeek || fixtureData.gameweek;
+                
+                if (pickGameweek !== fixtureGameweek) {
+                    console.log(`⚠️ Skipping pick - gameweek mismatch: pick=${pickGameweek}, fixture=${fixtureGameweek}`);
+                    continue;
+                }
+                
+                // CRITICAL FIX: Don't update picks that already have results (prevents duplicate processing)
+                if (pickData.result && pickData.result !== null) {
+                    console.log(`⚠️ Skipping pick - already has result: ${pickData.result}`);
+                    continue;
+                }
+                
                 // Determine if this pick is a win, loss, or draw
                 let pickResult;
                 if (pickedTeam === homeTeam) {
@@ -487,7 +503,7 @@ class GameLogicManager {
                 });
                 
                 updatedPicks++;
-                console.log(`✅ Updated pick for ${pickData.userId} - ${pickedTeam}: ${pickResult}`);
+                console.log(`✅ Updated pick for ${pickData.userId} - ${pickedTeam}: ${pickResult} (GW${pickGameweek})`);
             }
             
             if (updatedPicks === 0) {
