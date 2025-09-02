@@ -6,6 +6,7 @@ class AuthManager {
         this.isAdmin = false;
         this.isInitialized = false;
         this.dataLoaded = false; // Track if data has been loaded
+        this.isLoadingUserData = false; // Prevent multiple simultaneous retry attempts
         
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
@@ -194,9 +195,17 @@ class AuthManager {
     }
 
     async loadUserData(retryCount = 0) {
+        // Prevent multiple simultaneous retry attempts
+        if (this.isLoadingUserData) {
+            console.log('AuthManager: Already loading user data, skipping duplicate call');
+            return;
+        }
+        
+        this.isLoadingUserData = true;
+        
         try {
             // Prevent infinite retry loops
-            if (retryCount > 10) {
+            if (retryCount > 3) {
                 console.error('AuthManager: Too many retries, showing auth screen');
                 this.showAuthScreen();
                 return;
@@ -204,7 +213,7 @@ class AuthManager {
             
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
-                console.log(`AuthManager: Firebase not ready, retry ${retryCount + 1}/10, retrying in 2 seconds...`);
+                console.log(`AuthManager: Firebase not ready, retry ${retryCount + 1}/3, retrying in 2 seconds...`);
                 
                 // Try to update our database reference if Firebase is ready but we don't have it
                 if (window.firebaseReady && window.firebaseDB && !this.db) {
@@ -218,9 +227,8 @@ class AuthManager {
 
             // Check if ClubService is ready
             if (!window.losApp || !window.losApp.managers || !window.losApp.managers.club || 
-                typeof window.losApp.managers.club.setCurrentClubAndEdition !== 'function' ||
-                !window.losApp.managers.club.isReady) {
-                console.log(`AuthManager: ClubService not ready, retry ${retryCount + 1}/10, retrying in 2 seconds...`);
+                typeof window.losApp.managers.club.setCurrentClubAndEdition !== 'function') {
+                console.log(`AuthManager: ClubService not ready, retry ${retryCount + 1}/3, retrying in 2 seconds...`);
                 console.log(`🔍 AuthManager: ClubService status - exists: ${!!window.losApp?.managers?.club}, has method: ${!!window.losApp?.managers?.club?.setCurrentClubAndEdition}, isReady: ${window.losApp?.managers?.club?.isReady}`);
                 console.log(`🔍 AuthManager: App status - losApp: ${!!window.losApp}, managers: ${!!window.losApp?.managers}`);
                 setTimeout(() => this.loadUserData(retryCount + 1), 2000);
@@ -229,7 +237,7 @@ class AuthManager {
 
             // Check if we can attempt a connection (only if losApp is fully initialized)
             if (window.losApp && typeof window.losApp.canAttemptConnection === 'function' && !window.losApp.canAttemptConnection()) {
-                console.log(`AuthManager: Cannot attempt connection at this time, retry ${retryCount + 1}/10, retrying in 2 seconds...`);
+                console.log(`AuthManager: Cannot attempt connection at this time, retry ${retryCount + 1}/3, retrying in 2 seconds...`);
                 setTimeout(() => this.loadUserData(retryCount + 1), 2000);
                 return;
             }
@@ -383,6 +391,8 @@ class AuthManager {
                 console.error('Error loading user data:', error);
                 this.showError('Failed to load user data');
             }
+        } finally {
+            this.isLoadingUserData = false;
         }
     }
 

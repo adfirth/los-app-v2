@@ -25,7 +25,9 @@ class ClubService {
         console.log('🔍 ClubService.isReady - this.availableClubs:', this.availableClubs);
         console.log('🔍 ClubService.isReady - this.clubData keys:', Object.keys(this.clubData));
         
-        const ready = this.isInitialized && this.availableClubs.length > 0 && Object.keys(this.clubData).length > 0;
+        // Be more lenient - just check if we're initialized and have attempted to load clubs
+        // Don't require clubs to actually exist, as this might be a new setup
+        const ready = this.isInitialized && this.globalSettingsListener !== null;
         
         console.log('🔍 ClubService.isReady getter result:', ready);
         return ready;
