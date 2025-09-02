@@ -854,7 +854,7 @@ To set up sample clubs, run:
         }
     }
     
-    // Force fix club loading (useful for debugging)
+        // Force fix club loading (useful for debugging)
     async forceFixClubLoading() {
         console.log('🔧 ClubService: Force fixing club loading...');
         console.log('🔧 ClubService: Current state:', {
@@ -864,13 +864,13 @@ To set up sample clubs, run:
             clubData: this.clubData,
             globalSettingsListener: !!this.globalSettingsListener
         });
-        
+
         // Try to restore Firebase connection
         if (!this.db && window.firebaseDB) {
             console.log('🔧 ClubService: Restoring database connection...');
             this.db = window.firebaseDB;
         }
-        
+
         // Force reload global settings
         if (this.db) {
             try {
@@ -879,7 +879,41 @@ To set up sample clubs, run:
                 if (globalSettingsDoc.exists) {
                     const data = globalSettingsDoc.data();
                     console.log('🔧 ClubService: Global settings data:', data);
-                    this.availableClubs = data.activeClubs || [];
+                    
+                    // Check if activeClubs is empty and fix it
+                    if (!data.activeClubs || data.activeClubs.length === 0) {
+                        console.log('🔧 ClubService: activeClubs is empty, finding available clubs...');
+                        
+                        // Get all clubs from the database
+                        const clubsSnapshot = await this.db.collection('clubs').get();
+                        const availableClubIds = [];
+                        
+                        clubsSnapshot.forEach(doc => {
+                            const clubData = doc.data();
+                            if (clubData.isActive !== false) { // Include clubs that are active or don't have isActive set
+                                availableClubIds.push(doc.id);
+                            }
+                        });
+                        
+                        console.log('🔧 ClubService: Found clubs:', availableClubIds);
+                        
+                        if (availableClubIds.length > 0) {
+                            // Update global settings with the found clubs
+                            await this.db.collection('global-settings').doc('system').update({
+                                activeClubs: availableClubIds,
+                                updated_at: new Date()
+                            });
+                            
+                            console.log('🔧 ClubService: Updated global settings with active clubs:', availableClubIds);
+                            this.availableClubs = availableClubIds;
+                        } else {
+                            console.log('🔧 ClubService: No active clubs found in database');
+                            this.availableClubs = [];
+                        }
+                    } else {
+                        this.availableClubs = data.activeClubs || [];
+                    }
+                    
                     await this.loadClubData();
                 } else {
                     console.log('🔧 ClubService: No global settings found, creating default...');
@@ -891,7 +925,7 @@ To set up sample clubs, run:
         } else {
             console.log('🔧 ClubService: No database connection available');
         }
-        
+
         // Force update selectors
         this.updateClubSelectors();
     }
