@@ -148,6 +148,22 @@ class DeadlineService {
 
     async assignAutoPicksForDeadline(gameweek) {
         try {
+            // Ensure database connection is available
+            if (!this.db) {
+                console.log('🔧 DeadlineService: Database connection not available in assignAutoPicksForDeadline, attempting to restore...');
+                this.restoreFirebaseConnection();
+                
+                // If still not available, try to get it from global
+                if (!this.db && window.firebaseDB) {
+                    console.log('🔧 DeadlineService: Getting database reference from global Firebase...');
+                    this.db = window.firebaseDB;
+                }
+                
+                if (!this.db) {
+                    throw new Error('Database connection not available after restore attempts');
+                }
+            }
+            
             // Get current club and edition from ClubService
             const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
             const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
@@ -321,6 +337,24 @@ class DeadlineService {
             }
             
             console.log(`🔧 DeadlineService: Manual autopick assignment triggered for gameweek ${gameweek}`);
+            
+            // Ensure database connection is available
+            if (!this.db) {
+                console.log('🔧 DeadlineService: Database connection not available, attempting to restore...');
+                this.restoreFirebaseConnection();
+                
+                // If still not available, try to get it from global
+                if (!this.db && window.firebaseDB) {
+                    console.log('🔧 DeadlineService: Getting database reference from global Firebase...');
+                    this.db = window.firebaseDB;
+                }
+                
+                if (!this.db) {
+                    throw new Error('Database connection not available after restore attempts');
+                }
+            }
+            
+            console.log('🔧 DeadlineService: Database connection verified, proceeding with autopick assignment...');
             await this.assignAutoPicksForDeadline(gameweek);
             console.log('✅ Manual autopick assignment completed');
         } catch (error) {
