@@ -1521,10 +1521,9 @@ class SuperAdminManager {
                     
                     option.textContent = `${edition.name}${statusText}`;
                     
-                    // Disable inactive editions but still show them
+                    // Keep inactive editions selectable for Super Admin
                     if (edition.isActive === false) {
-                        option.disabled = true;
-                        option.style.color = '#9ca3af';
+                        option.style.color = '#6b7280'; // Gray out but keep selectable
                     }
                     
                     editionSelect.appendChild(option);

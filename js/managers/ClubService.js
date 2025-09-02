@@ -405,13 +405,14 @@ class ClubService {
                     let statusText = '';
                     if (edition.isActive === false) {
                         statusText = ' (Inactive)';
-                        option.style.color = '#9ca3af'; // Gray out inactive editions
+                        option.style.color = '#6b7280'; // Gray out inactive editions but keep them selectable
                     } else if (edition.isActive === true) {
                         statusText = ' (Active)';
                     } else {
                         statusText = ' (Unknown Status)';
                     }
                     option.textContent = `${edition.name}${statusText}`;
+                    // Don't disable inactive editions for Super Admin - they need to be selectable
                 } else {
                     option.textContent = edition.name;
                 }
@@ -436,13 +437,14 @@ class ClubService {
                     let statusText = '';
                     if (edition.isActive === false) {
                         statusText = ' (Inactive)';
-                        option.style.color = '#9ca3af'; // Gray out inactive editions
+                        option.style.color = '#6b7280'; // Gray out inactive editions but keep them selectable
                     } else if (edition.isActive === true) {
                         statusText = ' (Active)';
                     } else {
                         statusText = ' (Unknown Status)';
                     }
                     option.textContent = `${edition.name}${statusText}`;
+                    // Don't disable inactive editions for Super Admin - they need to be selectable
                 } else {
                     option.textContent = edition.name;
                 }
