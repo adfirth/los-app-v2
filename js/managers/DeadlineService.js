@@ -79,6 +79,22 @@ class DeadlineService {
 
     async checkAllDeadlines() {
         try {
+            // Ensure database connection is available
+            if (!this.db) {
+                console.log('🔧 DeadlineService: Database connection not available in checkAllDeadlines, attempting to restore...');
+                this.restoreFirebaseConnection();
+                
+                // If still not available, try to get it from global
+                if (!this.db && window.firebaseDB) {
+                    console.log('🔧 DeadlineService: Getting database reference from global Firebase...');
+                    this.db = window.firebaseDB;
+                }
+                
+                if (!this.db) {
+                    throw new Error('Database connection not available after restore attempts');
+                }
+            }
+            
             const currentEdition = window.editionService.getCurrentEdition();
             const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
             
@@ -827,7 +843,18 @@ document.addEventListener('DOMContentLoaded', () => {
     window.checkAllDeadlines = () => {
         console.log('🔧 DeadlineService: Manual deadline check triggered from console...');
         if (window.deadlineService) {
-            window.deadlineService.checkAllDeadlines();
+            // Check if database connection is available
+            if (!window.deadlineService.db && window.firebaseDB) {
+                console.log('🔧 DeadlineService: Restoring database connection from global...');
+                window.deadlineService.db = window.firebaseDB;
+            }
+            
+            if (window.deadlineService.db) {
+                window.deadlineService.checkAllDeadlines();
+            } else {
+                console.error('❌ DeadlineService: No database connection available');
+                console.log('💡 Try refreshing the page or waiting for Firebase to initialize');
+            }
         } else {
             console.error('❌ DeadlineService not available');
         }
