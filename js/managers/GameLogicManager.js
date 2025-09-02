@@ -801,5 +801,105 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     console.log('🔧 GameLogicManager: Global helper functions added: testStandings(), debugStandings(), forceRefreshStandings(), checkUsersInDatabase(), checkDatabaseStructure(), fixLoginLoop(), checkClubServiceStatus()');
+    
+    // Add specific debug function for Adam Firth's issue
+    window.debugAdamFirth = async () => {
+        console.log('🔍 Debugging Adam Firth issue...');
+        
+        if (!window.gameLogicManager.db) {
+            console.log('❌ No database reference available');
+            return;
+        }
+        
+        try {
+            // Get current club and edition
+            const currentClub = window.clubService?.getCurrentClub() || 'default-club';
+            const currentEdition = window.editionService?.getCurrentEdition() || '2024-25';
+            
+            console.log('🔍 Current club:', currentClub, 'edition:', currentEdition);
+            
+            // Find Adam Firth's user document
+            const usersSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                .collection('editions').doc(currentEdition)
+                .collection('users').get();
+            
+            let adamFirth = null;
+            usersSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.displayName === 'Adam Firth') {
+                    adamFirth = { id: doc.id, ...userData };
+                }
+            });
+            
+            if (!adamFirth) {
+                console.log('❌ Adam Firth not found in users collection');
+                return;
+            }
+            
+            console.log('🔍 Found Adam Firth:', adamFirth);
+            
+            // Get his picks
+            const picksSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                .collection('editions').doc(currentEdition)
+                .collection('picks')
+                .where('userId', '==', adamFirth.id)
+                .get();
+            
+            const picks = {};
+            picksSnapshot.forEach(doc => {
+                const pickData = doc.data();
+                picks[pickData.gameweek] = pickData;
+            });
+            
+            console.log('🔍 Adam Firth picks:', picks);
+            
+            // Check fixture results for GW1 and GW2
+            const fixturesSnapshot = await window.gameLogicManager.db.collection('clubs').doc(currentClub)
+                .collection('editions').doc(currentEdition)
+                .collection('fixtures')
+                .where('gameweek', 'in', ['1', '2'])
+                .get();
+            
+            const fixtures = {};
+            fixturesSnapshot.forEach(doc => {
+                const fixtureData = doc.data();
+                fixtures[fixtureData.gameweek] = { id: doc.id, ...fixtureData };
+            });
+            
+            console.log('🔍 GW1 and GW2 fixtures:', fixtures);
+            
+            // Calculate expected lives
+            const expectedLives = window.gameLogicManager.calculateLivesFromPicks(picks);
+            console.log('🔍 Expected lives based on picks:', expectedLives);
+            
+            // Check if picks need result processing
+            let needsProcessing = false;
+            Object.entries(picks).forEach(([gameweek, pick]) => {
+                if (!pick.result) {
+                    console.log(`⚠️ GW${gameweek} pick has no result, needs processing`);
+                    needsProcessing = true;
+                }
+            });
+            
+            if (needsProcessing) {
+                console.log('🔧 Attempting to process fixture results...');
+                for (const [gameweek, fixture] of Object.entries(fixtures)) {
+                    if (fixture.status === 'finished') {
+                        console.log(`🔧 Processing GW${gameweek} fixture results...`);
+                        await window.gameLogicManager.processFixtureResults(currentClub, currentEdition, fixture.id);
+                    }
+                }
+                
+                // Refresh standings
+                await window.gameLogicManager.loadStandings();
+                console.log('✅ Standings refreshed after processing');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error debugging Adam Firth:', error);
+        }
+    };
+    
+    console.log('🔧 Additional debug function added: window.debugAdamFirth()');
 });
 
