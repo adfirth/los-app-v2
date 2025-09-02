@@ -143,14 +143,11 @@ class ClubService {
         // Listen for global settings changes
         this.globalSettingsListener = this.db.collection('global-settings').doc('system')
             .onSnapshot((doc) => {
-                console.log('🔧 ClubService: Global settings snapshot received:', doc.exists);
                 if (doc.exists) {
                     const data = doc.data();
                     this.availableClubs = data.activeClubs || [];
-                    console.log('ClubService: Loaded clubs from global settings:', this.availableClubs);
                     this.loadClubData();
                 } else {
-                    console.log('ClubService: No global settings found, creating default structure...');
                     this.createDefaultGlobalSettings();
                 }
             }, (error) => {
@@ -162,12 +159,9 @@ class ClubService {
 
     async loadClubData() {
         if (!this.availableClubs.length) {
-            console.log('ClubService: No clubs available yet');
             this.updateClubSelectors(); // This will show empty dropdowns
             return;
         }
-
-        console.log('ClubService: Loading data for clubs:', this.availableClubs);
 
         // Load clubs from activeClubs array first
         for (const clubId of this.availableClubs) {
@@ -175,9 +169,6 @@ class ClubService {
                 const clubDoc = await this.db.collection('clubs').doc(clubId).get();
                 if (clubDoc.exists) {
                     this.clubData[clubId] = clubDoc.data();
-                    console.log(`ClubService: Loaded club data for ${clubId}:`, this.clubData[clubId]);
-                } else {
-                    console.log(`ClubService: Club document ${clubId} not found`);
                 }
             } catch (error) {
                 console.error(`ClubService: Error loading club ${clubId}:`, error);
@@ -291,28 +282,20 @@ class ClubService {
             window.losApp.onClubOrEditionChange(this.currentClub, editionId);
         }
         
-        console.log(`✅ Switched to club: ${this.currentClub}, edition: ${editionId}`);
+
         
         // Automatically navigate to current gameweek fixtures tab when edition changes
-        console.log(`🎯 ClubService: About to navigate to current gameweek after edition change...`);
         this.navigateToCurrentGameweek();
     }
 
     async loadClubEditions(clubId) {
-        console.log(`🔧 ClubService: loadClubEditions called for club: ${clubId}`);
-        console.log(`🔧 ClubService: Database reference available:`, !!this.db);
-        console.log(`🔧 ClubService: Database collection method available:`, !!(this.db && typeof this.db.collection === 'function'));
-        
         try {
             const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
                 .collection('editions').get();
             
-            console.log(`🔧 ClubService: Found ${editionsSnapshot.size} editions for club ${clubId}`);
-            
             const editions = [];
             editionsSnapshot.forEach(doc => {
                 const edition = doc.data();
-                console.log(`🔧 ClubService: Edition ${doc.id}:`, edition);
                 // Include all editions for now - we can filter by isActive later if needed
                 editions.push({
                     id: doc.id,
@@ -320,7 +303,6 @@ class ClubService {
                 });
             });
 
-            console.log(`🔧 ClubService: Loaded ${editions.length} editions:`, editions);
             this.updateEditionSelector(editions);
         } catch (error) {
             console.error('ClubService: Error loading editions:', error);
@@ -329,11 +311,8 @@ class ClubService {
     }
 
     updateEditionSelector(editions) {
-        console.log(`🔧 ClubService: updateEditionSelector called with ${editions.length} editions:`, editions);
-        
         // Check if user is Super Admin
         const isSuperAdmin = window.losApp?.managers?.superAdmin?.isSuperAdmin;
-        console.log(`🔧 ClubService: User is Super Admin: ${isSuperAdmin}`);
         
         const editionSelect = document.getElementById('editionSelect');
         if (editionSelect) {
@@ -361,9 +340,6 @@ class ClubService {
                 
                 editionSelect.appendChild(option);
             });
-            console.log(`🔧 ClubService: Registration form edition selector updated with ${editions.length} editions (SuperAdmin: ${isSuperAdmin})`);
-        } else {
-            console.log('🔧 ClubService: Registration form edition selector element not found');
         }
 
         // Update header edition selector
@@ -396,28 +372,19 @@ class ClubService {
                 }
                 headerEditionSelect.appendChild(option);
             });
-            console.log(`🔧 ClubService: Header edition selector updated with ${editions.length} editions (SuperAdmin: ${isSuperAdmin})`);
-        } else {
-            console.log('🔧 ClubService: Header edition selector element not found');
+
         }
     }
 
     clearEditionSelector() {
-        console.log('🔧 ClubService: clearEditionSelector called');
         const editionSelect = document.getElementById('editionSelect');
         if (editionSelect) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
-            console.log('🔧 ClubService: Registration form edition selector cleared');
-        } else {
-            console.log('🔧 ClubService: Registration form edition selector element not found for clearing');
         }
 
         const headerEditionSelect = document.getElementById('headerEditionSelect');
         if (headerEditionSelect) {
             headerEditionSelect.innerHTML = '<option value="">Select Edition...</option>';
-            console.log('🔧 ClubService: Header edition selector cleared');
-        } else {
-            console.log('🔧 ClubService: Header edition selector element not found for clearing');
         }
     }
 
@@ -826,12 +793,10 @@ To set up sample clubs, run:
     // Restore Firebase connection (called by app.js)
     restoreFirebaseConnection() {
         if (this.db && typeof this.db.collection === 'function') {
-            console.log('✅ ClubService: Firebase connection already available');
             return;
         }
         
         if (window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
-            console.log('✅ ClubService: Restoring Firebase connection from global');
             this.db = window.firebaseDB;
             
             // Set up listeners now that Firebase is available
@@ -842,8 +807,6 @@ To set up sample clubs, run:
                 this.loadStoredClubAndEdition();
                 this.checkAndReloadClubs();
             }, 1000);
-        } else {
-            console.log('⚠️ ClubService: Firebase not ready for connection restoration');
         }
     }
 
@@ -857,41 +820,26 @@ To set up sample clubs, run:
     
     // Manual trigger for club loading (useful for debugging)
     forceReload() {
-        console.log('🔄 ClubService: Force reloading clubs...');
         if (this.db && typeof this.db.collection === 'function') {
             this.setupRealtimeListeners();
-        } else {
-            console.log('⚠️ ClubService: Firebase not ready for force reload');
         }
     }
     
     // Manual trigger for club styling (useful for debugging)
     forceApplyStyling() {
-        console.log('🎨 ClubService: Force applying club styling...');
         if (this.currentClub) {
-            console.log('Current club:', this.currentClub);
             this.applyClubStyling(this.currentClub);
-        } else {
-            console.log('No current club set');
         }
     }
     
     // Check if clubs are loaded and reload if needed
     checkAndReloadClubs() {
-        console.log('🔍 ClubService: Checking club status...');
-        console.log('Available clubs:', this.availableClubs);
-        console.log('Club data:', this.clubData);
-        
         if (!this.availableClubs.length || !this.globalSettingsListener) {
-            console.log('🔄 ClubService: Clubs not loaded, setting up listeners...');
             this.setupRealtimeListeners();
-        } else {
-            console.log('✅ ClubService: Clubs already loaded');
         }
         
         // If we have a current club, apply its styling
         if (this.currentClub) {
-            console.log('🎨 ClubService: Applying styling for current club:', this.currentClub);
             this.applyClubStyling(this.currentClub);
         }
     }
@@ -899,15 +847,12 @@ To set up sample clubs, run:
     // Navigate to current gameweek fixtures tab
     async navigateToCurrentGameweek() {
         try {
-            console.log('🎯 ClubService: Navigating to current gameweek fixtures tab...');
-            
             // Switch to fixtures tab first
             this.switchToFixturesTab();
             
             // Calculate and set the current gameweek
             const currentGameweek = await this.calculateCurrentGameweek();
             if (currentGameweek) {
-                console.log(`🎯 ClubService: Setting current gameweek to ${currentGameweek}`);
                 this.setCurrentGameweek(currentGameweek);
             }
             
@@ -923,17 +868,12 @@ To set up sample clubs, run:
 
     // Switch to fixtures tab
     switchToFixturesTab() {
-        console.log('🎯 ClubService: Switching to fixtures tab...');
-        
         // Use EditionService's tab switching system if available
         if (window.losApp?.managers?.edition && typeof window.losApp.managers.edition.switchTab === 'function') {
-            console.log('✅ Using EditionService tab switching system');
             window.losApp.managers.edition.switchTab('fixtures');
         } else if (window.editionService && typeof window.editionService.switchTab === 'function') {
-            console.log('✅ Using EditionService tab switching system (legacy)');
             window.editionService.switchTab('fixtures');
         } else {
-            console.log('⚠️ EditionService not available, using manual tab switching');
             
             // Fallback to manual tab switching
             // Remove active class from all tabs
@@ -950,21 +890,18 @@ To set up sample clubs, run:
             const fixturesTab = document.querySelector('[data-tab="fixtures"]');
             if (fixturesTab) {
                 fixturesTab.classList.add('active');
-                console.log('✅ Fixtures tab activated');
             }
             
             // Activate fixtures content
             const fixturesContent = document.getElementById('fixturesTab');
             if (fixturesContent) {
                 fixturesContent.classList.add('active');
-                console.log('✅ Fixtures content activated');
             }
         }
     }
 
     // Set current gameweek
     setCurrentGameweek(gameweek) {
-        console.log(`🎯 ClubService: Setting current gameweek to ${gameweek}`);
         
         // Update EditionService if available
         if (window.editionService && typeof window.editionService.setCurrentGameweek === 'function') {
@@ -1009,11 +946,8 @@ To set up sample clubs, run:
     async calculateCurrentGameweek() {
         try {
             if (!this.currentClub || !this.currentEdition) {
-                console.log('⚠️ ClubService: No club or edition set for gameweek calculation');
                 return 1;
             }
-            
-            console.log(`🎯 ClubService: Calculating current gameweek for ${this.currentClub}/${this.currentEdition}`);
             
             // Get all fixtures for the current edition
             const fixturesSnapshot = await this.db.collection('clubs').doc(this.currentClub)
@@ -1022,7 +956,6 @@ To set up sample clubs, run:
                 .get();
             
             if (fixturesSnapshot.empty) {
-                console.log('ℹ️ ClubService: No fixtures found, defaulting to gameweek 1');
                 return 1;
             }
             
@@ -1071,19 +1004,14 @@ To set up sample clubs, run:
                 
                 if (now < deadlineBuffer) {
                     currentGameweek = parseInt(gameweek);
-                    console.log(`🎯 ClubService: Found current gameweek ${currentGameweek} - deadline not yet passed`);
                     break;
                 } else if (now < deadlineTime) {
                     // Same day deadline - still allow picks
                     currentGameweek = parseInt(gameweek);
-                    console.log(`🎯 ClubService: Found current gameweek ${currentGameweek} - same day deadline`);
                     break;
-                } else {
-                    console.log(`🎯 ClubService: Gameweek ${gameweek} deadline has passed`);
                 }
             }
             
-            console.log(`🎯 ClubService: Calculated current gameweek: ${currentGameweek}`);
             return currentGameweek;
             
         } catch (error) {
@@ -1095,36 +1023,23 @@ To set up sample clubs, run:
     // Force reload fixtures for the current club/edition
     reloadFixturesForCurrentClub() {
         try {
-            console.log('🔄 ClubService: Force reloading fixtures for current club/edition...');
-            
             if (!this.currentClub || !this.currentEdition) {
-                console.log('⚠️ ClubService: No club or edition set for fixture reload');
                 return;
             }
             
-            console.log(`🔄 ClubService: Reloading fixtures for ${this.currentClub}/${this.currentEdition}`);
-            
             // Try to reload fixtures through FixturesManager
             if (window.losApp?.managers?.fixtures) {
-                console.log('🔄 ClubService: Using losApp.managers.fixtures.loadFixtures()');
                 window.losApp.managers.fixtures.loadFixtures();
             } else if (window.fixturesManager) {
-                console.log('🔄 ClubService: Using window.fixturesManager.loadFixtures()');
                 window.fixturesManager.loadFixtures();
-            } else {
-                console.log('⚠️ ClubService: No FixturesManager available for reload');
             }
             
             // Also try to reload scores
             if (window.losApp?.managers?.scores) {
-                console.log('🔄 ClubService: Using losApp.managers.scores.loadScores()');
                 window.losApp.managers.scores.loadScores();
             } else if (window.scoresManager) {
-                console.log('🔄 ClubService: Using window.scoresManager.loadScores()');
                 window.scoresManager.loadScores();
             }
-            
-            console.log('✅ ClubService: Fixture reload triggered');
             
         } catch (error) {
             console.error('ClubService: Error reloading fixtures:', error);

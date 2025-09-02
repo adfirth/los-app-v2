@@ -107,7 +107,7 @@ class SuperAdminManager {
                         ...doc.data()
                     });
                 });
-                console.log(`SuperAdminManager: Loaded ${this.auditLogs.length} audit logs`);
+
                 this.updateAuditLogDisplay();
             }, (error) => {
                 console.error('SuperAdminManager: Audit log listener error:', error);
@@ -128,7 +128,7 @@ class SuperAdminManager {
                         ...doc.data()
                     });
                 });
-                console.log(`SuperAdminManager: Loaded ${this.clubs.length} clubs`);
+
                 this.updateClubsDisplay();
             }, (error) => {
                 console.error('SuperAdminManager: Clubs listener error:', error);
@@ -153,7 +153,7 @@ class SuperAdminManager {
                         ...doc.data()
                     });
                 });
-                console.log(`SuperAdminManager: Loaded ${this.users.length} users`);
+
                 this.updateUsersDisplay();
             }, (error) => {
                 console.error('SuperAdminManager: Users listener error:', error);

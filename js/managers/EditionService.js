@@ -368,17 +368,10 @@ class EditionService {
     }
 
     setupTabNavigation() {
-        // Setting up tab navigation...
-        
         const navTabs = document.querySelectorAll('.nav-tab');
-        // Found navigation tabs
         
         navTabs.forEach((tab, index) => {
-            const tabName = tab.getAttribute('data-tab');
-            console.log(`🎯 Setting up tab ${index + 1}: ${tabName}`);
-            
             tab.addEventListener('click', () => {
-                console.log(`🖱️ Tab clicked: ${tabName}`);
                 const targetTab = tab.getAttribute('data-tab');
                 this.switchTab(targetTab);
             });
@@ -386,13 +379,9 @@ class EditionService {
         
         // Setup gameweek navigation
         this.setupGameweekNavigation();
-        
-        console.log('✅ Tab navigation setup complete');
     }
 
     setupGameweekNavigation() {
-        // Setting up gameweek navigation...
-        
         const prevButton = document.getElementById('prevGameweek');
         const nextButton = document.getElementById('nextGameweek');
         const gameweekSelect = document.getElementById('gameweekSelect');
@@ -418,8 +407,6 @@ class EditionService {
         
         // Initialize gameweek display
         this.updateGameweekNavigation();
-        
-        console.log('✅ Gameweek navigation setup complete');
     }
 
     navigateGameweek(direction) {
@@ -439,7 +426,6 @@ class EditionService {
     }
 
     setCurrentGameweek(gameweek) {
-        console.log(`🔄 EditionService: Setting current gameweek to ${gameweek}`);
         this.currentGameweek = gameweek;
         this.updateGameweekDisplay();
         this.updateGameweekNavigation();
@@ -478,74 +464,32 @@ class EditionService {
     }
 
     switchTab(targetTab) {
-        console.log(`🔄 EditionService: Switching to tab: ${targetTab}`);
-        console.log(`🔍 EditionService: Current tab state before switch:`, {
-            activeTabs: Array.from(document.querySelectorAll('.nav-tab.active')).map(tab => tab.getAttribute('data-tab')),
-            activeContent: Array.from(document.querySelectorAll('.tab-content.active')).map(content => content.id)
-        });
-        
         // Remove active class from all tabs and content
         const allTabs = document.querySelectorAll('.nav-tab');
         const allContent = document.querySelectorAll('.tab-content');
         
-        // Found tabs and content areas
-        
         allTabs.forEach((tab, index) => {
-            const wasActive = tab.classList.contains('active');
             tab.classList.remove('active');
-            // Tab active class removed
         });
         
         allContent.forEach((content, index) => {
-            const wasActive = content.classList.contains('active');
             content.classList.remove('active');
-            // Content active class removed
         });
 
         // Add active class to clicked tab
         const activeTab = document.querySelector(`[data-tab="${targetTab}"]`);
         if (activeTab) {
             activeTab.classList.add('active');
-            console.log(`✅ Active tab set to: ${targetTab}`);
-            console.log(`🔍 Tab element classes after activation:`, activeTab.className);
-            console.log(`🔍 Tab element HTML:`, activeTab.outerHTML);
-        } else {
-            console.log(`❌ Could not find tab with data-tab="${targetTab}"`);
         }
 
         // Show corresponding content
         const targetContent = document.getElementById(`${targetTab}Tab`);
         if (targetContent) {
             targetContent.classList.add('active');
-            console.log(`✅ Content for ${targetTab} tab activated`);
-            console.log(`🔍 Content element classes after activation:`, targetContent.className);
-            console.log(`🔍 Content element display style:`, targetContent.style.display);
-        } else {
-            console.log(`❌ Could not find content element: ${targetTab}Tab`);
         }
 
         // Load content based on tab
-        console.log(`📋 Loading content for tab: ${targetTab}`);
         this.loadTabContent(targetTab);
-        
-        // Final verification of DOM state
-        setTimeout(() => {
-            console.log(`🔍 Final verification - Tab state after switch:`, {
-                activeTabs: Array.from(document.querySelectorAll('.nav-tab.active')).map(tab => tab.getAttribute('data-tab')),
-                activeContent: Array.from(document.querySelectorAll('.tab-content.active')).map(content => content.id),
-                allTabs: Array.from(document.querySelectorAll('.nav-tab')).map(tab => ({
-                    tab: tab.getAttribute('data-tab'),
-                    classes: tab.className,
-                    isActive: tab.classList.contains('active')
-                })),
-                allContent: Array.from(document.querySelectorAll('.tab-content')).map(content => ({
-                    id: content.id,
-                    classes: content.className,
-                    isActive: content.classList.contains('active'),
-                    display: content.style.display
-                }))
-            });
-        }, 100);
     }
 
     loadTabContent(tabName) {

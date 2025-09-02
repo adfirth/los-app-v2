@@ -281,10 +281,7 @@ class FixturesManager {
     }
 
     async checkDeadline() {
-        console.log('⏰ checkDeadline() called, fixtures count:', this.currentFixtures.length);
-        
         if (this.currentFixtures.length === 0) {
-            console.log('⏰ No fixtures, setting deadlinePassed = false');
             this.deadlinePassed = false;
             // Clear deadline display when there are no fixtures (shows 'N/A')
             this.clearDeadlineDisplay();
@@ -295,32 +292,22 @@ class FixturesManager {
             // Find the earliest kick-off time with proper validation
             const validFixtures = this.currentFixtures.filter(fixture => {
                 if (!fixture.date || !fixture.time) {
-                    console.log(`⚠️ Fixture missing date or time: ${fixture.homeTeam} vs ${fixture.awayTeam}`, {
-                        date: fixture.date,
-                        time: fixture.time
-                    });
                     return false;
                 }
                 
                 // Try to create a valid date object
                 const testDate = new Date(`${fixture.date}T${fixture.time}`);
                 if (isNaN(testDate.getTime())) {
-                    console.log(`⚠️ Invalid date/time for fixture: ${fixture.homeTeam} vs ${fixture.awayTeam}`, {
-                        date: fixture.date,
-                        time: fixture.time,
-                        combined: `${fixture.date}T${fixture.time}`
-                    });
                     return false;
                 }
                 
                 return true;
             });
 
-            if (validFixtures.length === 0) {
-                console.log('⚠️ No valid fixtures with proper date/time found');
-                this.deadlinePassed = false;
-                return;
-            }
+                    if (validFixtures.length === 0) {
+            this.deadlinePassed = false;
+            return;
+        }
 
             const earliestFixture = validFixtures.reduce((earliest, fixture) => {
                 const fixtureTime = new Date(`${fixture.date}T${fixture.time}`);
@@ -331,21 +318,12 @@ class FixturesManager {
             const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.time}`);
             const now = new Date();
             
-            console.log('⏰ Earliest fixture:', `${earliestFixture.homeTeam} vs ${earliestFixture.awayTeam}`);
-            console.log('⏰ Fixture date/time:', `${earliestFixture.date} ${earliestFixture.time}`);
-            console.log('⏰ Deadline time:', deadlineTime.toISOString());
-            console.log('⏰ Current time:', now.toISOString());
-            console.log('⏰ Time until deadline (ms):', deadlineTime - now);
-            
             this.deadlinePassed = now >= deadlineTime;
-            
-            console.log('⏰ Deadline passed:', this.deadlinePassed);
             
             // Update deadline display
             this.updateDeadlineDisplay(deadlineTime);
         } catch (error) {
             console.error('❌ Error in checkDeadline:', error);
-            console.log('⚠️ Setting deadlinePassed = false due to error');
             this.deadlinePassed = false;
         }
     }
@@ -366,7 +344,6 @@ class FixturesManager {
         try {
             // Validate the deadline time
             if (!deadlineTime || isNaN(deadlineTime.getTime())) {
-                console.log('⚠️ Invalid deadline time, setting default display');
                 deadlineText.textContent = 'Deadline: TBD';
                 deadlineText.style.color = '#6c757d';
                 return;
@@ -432,7 +409,6 @@ class FixturesManager {
             const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
             
             if (!currentClubId || !currentEdition) {
-                console.log('⚠️ No club or edition available for loading picks');
                 this.userPicks = {};
                 return;
             }
@@ -483,12 +459,10 @@ class FixturesManager {
         
         const fixturesList = document.getElementById('fixturesList');
         if (!fixturesList) {
-            console.log('❌ fixturesList element not found');
             return;
         }
 
         if (this.currentFixtures.length === 0) {
-            console.log('📝 No fixtures to display, showing empty state');
             this.showEmptyState();
             return;
         }
@@ -497,7 +471,7 @@ class FixturesManager {
         try {
             await this.preloadTeamBadges();
         } catch (error) {
-            console.warn('⚠️ FixturesManager: Failed to preload team badges:', error);
+            // Silently handle badge preload errors
         }
 
 
@@ -541,17 +515,7 @@ class FixturesManager {
         const isHomeUnavailable = this.isTeamUnavailable(fixture.homeTeam);
         const isAwayUnavailable = this.isTeamUnavailable(fixture.awayTeam);
 
-        // Debug button states (only in development)
-        if (window.DEBUG_MODE) {
-            console.log(`🔍 Button states for ${fixture.homeTeam} vs ${fixture.awayTeam}:`, {
-                currentPick,
-                homePickedInCurrent: isHomePickedInCurrent,
-                awayPickedInCurrent: isAwayPickedInCurrent,
-                homePickedInOther: isHomePickedInOther,
-                awayPickedInOther: isAwayPickedInOther,
-                hasPickInCurrentGameweek
-            });
-        }
+
 
         // Add has-pick class if any team is picked in current gameweek
         if (hasPickInCurrentGameweek) {
@@ -649,110 +613,55 @@ class FixturesManager {
             </div>
         `;
 
-        // Debug button classes (only in development)
-        if (window.DEBUG_MODE) {
-            console.log(`🔍 Button classes for ${fixture.homeTeam}:`, this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? 'picked' : 'not-picked');
-            console.log(`🔍 Button classes for ${fixture.awayTeam}:`, this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? 'picked' : 'not-picked');
-        }
+
 
         // Add event listeners to pick buttons
         const pickButtons = card.querySelectorAll('.team-btn:not(.unavailable)');
         const allButtons = card.querySelectorAll('.team-btn');
         
-        // Debug actual button classes after creation (only in development)
-        if (window.DEBUG_MODE) {
-            setTimeout(() => {
-                const homeButton = card.querySelector(`[data-team="${fixture.homeTeam}"]`);
-                const awayButton = card.querySelector(`[data-team="${fixture.awayTeam}"]`);
-                if (homeButton) {
-                    console.log(`🔍 Home button (${fixture.homeTeam}) actual classes:`, homeButton.className);
-                    console.log(`🔍 Home button has 'picked' class:`, homeButton.classList.contains('picked'));
-                }
-                if (awayButton) {
-                    console.log(`🔍 Away button (${fixture.awayTeam}) actual classes:`, awayButton.className);
-                    console.log(`🔍 Away button has 'picked' class:`, awayButton.classList.contains('picked'));
-                }
-            }, 10);
-        }
+
         
         pickButtons.forEach((button, btnIndex) => {
-            // Only log in debug mode
-            if (window.DEBUG_MODE) {
-                console.log(`🎯 Adding click listener to button ${btnIndex + 1} (${button.dataset.team})`);
-            }
             button.addEventListener('click', () => {
-                if (window.DEBUG_MODE) {
-                    console.log(`🖱️ Button clicked: ${button.dataset.team}`);
-                }
                 this.handlePickSelection(button.dataset.team, button.dataset.fixture);
             });
-            // Mark that this button has a click listener for debugging
-            button._hasClickListener = true;
         });
-
-        if (window.DEBUG_MODE) {
-            console.log(`✅ Event listeners added to ${pickButtons.length} buttons`);
-        }
         return card;
     }
 
     getScoreValue(score) {
         // Handle different score formats
         if (score === null || score === undefined) {
-            if (window.DEBUG_MODE) {
-                console.log(`🔍 getScoreValue: null/undefined score`);
-            }
             return null;
         }
         
         // If it's a simple number or string, return it
         if (typeof score === 'number' || typeof score === 'string') {
-            if (window.DEBUG_MODE) {
-                console.log(`🔍 getScoreValue: simple value ${score} (type: ${typeof score})`);
-            }
             return score;
         }
         
         // If it's an object (like Firestore Timestamp), try to extract the value
         if (typeof score === 'object') {
-            if (window.DEBUG_MODE) {
-                console.log(`🔍 getScoreValue: object score:`, score);
-            }
             // Check if it has a 'seconds' property (Firestore Timestamp)
             if (score.seconds !== undefined) {
-                if (window.DEBUG_MODE) {
-                    console.log(`🔍 getScoreValue: found seconds property: ${score.seconds}`);
-                }
                 return score.seconds;
             }
             // Check if it has a 'value' property
             if (score.value !== undefined) {
-                if (window.DEBUG_MODE) {
-                    console.log(`🔍 getScoreValue: found value property: ${score.value}`);
-                }
                 return score.value;
             }
             // Check if it has a 'score' property
             if (score.score !== undefined) {
-                if (window.DEBUG_MODE) {
-                    console.log(`🔍 getScoreValue: found score property: ${score.score}`);
-                }
                 return score.score;
             }
             // If it's an object with numeric properties, try to find the score
             for (const key in score) {
                 if (typeof score[key] === 'number' && !isNaN(score[key])) {
-                    if (window.DEBUG_MODE) {
-                        console.log(`🔍 getScoreValue: found numeric property ${key}: ${score[key]}`);
-                    }
                     return score[key];
                 }
             }
         }
         
-        if (window.DEBUG_MODE) {
-            console.log(`🔍 getScoreValue: no valid score found, returning null`);
-        }
         return null;
     }
 
@@ -846,15 +755,8 @@ class FixturesManager {
         const uniqueTeams = [...new Set(allTeams)];
         
         if (uniqueTeams.length > 0) {
-            if (window.DEBUG_MODE) {
-                console.log(`🏆 FixturesManager: Preloading badges for ${uniqueTeams.length} teams...`);
-            }
-            
             // Check if local badge service is available
             if (window.getLocalTeamBadge) {
-                if (window.DEBUG_MODE) {
-                    console.log(`✅ FixturesManager: Local badge service available for ${uniqueTeams.length} teams`);
-                }
                 return; // Local service is instant, no need to preload
             }
             
@@ -941,27 +843,18 @@ class FixturesManager {
     }
 
     handlePickSelection(teamName, fixtureIndex) {
-        console.log(`🎯 handlePickSelection called: ${teamName}, fixture ${fixtureIndex}`);
-        console.log('🔍 Deadline passed check:', this.deadlinePassed);
-        
         if (this.deadlinePassed) {
-            console.log('❌ Deadline has passed, showing warning');
             window.authManager.showWarning('Deadline has passed. Picks are locked.');
             return;
         }
 
         // Ensure userPicks is initialized
         if (!this.userPicks) {
-            console.log('🔧 Initializing userPicks object');
             this.userPicks = {};
         }
 
         const currentGameweek = window.editionService.getCurrentGameweek();
         const currentPick = this.userPicks[`gw${currentGameweek}`];
-        
-        console.log('🎮 Current gameweek:', currentGameweek);
-        console.log('🎯 Current pick for this gameweek:', currentPick);
-        console.log('🎯 Selected team:', teamName);
 
         // Check if team is already picked (handle both old and new formats)
         let isAlreadyPicked = false;
@@ -974,13 +867,11 @@ class FixturesManager {
         }
         
         if (isAlreadyPicked) {
-            console.log('ℹ️ Team already picked, showing info message');
             window.authManager.showInfo('You have already picked this team.');
             return;
         }
 
         // Show confirmation modal
-        console.log('📋 Showing pick confirmation modal');
         this.showPickConfirmation(teamName);
     }
 
@@ -995,55 +886,37 @@ class FixturesManager {
     }
 
     setupPickModal() {
-        console.log('🎭 Setting up pick modal event listeners');
-        
         const modal = document.getElementById('pickModal');
         const confirmBtn = document.getElementById('confirmPick');
         const cancelBtn = document.getElementById('cancelPick');
         const closeBtn = document.querySelector('.modal-close');
 
-        console.log('🔍 Modal elements found:');
-        console.log('   Modal:', !!modal);
-        console.log('   Confirm button:', !!confirmBtn);
-        console.log('   Cancel button:', !!cancelBtn);
-        console.log('   Close button:', !!closeBtn);
-
         if (confirmBtn) {
-            console.log('✅ Adding click listener to confirm button');
             confirmBtn.addEventListener('click', () => {
-                console.log('🖱️ Confirm button clicked');
                 this.confirmPick();
             });
         }
 
         if (cancelBtn) {
-            console.log('✅ Adding click listener to cancel button');
             cancelBtn.addEventListener('click', () => {
-                console.log('🖱️ Cancel button clicked');
                 this.hidePickModal();
             });
         }
 
         if (closeBtn) {
-            console.log('✅ Adding click listener to close button');
             closeBtn.addEventListener('click', () => {
-                console.log('🖱️ Close button clicked');
                 this.hidePickModal();
             });
         }
 
         // Close modal when clicking outside
         if (modal) {
-            console.log('✅ Adding click-outside listener to modal');
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    console.log('🖱️ Modal background clicked, closing modal');
                     this.hidePickModal();
                 }
             });
         }
-        
-        console.log('🎭 Pick modal setup complete');
     }
 
     async confirmPick() {
@@ -1056,7 +929,6 @@ class FixturesManager {
         const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
         
         if (!currentClubId || !currentEdition) {
-            console.error('❌ No club or edition available for saving pick');
             window.authManager.showError('Unable to save pick - club/edition not available');
             return;
         }
@@ -1086,9 +958,7 @@ class FixturesManager {
                 isAutopick: false
             };
 
-            console.log(`✅ Pick confirmed for ${teamName} in gameweek ${currentGameweek}`);
-            console.log(`📊 Updated userPicks:`, this.userPicks);
-            console.log(`🔍 Pick saved to: /clubs/${currentClubId}/editions/${currentEdition}/picks`);
+
 
             // Hide modal first
             this.hidePickModal();
@@ -1252,12 +1122,9 @@ class FixturesManager {
             const fixturesRef = this.db.collection('fixtures').doc(`${edition}_gw${gameweek}`);
             const fixturesDoc = await fixturesRef.get();
 
-            if (fixturesDoc.exists) {
-                await fixturesRef.delete();
-                console.log(`✅ Sample fixtures for ${edition} Gameweek ${gameweek} cleaned up.`);
-            } else {
-                console.log(`ℹ️ No sample fixtures found for ${edition} Gameweek ${gameweek} to clean up.`);
-            }
+                    if (fixturesDoc.exists) {
+            await fixturesRef.delete();
+        }
         } catch (error) {
             console.error('Error cleaning up sample fixtures:', error);
         }
