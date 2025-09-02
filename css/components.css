@@ -1760,7 +1760,7 @@ input:checked + .slider:before {
     margin-right: 8px;
 }
 
-/* Previous pick indicator (padlock) for teams picked in other gameweeks */
+/* Previous pick indicator (padlock/clock) for teams picked in other gameweeks */
 .fixture-card .previous-pick-indicator {
     position: absolute;
     top: 8px;
@@ -1776,6 +1776,23 @@ input:checked + .slider:before {
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
+}
+
+/* Different colors for different pick types */
+.fixture-card .previous-pick-indicator[title*="Gameweek"] {
+    /* Default styling for all indicators */
+}
+
+/* Clock symbol for future gameweek picks */
+.fixture-card .previous-pick-indicator.future-pick {
+    color: #ffc107; /* Warning yellow for future picks */
+    background: rgba(255, 193, 7, 0.1);
+}
+
+/* Padlock symbol for previous gameweek picks */
+.fixture-card .previous-pick-indicator.previous-pick {
+    color: #6c757d; /* Gray for used/locked picks */
+    background: rgba(108, 117, 125, 0.1);
 }
 
 .fixture-card .previous-pick-indicator:hover {

@@ -697,7 +697,7 @@ class FixturesManager {
                     ${this.createTeamWithBadgeHTML(fixture.homeTeam, 'small')}
                     ${fixture.homeScore !== null && fixture.homeScore !== undefined ? `<span class="team-score">${this.getScoreValue(fixture.homeScore)}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.homeTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
-                    ${this.isTeamPickedInOtherGameweek(fixture.homeTeam) ? `<span class="previous-pick-indicator" title="Picked in Gameweek ${this.getTeamPickGameweek(fixture.homeTeam)}">🔒</span>` : ''}
+                    ${this.isTeamPickedInOtherGameweek(fixture.homeTeam) ? `<span class="previous-pick-indicator ${this.getTeamPickGameweek(fixture.homeTeam) < window.editionService.getCurrentGameweek() ? 'previous-pick' : 'future-pick'}" title="${this.getTeamPickGameweek(fixture.homeTeam) < window.editionService.getCurrentGameweek() ? 'Picked in Gameweek ' + this.getTeamPickGameweek(fixture.homeTeam) + ' (locked)' : 'Picked in Gameweek ' + this.getTeamPickGameweek(fixture.homeTeam) + ' (pending)'}">${this.getTeamPickGameweek(fixture.homeTeam) < window.editionService.getCurrentGameweek() ? '🔒' : '⏰'}</span>` : ''}
                 </button>
                 
                 <div class="vs-container">
@@ -713,7 +713,7 @@ class FixturesManager {
                     ${this.createTeamWithBadgeHTML(fixture.awayTeam, 'small')}
                     ${fixture.awayScore !== null && fixture.awayScore !== undefined ? `<span class="team-score">${this.getScoreValue(fixture.awayScore)}</span>` : ''}
                     ${this.isTeamPickedInCurrentGameweek(fixture.awayTeam) ? '<span class="pick-checkmark">✓</span>' : ''}
-                    ${this.isTeamPickedInOtherGameweek(fixture.awayTeam) ? `<span class="previous-pick-indicator" title="Picked in Gameweek ${this.getTeamPickGameweek(fixture.awayTeam)}">🔒</span>` : ''}
+                    ${this.isTeamPickedInOtherGameweek(fixture.awayTeam) ? `<span class="previous-pick-indicator ${this.getTeamPickGameweek(fixture.awayTeam) < window.editionService.getCurrentGameweek() ? 'previous-pick' : 'future-pick'}" title="${this.getTeamPickGameweek(fixture.awayTeam) < window.editionService.getCurrentGameweek() ? 'Picked in Gameweek ' + this.getTeamPickGameweek(fixture.awayTeam) + ' (locked)' : 'Picked in Gameweek ' + this.getTeamPickGameweek(fixture.awayTeam) + ' (pending)'}">${this.getTeamPickGameweek(fixture.awayTeam) < window.editionService.getCurrentGameweek() ? '🔒' : '⏰'}</span>` : ''}
                 </button>
             </div>
         `;
