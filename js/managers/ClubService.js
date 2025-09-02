@@ -35,11 +35,11 @@ class ClubService {
     init() {
         if (this.isInitialized) return;
         
-        console.log('🏟️ ClubService: Full initialization...');
+        // Full initialization...
         
         // Ensure Firebase connection is available before setting up listeners
         if (!this.db && window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
-            console.log('🔧 ClubService: Setting database reference during init');
+            // Setting database reference during init
             this.db = window.firebaseDB;
         }
         
@@ -87,7 +87,7 @@ class ClubService {
     setupBasicStructure() {
         // Set up basic DOM structure and event listeners
         // This runs before Firebase is ready
-        console.log('🔧 Setting up ClubService basic structure...');
+        // Setting up basic structure...
         
         // Check if DOM elements exist before setting up listeners
         const clubSelect = document.getElementById('clubSelect');
@@ -95,93 +95,56 @@ class ClubService {
         const editionSelect = document.getElementById('editionSelect');
         const headerEditionSelect = document.getElementById('headerEditionSelect');
         
-        console.log('🔧 ClubService: DOM elements check in setupBasicStructure:', {
-            clubSelect: !!clubSelect,
-            headerClubSelect: !!headerClubSelect,
-            editionSelect: !!editionSelect,
-            headerEditionSelect: !!headerEditionSelect
-        });
-        
         // Set up club selector event listeners
-        console.log('🔧 ClubService: About to call setupClubSelectorListeners');
         this.setupClubSelectorListeners();
-        
-        console.log('✅ ClubService basic structure setup complete');
     }
 
     setupClubSelectorListeners() {
-        console.log('🔧 ClubService: setupClubSelectorListeners called');
-        
         // Set up event listeners for club selectors
         const clubSelect = document.getElementById('clubSelect');
         const headerClubSelect = document.getElementById('headerClubSelect');
         const editionSelect = document.getElementById('editionSelect');
         const headerEditionSelect = document.getElementById('headerEditionSelect');
         
-        console.log('🔧 ClubService: DOM elements found:', {
-            clubSelect: !!clubSelect,
-            headerClubSelect: !!headerClubSelect,
-            editionSelect: !!editionSelect,
-            headerEditionSelect: !!headerEditionSelect
-        });
-        
         if (clubSelect) {
-            console.log('🔧 ClubService: Adding change listener to clubSelect');
             clubSelect.addEventListener('change', (e) => {
-                console.log('🔧 ClubService: clubSelect change event triggered with value:', e.target.value);
                 this.onClubChange(e.target.value);
             });
         }
         
         if (headerClubSelect) {
-            console.log('🔧 ClubService: Adding change listener to headerClubSelect');
             headerClubSelect.addEventListener('change', (e) => {
-                console.log('🔧 ClubService: headerClubSelect change event triggered with value:', e.target.value);
                 this.onClubChange(e.target.value);
             });
         }
 
         // Add event listener for registration form edition selector
         if (editionSelect) {
-            console.log('🔧 ClubService: Adding change listener to editionSelect');
             editionSelect.addEventListener('change', (e) => {
-                console.log('🔧 ClubService: editionSelect change event triggered with value:', e.target.value);
                 this.onEditionChange(e.target.value);
             });
         }
 
         // Add event listener for header edition selector
         if (headerEditionSelect) {
-            console.log('🔧 ClubService: Adding change listener to headerEditionSelect');
             headerEditionSelect.addEventListener('change', (e) => {
-                console.log('🔧 ClubService: headerEditionSelect change event triggered with value:', e.target.value);
                 this.onEditionChange(e.target.value);
             });
         }
-        
-        console.log('🔧 ClubService: setupClubSelectorListeners completed');
     }
 
     setupRealtimeListeners() {
-        console.log('🔧 ClubService: setupRealtimeListeners called');
-        console.log('🔧 ClubService: Current db reference:', !!this.db);
-        console.log('🔧 ClubService: window.firebaseDB available:', !!window.firebaseDB);
-        
         // Try to get database reference if not available
         if (!this.db && window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
-            console.log('🔧 ClubService: Setting database reference in setupRealtimeListeners');
             this.db = window.firebaseDB;
         }
         
         if (!this.db || typeof this.db.collection !== 'function') {
-            console.log('ClubService: Firebase not ready, retrying in 2 seconds...');
-            console.log('🔧 ClubService: db type:', typeof this.db);
-            console.log('🔧 ClubService: db.collection type:', this.db ? typeof this.db.collection : 'undefined');
             setTimeout(() => this.setupRealtimeListeners(), 2000);
             return;
         }
 
-        console.log('🔧 ClubService: Setting up global settings listener...');
+        // Setting up global settings listener...
         
         // Listen for global settings changes
         this.globalSettingsListener = this.db.collection('global-settings').doc('system')

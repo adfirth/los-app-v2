@@ -40,7 +40,7 @@ class EnvironmentLoader {
 
     // Load environment variables from Netlify
     loadNetlifyEnvironment() {
-        console.log('🌐 EnvironmentLoader: Loading from Netlify environment...');
+                        // Loading from Netlify environment...
         
         // In Netlify, environment variables are available to serverless functions
         // We'll use the Netlify functions to access them
@@ -57,12 +57,12 @@ class EnvironmentLoader {
         // Set up Firebase configuration for Netlify
         this.setupFirebaseConfig();
         
-        console.log('✅ EnvironmentLoader: Netlify environment loaded');
+        // Netlify environment loaded
     }
 
     // Set up Firebase configuration
     setupFirebaseConfig() {
-        console.log('🔥 EnvironmentLoader: Setting up Firebase configuration...');
+                        // Setting up Firebase configuration...
         
         // Create Firebase config object
         window.firebaseConfig = {
@@ -79,17 +79,15 @@ class EnvironmentLoader {
         try {
             if (window.firebase && !window.firebase.apps.length) {
                 window.firebase.initializeApp(window.firebaseConfig);
-                console.log('✅ EnvironmentLoader: Firebase initialized successfully');
+                // Firebase initialized successfully
             } else if (window.firebase && window.firebase.apps.length) {
-                console.log('✅ EnvironmentLoader: Firebase already initialized');
+                // Firebase already initialized
             } else {
-                console.log('⚠️ EnvironmentLoader: Firebase SDK not loaded yet');
+                // Firebase SDK not loaded yet
             }
         } catch (error) {
             console.error('❌ EnvironmentLoader: Error initializing Firebase:', error);
         }
-        
-        console.log('✅ EnvironmentLoader: Firebase configuration set up');
     }
 
     // Parse .env file content
@@ -160,13 +158,12 @@ class EnvironmentLoader {
         // Wait for Firebase SDK and initialize
         this.waitForFirebaseAndInit();
         
-        console.log('🌍 EnvironmentLoader: Global configuration setup complete');
-        console.log('🔑 Available API keys:', Object.keys(this.envVars).filter(key => key.includes('API_KEY')));
+        // Global configuration setup complete
     }
 
     // Wait for Firebase SDK to load and then initialize
     waitForFirebaseAndInit() {
-        console.log('⏳ EnvironmentLoader: Waiting for Firebase SDK...');
+        // Waiting for Firebase SDK...
         
         let attempts = 0;
         const maxAttempts = 50; // 5 seconds max wait time
@@ -175,7 +172,7 @@ class EnvironmentLoader {
             attempts++;
             
             if (window.firebase) {
-                console.log('✅ EnvironmentLoader: Firebase SDK loaded, initializing...');
+                // Firebase SDK loaded, initializing...
                 this.initializeFirebase();
             } else if (attempts >= maxAttempts) {
                 console.warn('⚠️ EnvironmentLoader: Firebase SDK not loaded after 5 seconds, proceeding without Firebase');
@@ -207,7 +204,7 @@ class EnvironmentLoader {
                 // Dispatch custom event for other parts of the app
                 window.dispatchEvent(new CustomEvent('firebase-ready'));
             } else {
-                console.log('✅ EnvironmentLoader: Firebase already initialized');
+                // Firebase already initialized
                 
                 // Set up Firebase database reference
                 this.setupFirebaseDatabase();
@@ -225,11 +222,11 @@ class EnvironmentLoader {
         try {
             // Set up Firestore database reference
             window.firebaseDB = window.firebase.firestore();
-            console.log('✅ EnvironmentLoader: Firebase database reference set up');
+            // Firebase database reference set up
             
             // Set up Firebase Auth reference
             window.firebaseAuth = window.firebase.auth();
-            console.log('✅ EnvironmentLoader: Firebase auth reference set up');
+            // Firebase auth reference set up
             
             // Also set the legacy flag for compatibility
             window.firebaseReady = true;
@@ -293,7 +290,7 @@ class EnvironmentLoader {
             }
         };
         
-        console.log('✅ EnvironmentLoader: API configuration set up');
+        // API configuration set up
     }
 
     // Get environment variable
