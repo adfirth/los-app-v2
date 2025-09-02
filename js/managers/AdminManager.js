@@ -1863,6 +1863,17 @@ class AdminManager {
                     return;
                 }
             }
+            
+            // Test database connection with a simple query
+            try {
+                console.log('🔍 AdminManager: Testing database connection...');
+                const testQuery = await this.db.collection('clubs').limit(1).get();
+                console.log('✅ AdminManager: Database connection test successful, found', testQuery.size, 'clubs');
+            } catch (dbError) {
+                console.error('❌ AdminManager: Database connection test failed:', dbError);
+                scoresList.innerHTML = '<p>Error: Database connection failed. Please refresh the page.</p>';
+                return;
+            }
 
             // Show loading state
             scoresList.innerHTML = `
@@ -1879,9 +1890,14 @@ class AdminManager {
             // Load fixtures for the selected parameters
             let fixtures = [];
             
+            console.log('🔍 AdminManager: Querying database path:', `clubs/${selectedClub}/editions/${selectedEdition}/fixtures`);
+            
             if (selectedGameweek) {
                 // Load specific gameweek - query individual fixtures where gameWeek matches
-                const fixturesSnapshot = await this.db.collection('clubs')
+                console.log('🔍 AdminManager: Querying for specific gameweek:', selectedGameweek);
+                
+                // First try the new structure: query by gameWeek field
+                let fixturesSnapshot = await this.db.collection('clubs')
                     .doc(selectedClub)
                     .collection('editions')
                     .doc(selectedEdition)
@@ -1889,16 +1905,48 @@ class AdminManager {
                     .where('gameWeek', '==', parseInt(selectedGameweek))
                     .get();
                 
+                console.log('🔍 AdminManager: Query by gameWeek field returned:', fixturesSnapshot.size, 'documents');
+                
+                // If no results, try the old structure: query by document ID containing gameweek
+                if (fixturesSnapshot.empty) {
+                    console.log('🔍 AdminManager: No results by gameWeek field, trying document ID pattern...');
+                    fixturesSnapshot = await this.db.collection('clubs')
+                        .doc(selectedClub)
+                        .collection('editions')
+                        .doc(selectedEdition)
+                        .collection('fixtures')
+                        .where('__name__', '>=', `gw${selectedGameweek}`)
+                        .where('__name__', '<=', `gw${selectedGameweek}\uf8ff`)
+                        .get();
+                    
+                    console.log('🔍 AdminManager: Query by document ID pattern returned:', fixturesSnapshot.size, 'documents');
+                }
+                
                 fixturesSnapshot.forEach(doc => {
                     const fixtureData = doc.data();
-                    fixtures.push({
-                        ...fixtureData,
-                        id: doc.id,
-                        gameweek: fixtureData.gameWeek || selectedGameweek
-                    });
+                    console.log('🔍 AdminManager: Processing fixture document:', doc.id, fixtureData);
+                    
+                    if (fixtureData.fixtures && Array.isArray(fixtureData.fixtures)) {
+                        // New structure: fixtures array within document
+                        fixtureData.fixtures.forEach(fixture => {
+                            fixtures.push({
+                                ...fixture,
+                                id: doc.id,
+                                gameweek: fixture.gameWeek || selectedGameweek
+                            });
+                        });
+                    } else {
+                        // Old structure: single fixture data
+                        fixtures.push({
+                            ...fixtureData,
+                            id: doc.id,
+                            gameweek: fixtureData.gameWeek || selectedGameweek
+                        });
+                    }
                 });
             } else {
                 // Load all gameweeks for the edition
+                console.log('🔍 AdminManager: Querying for all gameweeks');
                 const fixturesSnapshot = await this.db.collection('clubs')
                     .doc(selectedClub)
                     .collection('editions')
@@ -1906,22 +1954,49 @@ class AdminManager {
                     .collection('fixtures')
                     .get();
                 
+                console.log('🔍 AdminManager: All fixtures query returned:', fixturesSnapshot.size, 'documents');
+                
                 fixturesSnapshot.forEach(doc => {
                     const fixtureData = doc.data();
-                    fixtures.push({
-                        ...fixtureData,
-                        id: doc.id,
-                        gameweek: fixtureData.gameWeek || 'Unknown'
-                    });
+                    console.log('🔍 AdminManager: Processing fixture document:', doc.id, fixtureData);
+                    
+                    if (fixtureData.fixtures && Array.isArray(fixtureData.fixtures)) {
+                        // New structure: fixtures array within document
+                        fixtureData.fixtures.forEach(fixture => {
+                            fixtures.push({
+                                ...fixture,
+                                id: doc.id,
+                                gameweek: fixture.gameWeek || 'Unknown'
+                            });
+                        });
+                    } else {
+                        // Old structure: single fixture data
+                        fixtures.push({
+                            ...fixtureData,
+                            id: doc.id,
+                            gameweek: fixtureData.gameWeek || 'Unknown'
+                        });
+                    }
                 });
             }
 
+            console.log('🔍 AdminManager: Final fixtures array:', fixtures);
+            console.log('🔍 AdminManager: Fixtures count:', fixtures.length);
+            
             if (fixtures.length === 0) {
+                console.log('🔍 AdminManager: No fixtures found, showing empty state');
                 scoresList.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-futbol"></i>
                         <h4>No Fixtures Found</h4>
                         <p>No fixtures found for the selected criteria</p>
+                        <div class="debug-info">
+                            <p><strong>Debug Info:</strong></p>
+                            <p>Club: ${selectedClub}</p>
+                            <p>Edition: ${selectedEdition}</p>
+                            <p>Gameweek: ${selectedGameweek || 'All'}</p>
+                            <p>Database Path: clubs/${selectedClub}/editions/${selectedEdition}/fixtures</p>
+                        </div>
                     </div>
                 `;
                 return;

@@ -148,6 +148,7 @@ class ClubService {
 
         console.log('ClubService: Loading data for clubs:', this.availableClubs);
 
+        // Load clubs from activeClubs array first
         for (const clubId of this.availableClubs) {
             try {
                 const clubDoc = await this.db.collection('clubs').doc(clubId).get();
@@ -161,6 +162,9 @@ class ClubService {
                 console.error(`ClubService: Error loading club ${clubId}:`, error);
             }
         }
+
+        // Also discover and load any additional clubs that might exist in the database
+        await this.discoverAllClubs();
 
         console.log('🔍 ClubService: After loading all clubs, clubData keys:', Object.keys(this.clubData));
         console.log('🔍 ClubService: After loading all clubs, availableClubs length:', this.availableClubs.length);

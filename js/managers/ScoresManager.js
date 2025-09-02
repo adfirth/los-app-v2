@@ -706,7 +706,7 @@ class ScoresManager {
                 // If Netlify function fails, try direct API call as fallback
                 if (!this.isDevelopmentMode() && (response.status === 404 || response.status === 500 || response.status === 429)) {
                     console.log(`⚠️ ScoresManager: Netlify function failed (${response.status}), trying direct API call as fallback...`);
-                    return await this.importScoresDirectAPI(dateRange);
+                    return await this.makeDirectAPICall(date);
                 }
                 
                 const errorText = await response.text();
@@ -1590,9 +1590,20 @@ class ScoresManager {
     async importScoresDirectAPI(dateRange) {
         console.log('🔧 ScoresManager: Making direct API call to fixtures-results...');
         
-        const url = `https://football-web-pages1.p.rapidapi.com/fixtures-results.json?from=${dateRange.from}&to=${dateRange.to}&comp=5&season=2024-25`;
+        // Get current season from edition service or use default
+        let currentSeason = '2025-26';
+        if (window.editionService && window.editionService.getCurrentEdition) {
+            const currentEdition = window.editionService.getCurrentEdition();
+            if (currentEdition && currentEdition.includes('2025-26')) {
+                currentSeason = '2025-26';
+            } else if (currentEdition && currentEdition.includes('2024-25')) {
+                currentSeason = '2024-25';
+            }
+        }
+        
+        const url = `https://football-web-pages1.p.rapidapi.com/fixtures-results.json?from=${dateRange.from}&to=${dateRange.to}&comp=5&season=${currentSeason}`;
         const headers = {
-            'X-RapidAPI-Key': this.apiConfig.RAPIDAPI_KEY,
+            'X-RapidAPI_Key': this.apiConfig.RAPIDAPI_KEY,
             'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
         };
         
