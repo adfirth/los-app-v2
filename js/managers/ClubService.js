@@ -389,16 +389,36 @@ class ClubService {
     updateEditionSelector(editions) {
         console.log(`🔧 ClubService: updateEditionSelector called with ${editions.length} editions:`, editions);
         
+        // Check if user is Super Admin
+        const isSuperAdmin = window.losApp?.managers?.superAdmin?.isSuperAdmin;
+        console.log(`🔧 ClubService: User is Super Admin: ${isSuperAdmin}`);
+        
         const editionSelect = document.getElementById('editionSelect');
         if (editionSelect) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
             editions.forEach(edition => {
                 const option = document.createElement('option');
                 option.value = edition.id; // Use edition.id, not edition.editionId
-                option.textContent = edition.name;
+                
+                // Add status indicator for Super Admin users
+                if (isSuperAdmin) {
+                    let statusText = '';
+                    if (edition.isActive === false) {
+                        statusText = ' (Inactive)';
+                        option.style.color = '#9ca3af'; // Gray out inactive editions
+                    } else if (edition.isActive === true) {
+                        statusText = ' (Active)';
+                    } else {
+                        statusText = ' (Unknown Status)';
+                    }
+                    option.textContent = `${edition.name}${statusText}`;
+                } else {
+                    option.textContent = edition.name;
+                }
+                
                 editionSelect.appendChild(option);
             });
-            console.log(`🔧 ClubService: Registration form edition selector updated with ${editions.length} editions`);
+            console.log(`🔧 ClubService: Registration form edition selector updated with ${editions.length} editions (SuperAdmin: ${isSuperAdmin})`);
         } else {
             console.log('🔧 ClubService: Registration form edition selector element not found');
         }
@@ -410,13 +430,29 @@ class ClubService {
             editions.forEach(edition => {
                 const option = document.createElement('option');
                 option.value = edition.id; // Use edition.id, not edition.editionId
-                option.textContent = edition.name;
+                
+                // Add status indicator for Super Admin users
+                if (isSuperAdmin) {
+                    let statusText = '';
+                    if (edition.isActive === false) {
+                        statusText = ' (Inactive)';
+                        option.style.color = '#9ca3af'; // Gray out inactive editions
+                    } else if (edition.isActive === true) {
+                        statusText = ' (Active)';
+                    } else {
+                        statusText = ' (Unknown Status)';
+                    }
+                    option.textContent = `${edition.name}${statusText}`;
+                } else {
+                    option.textContent = edition.name;
+                }
+                
                 if (edition.id === this.currentEdition) {
                     option.selected = true;
                 }
                 headerEditionSelect.appendChild(option);
             });
-            console.log(`🔧 ClubService: Header edition selector updated with ${editions.length} editions`);
+            console.log(`🔧 ClubService: Header edition selector updated with ${editions.length} editions (SuperAdmin: ${isSuperAdmin})`);
         } else {
             console.log('🔧 ClubService: Header edition selector element not found');
         }
@@ -650,6 +686,40 @@ class ClubService {
             return editions;
         } catch (error) {
             console.error('ClubService: Error getting active editions:', error);
+            return [];
+        }
+    }
+
+    // Get ALL editions for a club (including inactive ones) - for Super Admin use
+    async getAllEditions(clubId) {
+        try {
+            const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
+                .collection('editions').get();
+            
+            const editions = [];
+            editionsSnapshot.forEach(doc => {
+                editions.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            // Sort editions by creation date (newest first) and then by edition number
+            editions.sort((a, b) => {
+                // First sort by edition number if available
+                if (a.editionNumber && b.editionNumber) {
+                    return a.editionNumber - b.editionNumber;
+                }
+                // Fallback to creation date
+                if (a.created_at && b.created_at) {
+                    return b.created_at.toDate() - a.created_at.toDate();
+                }
+                return 0;
+            });
+            
+            return editions;
+        } catch (error) {
+            console.error('ClubService: Error getting all editions:', error);
             return [];
         }
     }

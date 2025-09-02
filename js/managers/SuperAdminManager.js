@@ -1501,17 +1501,36 @@ class SuperAdminManager {
             
             // Get editions for the selected club using ClubService
             if (window.losApp?.managers?.club) {
-                const editions = await window.losApp.managers.club.getActiveEditions(clubId);
+                // Super Admin should see ALL editions (including inactive ones)
+                const editions = await window.losApp.managers.club.getAllEditions(clubId);
                 
                 editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
                 editions.forEach(edition => {
                     const option = document.createElement('option');
                     option.value = edition.id;
-                    option.textContent = edition.name;
+                    
+                    // Add status indicator to edition name
+                    let statusText = '';
+                    if (edition.isActive === false) {
+                        statusText = ' (Inactive)';
+                    } else if (edition.isActive === true) {
+                        statusText = ' (Active)';
+                    } else {
+                        statusText = ' (Unknown Status)';
+                    }
+                    
+                    option.textContent = `${edition.name}${statusText}`;
+                    
+                    // Disable inactive editions but still show them
+                    if (edition.isActive === false) {
+                        option.disabled = true;
+                        option.style.color = '#9ca3af';
+                    }
+                    
                     editionSelect.appendChild(option);
                 });
                 
-                console.log(`✅ Loaded ${editions.length} editions for club ${clubId}`);
+                console.log(`✅ SuperAdmin: Loaded ${editions.length} editions for club ${clubId} (including inactive ones)`);
             } else {
                 editionSelect.innerHTML = '<option value="">Error: ClubService not available</option>';
             }
@@ -2305,11 +2324,22 @@ class SuperAdminManager {
             
             // Use ClubService to get editions for the club
             if (window.losApp && window.losApp.managers && window.losApp.managers.club) {
-                const editions = await window.losApp.managers.club.getActiveEditions(clubId);
+                // Super Admin should see ALL editions (including inactive ones)
+                const editions = await window.losApp.managers.club.getAllEditions(clubId);
                 
-                editionSelect.innerHTML = editions.map(edition => 
-                    `<option value="${edition.id}">${edition.name}</option>`
-                ).join('');
+                editionSelect.innerHTML = editions.map(edition => {
+                    // Add status indicator to edition name
+                    let statusText = '';
+                    if (edition.isActive === false) {
+                        statusText = ' (Inactive)';
+                    } else if (edition.isActive === true) {
+                        statusText = ' (Active)';
+                    } else {
+                        statusText = ' (Unknown Status)';
+                    }
+                    
+                    return `<option value="${edition.id}">${edition.name}${statusText}</option>`;
+                }).join('');
                 
                 // Set default to current edition if available
                 if (this.fixtureSelectionData.editionId) {
