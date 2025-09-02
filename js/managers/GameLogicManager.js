@@ -536,12 +536,32 @@ class GameLogicManager {
             
             console.log('🔍 GameLogicManager: Found fixtures for gameweek:', fixturesSnapshot.size);
             
-            // Process each finished fixture
+            // Process each finished/completed fixture
             for (const fixtureDoc of fixturesSnapshot.docs) {
                 const fixtureData = fixtureDoc.data();
-                if (fixtureData.status === 'finished' && fixtureData.homeScore !== null && fixtureData.awayScore !== null) {
-                    console.log('🔍 GameLogicManager: Processing finished fixture:', fixtureDoc.id);
+                
+                // Check if fixture is finished/completed with scores, OR if it already has results
+                const hasScores = fixtureData.homeScore !== null && fixtureData.awayScore !== null;
+                const isFinished = fixtureData.status === 'finished' || fixtureData.status === 'completed';
+                const hasResults = fixtureData.result !== null && fixtureData.result !== undefined;
+                
+                if ((isFinished && hasScores) || hasResults) {
+                    console.log('🔍 GameLogicManager: Processing fixture:', fixtureDoc.id, {
+                        status: fixtureData.status,
+                        hasScores: hasScores,
+                        hasResults: hasResults,
+                        homeScore: fixtureData.homeScore,
+                        awayScore: fixtureData.awayScore,
+                        result: fixtureData.result
+                    });
+                    
                     await this.processFixtureResults(clubId, editionId, fixtureDoc.id);
+                } else {
+                    console.log('🔍 GameLogicManager: Skipping fixture:', fixtureDoc.id, {
+                        status: fixtureData.status,
+                        hasScores: hasScores,
+                        hasResults: hasResults
+                    });
                 }
             }
             
