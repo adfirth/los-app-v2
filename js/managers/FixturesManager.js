@@ -127,6 +127,9 @@ class FixturesManager {
             // Show loading state
             this.showLoadingState();
             
+            // Clear deadline display while loading new fixtures
+            this.clearDeadlineDisplay();
+            
             // Try to load fixtures from the new multi-club structure first
             const currentClubId = window.losApp?.managers?.club?.getCurrentClub() || 'default-club';
             
@@ -331,6 +334,8 @@ class FixturesManager {
         if (this.currentFixtures.length === 0) {
             console.log('⏰ No fixtures, setting deadlinePassed = false');
             this.deadlinePassed = false;
+            // Clear deadline display when there are no fixtures
+            this.clearDeadlineDisplay();
             return;
         }
 
@@ -390,6 +395,15 @@ class FixturesManager {
             console.error('❌ Error in checkDeadline:', error);
             console.log('⚠️ Setting deadlinePassed = false due to error');
             this.deadlinePassed = false;
+        }
+    }
+
+    // Clear deadline display (used when switching to editions with no fixtures)
+    clearDeadlineDisplay() {
+        const deadlineText = document.getElementById('deadlineText');
+        if (deadlineText) {
+            deadlineText.textContent = 'Deadline: Loading...';
+            deadlineText.style.color = '#6c757d';
         }
     }
 
