@@ -185,6 +185,17 @@ class AdminManager {
     }
 
     insertAdminButton(retryCount = 0) {
+        // Wait for DOM to be ready and app container to be visible
+        if (document.readyState !== 'complete' || !document.getElementById('appContainer') || document.getElementById('appContainer').classList.contains('hidden')) {
+            if (retryCount < 100) { // Max 100 retries (10 seconds)
+                setTimeout(() => this.insertAdminButton(retryCount + 1), 100);
+                return;
+            } else {
+                console.error('❌ AdminManager: App container not ready after 10 seconds');
+                return;
+            }
+        }
+
         const adminButtonsContainer = document.getElementById('adminButtonsContainer');
         
         if (adminButtonsContainer) {

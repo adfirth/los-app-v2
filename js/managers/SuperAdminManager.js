@@ -55,6 +55,17 @@ class SuperAdminManager {
     }
 
     insertSuperAdminToggle(toggle, retryCount = 0) {
+        // Wait for DOM to be ready and app container to be visible
+        if (document.readyState !== 'complete' || !document.getElementById('appContainer') || document.getElementById('appContainer').classList.contains('hidden')) {
+            if (retryCount < 100) { // Max 100 retries (10 seconds)
+                setTimeout(() => this.insertSuperAdminToggle(toggle, retryCount + 1), 100);
+                return;
+            } else {
+                console.error('❌ SuperAdminManager: App container not ready after 10 seconds');
+                return;
+            }
+        }
+
         const adminButtonsContainer = document.getElementById('adminButtonsContainer');
         console.log('🔍 SuperAdminManager: Admin buttons container found:', !!adminButtonsContainer, 'Retry:', retryCount);
         
@@ -63,28 +74,14 @@ class SuperAdminManager {
             adminButtonsContainer.appendChild(toggle);
             console.log('✅ SuperAdminManager: Toggle button inserted into admin buttons container');
         } else if (retryCount < 50) { // Max 50 retries (5 seconds)
-            // Debug DOM state
-            if (retryCount === 0) {
+            // Debug DOM state only on first few attempts
+            if (retryCount < 3) {
                 console.log('🔍 SuperAdminManager: Debugging DOM state...');
                 console.log('🔍 SuperAdminManager: document.readyState:', document.readyState);
-                console.log('🔍 SuperAdminManager: document.body exists:', !!document.body);
+                console.log('🔍 SuperAdminManager: appContainer visible:', !document.getElementById('appContainer')?.classList.contains('hidden'));
                 console.log('🔍 SuperAdminManager: .app-header exists:', !!document.querySelector('.app-header'));
                 console.log('🔍 SuperAdminManager: .header-controls exists:', !!document.querySelector('.header-controls'));
                 console.log('🔍 SuperAdminManager: All elements with "admin" in ID:', Array.from(document.querySelectorAll('[id*="admin"]')).map(el => el.id));
-                
-                // More detailed debugging
-                const appHeader = document.querySelector('.app-header');
-                if (appHeader) {
-                    console.log('🔍 SuperAdminManager: .app-header HTML structure:', appHeader.innerHTML.substring(0, 500) + '...');
-                    console.log('🔍 SuperAdminManager: .app-header children:', Array.from(appHeader.children).map(child => ({ tagName: child.tagName, className: child.className, id: child.id })));
-                }
-                
-                // Check if the element exists but is hidden
-                const headerControls = document.querySelector('.header-controls');
-                if (headerControls) {
-                    console.log('🔍 SuperAdminManager: .header-controls computed style:', window.getComputedStyle(headerControls).display);
-                    console.log('🔍 SuperAdminManager: .header-controls visibility:', window.getComputedStyle(headerControls).visibility);
-                }
             }
             
             // Retry after a short delay if container not found
