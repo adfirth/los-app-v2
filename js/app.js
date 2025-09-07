@@ -51,6 +51,10 @@ class LOSApp {
             // Initialize core services
             this.uiService = new UIService();
             this.performanceService = new PerformanceService();
+            this.performanceOptimizer = new PerformanceOptimizer();
+            
+            // Initialize performance optimization
+            this.performanceOptimizer.initialize();
             
             // Initialize managers
             this.initializeManagers();
@@ -65,20 +69,34 @@ class LOSApp {
 
     async initializeManagers() {
         try {
-            // Initialize all managers
-            this.managers = {
-                auth: new AuthManager(),
-                edition: new EditionService(),
-                fixtures: new FixturesManager(),
-                scores: new ScoresManager(),
-                gameLogic: new GameLogicManager(),
-                pickStatus: new PickStatusService(),
-                deadline: new DeadlineService(),
-                admin: new AdminManager(),
-                club: new ClubService(),
-                superAdmin: new SuperAdminManager(),
-                fixtureManagement: new FixtureManagementManager()
-            };
+            // Initialize all managers with error handling
+            this.managers = {};
+            
+            const managerConfigs = [
+                { key: 'auth', class: AuthManager },
+                { key: 'edition', class: EditionService },
+                { key: 'fixtures', class: FixturesManager },
+                { key: 'scores', class: ScoresManager },
+                { key: 'gameLogic', class: GameLogicManager },
+                { key: 'pickStatus', class: PickStatusService },
+                { key: 'deadline', class: DeadlineService },
+                { key: 'admin', class: AdminManager },
+                { key: 'club', class: ClubService },
+                { key: 'superAdmin', class: SuperAdminManager },
+                { key: 'fixtureManagement', class: FixtureManagementManager }
+            ];
+
+            // Initialize each manager with error handling
+            for (const config of managerConfigs) {
+                try {
+                    console.log(`🔧 Initializing ${config.key} manager...`);
+                    this.managers[config.key] = new config.class();
+                    console.log(`✅ ${config.key} manager initialized`);
+                } catch (error) {
+                    console.error(`❌ Failed to initialize ${config.key} manager:`, error);
+                    // Continue with other managers even if one fails
+                }
+            }
 
             // Make key services globally available
             window.clubService = this.managers.club;
@@ -91,6 +109,7 @@ class LOSApp {
             
         } catch (error) {
             console.error('Error initializing managers:', error);
+            this.handleError(error, 'manager initialization');
         }
     }
 
@@ -1087,12 +1106,12 @@ class LOSApp {
         // Global error handling
         window.addEventListener('error', (e) => {
             console.error('Global error:', e.error);
-            this.handleError(e.error);
+            this.handleError(e.error, 'global error');
         });
 
         window.addEventListener('unhandledrejection', (e) => {
             console.error('Unhandled promise rejection:', e.reason);
-            this.handleError(e.reason);
+            this.handleError(e.reason, 'unhandled promise rejection');
         });
 
         // Specific Firebase error handling
@@ -1102,6 +1121,8 @@ class LOSApp {
                 if (error.message && error.message.includes('Target ID already exists')) {
                     console.log('Firebase connection conflict detected at DB level');
                     this.handleConnectionConflict();
+                } else {
+                    this.handleError(error, 'Firebase connection');
                 }
             });
         }
@@ -1111,13 +1132,15 @@ class LOSApp {
             console.log('Firebase error event received:', e.detail);
             if (e.detail && e.detail.message && e.detail.message.includes('Target ID already exists')) {
                 this.handleConnectionConflict();
+            } else {
+                this.handleError(e.detail, 'Firebase error event');
             }
         });
     }
 
-    handleError(error) {
+    handleError(error, operation = 'operation') {
         // Handle errors gracefully
-        console.error('App error:', error);
+        console.error(`App error during ${operation}:`, error);
         
         // Check for specific Firebase connection conflicts
         if (error.message && error.message.includes('Target ID already exists')) {
@@ -1126,9 +1149,40 @@ class LOSApp {
             return;
         }
         
+        // Get user-friendly error message
+        const userMessage = this.getErrorMessage(error, operation);
+        
         // Show user-friendly error message
-        if (this.managers.auth) {
-            this.managers.auth.showError('An error occurred. Please try refreshing the page.');
+        if (this.uiService) {
+            this.uiService.showToast('error', userMessage);
+        } else if (this.managers.auth) {
+            this.managers.auth.showError(userMessage);
+        } else {
+            // Fallback to console
+            console.error('Error Toast:', userMessage);
+        }
+    }
+
+    /**
+     * Get user-friendly error message
+     */
+    getErrorMessage(error, operation) {
+        const errorMessage = error.message?.toLowerCase() || '';
+        
+        if (errorMessage.includes('client is offline')) {
+            return 'You are currently offline. Please check your internet connection.';
+        } else if (errorMessage.includes('permission denied')) {
+            return 'You do not have permission to perform this action.';
+        } else if (errorMessage.includes('not found')) {
+            return 'The requested data was not found.';
+        } else if (errorMessage.includes('timeout')) {
+            return 'The operation timed out. Please try again.';
+        } else if (errorMessage.includes('network error')) {
+            return 'Network error occurred. Please check your connection.';
+        } else if (errorMessage.includes('firebase')) {
+            return 'Database connection issue. Please refresh the page.';
+        } else {
+            return `An error occurred during ${operation}. Please try again.`;
         }
     }
 

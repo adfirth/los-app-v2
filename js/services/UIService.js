@@ -69,9 +69,17 @@ class UIService {
     /**
      * Show loading state for a specific content area
      */
-    showLoading(contentType) {
+    showLoading(contentType, message = null) {
         if (this.loadingStates[contentType]) {
             this.loadingStates[contentType].classList.remove('hidden');
+            
+            // Update loading message if provided
+            if (message) {
+                const messageElement = this.loadingStates[contentType].querySelector('p');
+                if (messageElement) {
+                    messageElement.textContent = message;
+                }
+            }
         }
         
         // Add loading class to tab content
@@ -79,6 +87,9 @@ class UIService {
         if (tabContent) {
             tabContent.classList.add('loading');
         }
+        
+        // Show loading overlay for better UX
+        this.showLoadingOverlay(contentType);
     }
 
     /**
@@ -93,6 +104,43 @@ class UIService {
         const tabContent = document.getElementById(`${contentType}Tab`);
         if (tabContent) {
             tabContent.classList.remove('loading');
+        }
+        
+        // Hide loading overlay
+        this.hideLoadingOverlay(contentType);
+    }
+
+    /**
+     * Show loading overlay for better visual feedback
+     */
+    showLoadingOverlay(contentType) {
+        const tabContent = document.getElementById(`${contentType}Tab`);
+        if (tabContent) {
+            // Create overlay if it doesn't exist
+            let overlay = tabContent.querySelector('.loading-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'loading-overlay';
+                overlay.innerHTML = `
+                    <div class="loading-spinner-large"></div>
+                    <p>Loading ${contentType}...</p>
+                `;
+                tabContent.appendChild(overlay);
+            }
+            overlay.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * Hide loading overlay
+     */
+    hideLoadingOverlay(contentType) {
+        const tabContent = document.getElementById(`${contentType}Tab`);
+        if (tabContent) {
+            const overlay = tabContent.querySelector('.loading-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
         }
     }
 

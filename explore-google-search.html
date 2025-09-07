@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Search Data Explorer - National League</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #3367d6;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #388e3c;
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+        }
+        .loading {
+            color: #1976d2;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Google Search Data Explorer - National League</h1>
+        <p>This tool helps explore the structure of Google Search results for National League fixtures and scores.</p>
+
+        <div class="section">
+            <h2>1. Search and Analyze</h2>
+            <p>Search for National League fixtures and analyze the page structure:</p>
+            <button class="button" onclick="searchAndAnalyze()">🔍 Search & Analyze</button>
+            <button class="button" onclick="clearResults()">🗑️ Clear Results</button>
+            
+            <div id="searchResults" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. Data Extraction Tests</h2>
+            <p>Test different extraction methods:</p>
+            <button class="button" onclick="extractFixtureData()">⚽ Extract Fixture Data</button>
+            <button class="button" onclick="extractScoreData()">📊 Extract Score Data</button>
+            <button class="button" onclick="extractTableData()">🏆 Extract Table Data</button>
+            
+            <div id="extractionResults" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. Structure Analysis</h2>
+            <p>Analyze the DOM structure for data patterns:</p>
+            <button class="button" onclick="analyzeDOMStructure()">🔍 Analyze DOM Structure</button>
+            <button class="button" onclick="findDataPatterns()">📋 Find Data Patterns</button>
+            
+            <div id="structureResults" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. Data Preview</h2>
+            <p>Preview extracted data in table format:</p>
+            <div id="dataPreview"></div>
+        </div>
+
+        <div class="section">
+            <h2>5. Implementation Notes</h2>
+            <div id="implementationNotes">
+                <h3>Key Considerations:</h3>
+                <ul>
+                    <li><strong>Rate Limiting:</strong> Implement delays between requests to avoid being blocked</li>
+                    <li><strong>User-Agent:</strong> Use realistic browser headers to avoid detection</li>
+                    <li><strong>Error Handling:</strong> Plan for when Google changes their structure</li>
+                    <li><strong>Data Validation:</strong> Verify extracted data matches expected formats</li>
+                    <li><strong>Fallback Strategy:</strong> Have backup data sources ready</li>
+                </ul>
+                
+                <h3>Potential Data Sources Found:</h3>
+                <ul>
+                    <li>Fixture cards with team names, dates, and times</li>
+                    <li>Live score updates and final results</li>
+                    <li>League table standings</li>
+                    <li>Team statistics and form</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSearchData = null;
+        let extractedData = {
+            fixtures: [],
+            scores: [],
+            table: []
+        };
+
+        // Search and analyze Google results
+        async function searchAndAnalyze() {
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="loading">🔍 Searching and analyzing Google results...</div>';
+
+            try {
+                // Simulate searching Google for National League
+                const searchUrl = 'https://www.google.com/search?q=National+League+fixtures+results';
+                
+                // Note: Due to CORS restrictions, we can't directly fetch Google search results
+                // This is a demonstration of what we'd look for
+                resultsDiv.innerHTML = `
+                    <div class="success">✅ Search URL prepared: ${searchUrl}</div>
+                    <div class="error">⚠️ CORS Restriction: Cannot directly fetch Google results from browser</div>
+                    <div class="success">💡 Alternative approaches:</div>
+                    <ul>
+                        <li>Use a proxy service or backend API</li>
+                        <li>Implement server-side scraping</li>
+                        <li>Use Google's Custom Search API (limited free tier)</li>
+                        <li>Consider official National League data sources</li>
+                    </ul>
+                `;
+
+                // Simulate what we'd find in the results
+                simulateGoogleResults(resultsDiv);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Simulate Google search results structure
+        function simulateGoogleResults(resultsDiv) {
+            const mockResults = `
+                <div class="success">🔍 Simulated Google Search Results Structure:</div>
+                
+                <h4>1. Fixture Cards (typically found in search results):</h4>
+                <div style="background: #e3f2fd; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <strong>Example Fixture Card:</strong>
+                    <div>🏟️ Chesterfield vs Solihull Moors</div>
+                    <div>📅 Saturday, 7 September 2025</div>
+                    <div>🕐 15:00 BST</div>
+                    <div>🏆 National League</div>
+                </div>
+
+                <h4>2. Live Score Elements:</h4>
+                <div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <strong>Example Live Score:</strong>
+                    <div>⚽ Chesterfield 2 - 1 Solihull Moors</div>
+                    <div>🕐 67' (Live)</div>
+                    <div>📊 HT: 1-0</div>
+                </div>
+
+                <h4>3. League Table Snippets:</h4>
+                <div style="background: #fff3e0; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <strong>Example Table Data:</strong>
+                    <div>1. Chesterfield - 15 pts</div>
+                    <div>2. Solihull Moors - 12 pts</div>
+                    <div>3. Barnet - 10 pts</div>
+                </div>
+
+                <div class="success">✅ This structure analysis helps identify CSS selectors and data patterns for extraction</div>
+            `;
+
+            resultsDiv.innerHTML += mockResults;
+        }
+
+        // Extract fixture data
+        function extractFixtureData() {
+            const resultsDiv = document.getElementById('extractionResults');
+            resultsDiv.style.display = 'block';
+            
+            // Simulate extracted fixture data
+            const mockFixtures = [
+                { home: 'Chesterfield', away: 'Solihull Moors', date: '2025-09-07', time: '15:00', competition: 'National League' },
+                { home: 'Barnet', away: 'Aldershot Town', date: '2025-09-07', time: '15:00', competition: 'National League' },
+                { home: 'Gateshead', away: 'Dagenham & Redbridge', date: '2025-09-07', time: '15:00', competition: 'National League' }
+            ];
+
+            extractedData.fixtures = mockFixtures;
+            
+            resultsDiv.innerHTML = `
+                <div class="success">✅ Extracted ${mockFixtures.length} fixtures</div>
+                <pre>${JSON.stringify(mockFixtures, null, 2)}</pre>
+            `;
+
+            updateDataPreview();
+        }
+
+        // Extract score data
+        function extractScoreData() {
+            const resultsDiv = document.getElementById('extractionResults');
+            resultsDiv.style.display = 'block';
+            
+            // Simulate extracted score data
+            const mockScores = [
+                { home: 'Chesterfield', away: 'Solihull Moors', homeScore: 2, awayScore: 1, status: 'Live', minute: 67 },
+                { home: 'Barnet', away: 'Aldershot Town', homeScore: 0, awayScore: 0, status: 'HT', minute: 45 },
+                { home: 'Gateshead', away: 'Dagenham & Redbridge', homeScore: 1, awayScore: 2, status: 'FT', minute: 90 }
+            ];
+
+            extractedData.scores = mockScores;
+            
+            resultsDiv.innerHTML = `
+                <div class="success">✅ Extracted ${mockScores.length} scores</div>
+                <pre>${JSON.stringify(mockScores, null, 2)}</pre>
+            `;
+
+            updateDataPreview();
+        }
+
+        // Extract table data
+        function extractTableData() {
+            const resultsDiv = document.getElementById('extractionResults');
+            resultsDiv.style.display = 'block';
+            
+            // Simulate extracted table data
+            const mockTable = [
+                { position: 1, team: 'Chesterfield', played: 5, won: 5, drawn: 0, lost: 0, points: 15 },
+                { position: 2, team: 'Solihull Moors', played: 5, won: 4, drawn: 0, lost: 1, points: 12 },
+                { position: 3, team: 'Barnet', played: 5, won: 3, drawn: 1, lost: 1, points: 10 }
+            ];
+
+            extractedData.table = mockTable;
+            
+            resultsDiv.innerHTML = `
+                <div class="success">✅ Extracted ${mockTable.length} table entries</div>
+                <pre>${JSON.stringify(mockTable, null, 2)}</pre>
+            `;
+
+            updateDataPreview();
+        }
+
+        // Analyze DOM structure
+        function analyzeDOMStructure() {
+            const resultsDiv = document.getElementById('structureResults');
+            resultsDiv.style.display = 'block';
+            
+            resultsDiv.innerHTML = `
+                <div class="success">🔍 DOM Structure Analysis for Google Search Results:</div>
+                
+                <h4>Common Selectors to Target:</h4>
+                <ul>
+                    <li><strong>Fixture Cards:</strong> .g, .rc, [data-ved]</li>
+                    <li><strong>Team Names:</strong> .LC20lb, .DKV0Md</li>
+                    <li><strong>Dates/Times:</strong> .MUxGbd, .MUxGbd.v0nnCb</li>
+                    <li><strong>Scores:</strong> .imso_mh__l-tm-sc, .imso_mh__r-tm-sc</li>
+                    <li><strong>League Info:</strong> .MUxGbd.ULSxyf</li>
+                </ul>
+
+                <h4>Data Extraction Strategy:</h4>
+                <ol>
+                    <li>Identify the main search result container</li>
+                    <li>Find fixture-specific elements within each result</li>
+                    <li>Extract text content and parse structured data</li>
+                    <li>Handle different result formats (cards, lists, tables)</li>
+                    <li>Validate extracted data against expected patterns</li>
+                </ol>
+
+                <div class="error">⚠️ Note: Google's structure changes frequently, requiring regular maintenance</div>
+            `;
+        }
+
+        // Find data patterns
+        function findDataPatterns() {
+            const resultsDiv = document.getElementById('structureResults');
+            resultsDiv.style.display = 'block';
+            
+            resultsDiv.innerHTML = `
+                <div class="success">📋 Data Pattern Analysis:</div>
+                
+                <h4>Fixture Pattern:</h4>
+                <div style="background: #f3e5f5; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <code>Home Team vs Away Team - Date Time - Competition</code>
+                </div>
+
+                <h4>Score Pattern:</h4>
+                <div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <code>HomeTeam Score - AwayTeam Score (Status: Live/HT/FT)</code>
+                </div>
+
+                <h4>Table Pattern:</h4>
+                <div style="background: #fff3e0; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <code>Position. Team - P W D L Pts</code>
+                </div>
+
+                <h4>Regular Expressions for Parsing:</h4>
+                <ul>
+                    <li><strong>Team Names:</strong> /([A-Za-z\s&]+)\s+vs\s+([A-Za-z\s&]+)/</li>
+                    <li><strong>Date:</strong> /(\d{1,2}\s+[A-Za-z]+\s+\d{4})/</li>
+                    <li><strong>Time:</strong> /(\d{1,2}:\d{2})/</li>
+                    <li><strong>Score:</strong> /(\d+)\s*-\s*(\d+)/</li>
+                </ul>
+            `;
+        }
+
+        // Update data preview table
+        function updateDataPreview() {
+            const previewDiv = document.getElementById('dataPreview');
+            
+            let html = '<h3>📊 Extracted Data Preview</h3>';
+            
+            if (extractedData.fixtures.length > 0) {
+                html += '<h4>Fixtures:</h4>';
+                html += createDataTable(extractedData.fixtures);
+            }
+            
+            if (extractedData.scores.length > 0) {
+                html += '<h4>Scores:</h4>';
+                html += createDataTable(extractedData.scores);
+            }
+            
+            if (extractedData.table.length > 0) {
+                html += '<h4>League Table:</h4>';
+                html += createDataTable(extractedData.table);
+            }
+            
+            previewDiv.innerHTML = html;
+        }
+
+        // Create data table
+        function createDataTable(data) {
+            if (data.length === 0) return '<p>No data available</p>';
+            
+            const headers = Object.keys(data[0]);
+            let table = '<table class="data-table"><thead><tr>';
+            
+            headers.forEach(header => {
+                table += `<th>${header.charAt(0).toUpperCase() + header.slice(1)}</th>`;
+            });
+            table += '</tr></thead><tbody>';
+            
+            data.forEach(row => {
+                table += '<tr>';
+                headers.forEach(header => {
+                    table += `<td>${row[header]}</td>`;
+                });
+                table += '</tr>';
+            });
+            
+            table += '</tbody></table>';
+            return table;
+        }
+
+        // Clear results
+        function clearResults() {
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('extractionResults').style.display = 'none';
+            document.getElementById('structureResults').style.display = 'none';
+            document.getElementById('dataPreview').innerHTML = '';
+            extractedData = { fixtures: [], scores: [], table: [] };
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Google Search Data Explorer loaded');
+        });
+    </script>
+</body>
+</html>
+

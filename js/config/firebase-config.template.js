@@ -37,7 +37,7 @@ window.firebaseInitializationComplete = false;
 let initializationAttempted = false;
 let persistenceAttempted = false;
 
-// Enhanced Firebase initialization with better error handling
+// Simplified and robust Firebase initialization
 const initializeFirebase = () => {
     if (initializationAttempted) {
         console.log('Firebase initialization already attempted, skipping...');
@@ -47,86 +47,28 @@ const initializeFirebase = () => {
     initializationAttempted = true;
     console.log('Starting Firebase initialization...');
     
-    // Detect environment (Live Server vs localhost)
-    const isLiveServer = window.location.host.includes('127.0.0.1');
-    console.log(`Environment detected: ${isLiveServer ? 'Live Server' : 'localhost/other'}`);
-    
-    // Clear any existing Firebase connections first
     try {
-        if (window.firebaseDB) {
-            console.log('Clearing existing Firebase connection...');
-            
-            if (isLiveServer) {
-                // More aggressive cleanup for Live Server
-                console.log('Applying Live Server specific cleanup...');
-                
-                // Try to clear existing persistence data
-                try {
-                    window.firebaseDB.clearPersistence().then(() => {
-                        console.log('Firebase persistence cleared');
-                        proceedWithConnection();
-                    }).catch(() => {
-                        console.log('Could not clear persistence, proceeding anyway...');
-                        proceedWithConnection();
-                    });
-                } catch (err) {
-                    console.log('Persistence clear not available, proceeding...');
-                    proceedWithConnection();
-                }
-            } else {
-                // Standard cleanup for localhost
-                window.firebaseDB.disableNetwork().then(() => {
-                    console.log('Previous Firebase network disabled');
-                    enablePersistenceAndConnect();
-                }).catch(() => {
-                    // If disabling fails, just proceed
-                    enablePersistenceAndConnect();
-                });
-            }
-        } else {
-            enablePersistenceAndConnect();
-        }
+        // Simple, direct initialization without complex cleanup
+        initializeFirestore();
     } catch (error) {
-        console.log('Error during Firebase cleanup, proceeding with fresh connection...');
-        enablePersistenceAndConnect();
+        console.error('Firebase initialization failed:', error);
+        // Still mark as ready to prevent app from hanging
+        markFirebaseReady();
     }
     
-    function proceedWithConnection() {
-        window.firebaseDB.disableNetwork().then(() => {
-            console.log('Network disabled, re-enabling...');
-            setTimeout(() => {
-                enablePersistenceAndConnect();
-            }, 1000);
-        }).catch(() => {
-            enablePersistenceAndConnect();
-        });
-    }
-    
-    function enablePersistenceAndConnect() {
-        console.log('Enabling persistence and connecting...');
+    function initializeFirestore() {
+        console.log('Initializing Firestore...');
         
-        // Enable offline persistence
+        // Enable persistence with error handling
         window.firebaseDB.enablePersistence({
             synchronizeTabs: true
         }).then(() => {
-            console.log('Firebase persistence enabled successfully');
-            window.firebaseDB.enableNetwork().then(() => {
-                console.log('Firebase network enabled');
-                markFirebaseReady();
-            }).catch((error) => {
-                console.error('Error enabling Firebase network:', error);
-                markFirebaseReady();
-            });
+            console.log('✅ Firebase persistence enabled');
+            markFirebaseReady();
         }).catch((error) => {
-            console.warn('Firebase persistence not available:', error);
-            // Continue without persistence
-            window.firebaseDB.enableNetwork().then(() => {
-                console.log('Firebase network enabled (without persistence)');
-                markFirebaseReady();
-            }).catch((error) => {
-                console.error('Error enabling Firebase network:', error);
-                markFirebaseReady();
-            });
+            console.warn('⚠️ Firebase persistence not available:', error.message);
+            // Continue without persistence - this is not critical
+            markFirebaseReady();
         });
     }
     

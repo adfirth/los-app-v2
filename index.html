@@ -19,6 +19,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="loading-content">
@@ -88,10 +91,10 @@
     <!-- Main App Container -->
     <div id="appContainer" class="app-container hidden">
         <!-- Header -->
-        <header class="app-header">
+        <header class="app-header" role="banner">
             <div class="header-content">
                 <!-- Left Logo - spans both rows -->
-                <img src="images/Logo Round1.png" alt="Altrincham FC" class="header-logo header-logo-left">
+                <img src="images/Logo Round1.png" alt="LOS App Logo" class="header-logo header-logo-left">
                 
                 <!-- Main Content Area -->
                 <div class="header-main">
@@ -104,82 +107,91 @@
                     <div class="header-row header-row-bottom">
                         <div class="header-controls">
                             <div class="club-selector">
-                                <select id="headerClubSelect" class="club-select">
+                                <label for="headerClubSelect" class="sr-only">Select Club</label>
+                                <select id="headerClubSelect" class="club-select" aria-label="Select Club">
                                     <option value="">Select Club...</option>
                                 </select>
-                                <select id="headerEditionSelect" class="edition-select">
+                                <label for="headerEditionSelect" class="sr-only">Select Edition</label>
+                                <select id="headerEditionSelect" class="edition-select" aria-label="Select Edition">
                                     <option value="">Select Edition...</option>
                                 </select>
                             </div>
                             <div class="user-info">
-                                <span id="userName">Player</span>
-                                <div id="userLives" class="lives-indicator">
+                                <span id="userName" aria-label="Current user">Player</span>
+                                <div id="userLives" class="lives-indicator" aria-label="User lives remaining">
                                     <!-- Lives will be populated by JavaScript -->
                                 </div>
                             </div>
                             <!-- Admin and Super Admin buttons will be inserted here by JavaScript -->
                             <div id="adminButtonsContainer"></div>
                             <!-- Connection Status Indicator - Hidden by default, shown only when needed -->
-                            <div id="connectionStatus" class="connection-status hidden">
-                                <i class="fas fa-circle"></i>
+                            <div id="connectionStatus" class="connection-status hidden" role="status" aria-live="polite">
+                                <i class="fas fa-circle" aria-hidden="true"></i>
                                 <span id="connectionText">Connecting...</span>
                             </div>
                             <!-- Refresh button - Hidden by default, shown only when needed -->
-                            <button id="resetConnectionBtn" class="btn btn-warning btn-sm hidden" title="Reset Firebase Connection">
-                                <i class="fas fa-sync-alt"></i>
+                            <button id="resetConnectionBtn" class="btn btn-warning btn-sm hidden" 
+                                    title="Reset Firebase Connection" 
+                                    aria-label="Reset Firebase Connection">
+                                <i class="fas fa-sync-alt" aria-hidden="true"></i>
                             </button>
-                            <button id="logoutBtn" class="btn btn-secondary">
-                                <i class="fas fa-sign-out-alt"></i>
+                            <button id="logoutBtn" class="btn btn-secondary" 
+                                    title="Logout" 
+                                    aria-label="Logout">
+                                <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Right Logo - spans both rows -->
-                <img src="images/Logo Round1.png" alt="Altrincham FC" class="header-logo header-logo-right">
+                <img src="images/Logo Round1.png" alt="LOS App Logo" class="header-logo header-logo-right">
             </div>
         </header>
 
         <!-- Navigation Tabs -->
-        <nav class="app-nav">
-            <div class="nav-tabs">
-                <button class="nav-tab active" data-tab="fixtures">
-                    <i class="fas fa-calendar-alt"></i>
+        <nav class="app-nav" role="navigation" aria-label="Main navigation">
+            <div class="nav-tabs" role="tablist">
+                <button class="nav-tab active" data-tab="fixtures" role="tab" aria-selected="true" aria-controls="fixturesTab">
+                    <i class="fas fa-calendar-alt" aria-hidden="true"></i>
                     <span>Fixtures</span>
                 </button>
-                <button class="nav-tab" data-tab="picks">
-                    <i class="fas fa-list-check"></i>
+                <button class="nav-tab" data-tab="picks" role="tab" aria-selected="false" aria-controls="picksTab">
+                    <i class="fas fa-list-check" aria-hidden="true"></i>
                     <span>My Picks</span>
                 </button>
-                <button class="nav-tab" data-tab="standings">
-                    <i class="fas fa-trophy"></i>
+                <button class="nav-tab" data-tab="standings" role="tab" aria-selected="false" aria-controls="standingsTab">
+                    <i class="fas fa-trophy" aria-hidden="true"></i>
                     <span>As It Stands</span>
                 </button>
-                <button class="nav-tab" data-tab="scores">
-                    <i class="fas fa-futbol"></i>
+                <button class="nav-tab" data-tab="scores" role="tab" aria-selected="false" aria-controls="scoresTab">
+                    <i class="fas fa-futbol" aria-hidden="true"></i>
                     <span>Scores</span>
                 </button>
             </div>
         </nav>
 
         <!-- Main Content Area -->
-        <main class="app-main">
+        <main id="main-content" class="app-main" role="main">
             <!-- Fixtures Tab -->
-            <div id="fixturesTab" class="tab-content active">
+            <div id="fixturesTab" class="tab-content active" role="tabpanel" aria-labelledby="fixtures-tab">
                 <div class="tab-header">
                     <div class="tab-header-left">
                         <h2>Gameweek <span id="currentGameweek">1</span> Fixtures</h2>
                         <div class="deadline-info">
-                            <i class="fas fa-clock"></i>
+                            <i class="fas fa-clock" aria-hidden="true"></i>
                             <span id="deadlineText">Deadline: Loading...</span>
                         </div>
                     </div>
                     <div class="tab-header-right">
                         <div class="gameweek-navigation">
-                            <button id="prevGameweek" class="btn btn-secondary btn-sm" title="Previous Gameweek">
-                                <i class="fas fa-chevron-left"></i>
+                            <button id="prevGameweek" class="btn btn-secondary btn-sm" 
+                                    title="Previous Gameweek" 
+                                    aria-label="Previous Gameweek">
+                                <i class="fas fa-chevron-left" aria-hidden="true"></i>
                             </button>
-                            <select id="gameweekSelect" class="gameweek-select">
+                            <label for="gameweekSelect" class="sr-only">Select Gameweek</label>
+                            <select id="gameweekSelect" class="gameweek-select" aria-label="Select Gameweek">
                                 <option value="1">Gameweek 1</option>
                                 <option value="2">Gameweek 2</option>
                                 <option value="3">Gameweek 3</option>
@@ -191,16 +203,18 @@
                                 <option value="9">Gameweek 9</option>
                                 <option value="10">Gameweek 10</option>
                             </select>
-                            <button id="nextGameweek" class="btn btn-secondary btn-sm" title="Next Gameweek">
-                                <i class="fas fa-chevron-right"></i>
+                            <button id="nextGameweek" class="btn btn-secondary btn-sm" 
+                                    title="Next Gameweek" 
+                                    aria-label="Next Gameweek">
+                                <i class="fas fa-chevron-right" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-                <div id="fixturesList" class="fixtures-list">
+                <div id="fixturesList" class="fixtures-list" role="region" aria-label="Fixtures list">
                     <!-- Loading state for fixtures -->
-                    <div id="fixturesLoading" class="loading-state">
-                        <div class="loading-spinner-small"></div>
+                    <div id="fixturesLoading" class="loading-state" role="status" aria-live="polite">
+                        <div class="loading-spinner-small" aria-hidden="true"></div>
                         <p>Loading fixtures...</p>
                     </div>
                     <!-- Fixtures will be loaded here -->
@@ -334,9 +348,13 @@
     <!-- Core Services -->
     <script src="js/services/ConsoleLogger.js?v=1.0.0"></script>
     <script src="js/services/UIService.js?v=1.0.0"></script>
+    <script src="js/services/PerformanceOptimizer.js?v=1.0.0"></script>
     <script src="js/services/TeamBadgeService.js?v=1.0.0"></script>
     <script src="js/services/EmailService.js?v=1.0.0"></script>
     <script src="js/services/PerformanceService.js?v=1.0.0"></script>
+    
+    <!-- Base Manager Class -->
+    <script src="js/managers/BaseManager.js?v=1.0.0"></script>
     
     <!-- Manager Classes -->
     <script src="js/managers/AuthManager.js?v=1.0.0"></script>
