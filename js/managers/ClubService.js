@@ -30,6 +30,35 @@ class ClubService {
         if (this.isInitialized) return;
         
         this.setupBasicStructure();
+        
+        // Add global helper functions immediately for debugging
+        window.loadClubs = () => {
+            console.log('🔧 ClubService: Manual club loading triggered...');
+            if (this.loadClubsFallback) {
+                this.loadClubsFallback();
+            } else {
+                console.log('🔧 ClubService: loadClubsFallback not available yet');
+            }
+        };
+        
+        window.checkClubService = () => {
+            console.log('🔧 ClubService Debug Info:');
+            console.log('- isInitialized:', this.isInitialized);
+            console.log('- availableClubs:', this.availableClubs);
+            console.log('- clubData keys:', Object.keys(this.clubData));
+            console.log('- db available:', !!this.db);
+        };
+        
+        // Try to load clubs immediately if Firebase is available
+        if (window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
+            this.db = window.firebaseDB;
+            // Load clubs immediately
+            setTimeout(() => {
+                if (this.loadClubsFallback) {
+                    this.loadClubsFallback();
+                }
+            }, 1000);
+        }
     }
 
     init() {
