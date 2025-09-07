@@ -1127,9 +1127,12 @@ To set up sample clubs, run:
             const currentGameweek = await this.calculateCurrentGameweek();
             console.log('🎯 ClubService: Calculated current gameweek:', currentGameweek);
             
+            // Yield control after gameweek calculation
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
             if (currentGameweek) {
                 console.log('🎯 ClubService: Setting current gameweek to:', currentGameweek);
-                this.setCurrentGameweek(currentGameweek);
+                await this.setCurrentGameweek(currentGameweek);
             }
             
             // Yield control before switching tabs
@@ -1139,11 +1142,14 @@ To set up sample clubs, run:
             console.log('🎯 ClubService: Switching to fixtures tab...');
             this.switchToFixturesTab();
             
+            // Yield control after tab switch
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
             // Force reload fixtures for the new club/edition (with small delay to ensure change is processed)
             setTimeout(() => {
                 console.log('🎯 ClubService: Reloading fixtures for current club...');
                 this.reloadFixturesForCurrentClub();
-            }, 100); // Reduced delay from 500ms to 100ms
+            }, 50); // Further reduced delay from 100ms to 50ms
             
         } catch (error) {
             console.error('ClubService: Error navigating to current gameweek:', error);
@@ -1184,17 +1190,17 @@ To set up sample clubs, run:
         }
     }
 
-    // Set current gameweek
-    setCurrentGameweek(gameweek) {
+    // Set current gameweek (optimized)
+    async setCurrentGameweek(gameweek) {
         console.log('🎯 ClubService: setCurrentGameweek called with:', gameweek);
         
         // Update EditionService if available
         if (window.editionService && typeof window.editionService.setCurrentGameweek === 'function') {
-    
             window.editionService.setCurrentGameweek(gameweek);
-        } else {
-    
         }
+        
+        // Use requestAnimationFrame to batch DOM updates
+        await new Promise(resolve => requestAnimationFrame(resolve));
         
         // Update gameweek display elements
         const currentGameweekSpan = document.getElementById('currentGameweek');
@@ -1212,6 +1218,9 @@ To set up sample clubs, run:
         } else {
             console.log('🎯 ClubService: gameweekSelect not found');
         }
+        
+        // Yield control before navigation update
+        await new Promise(resolve => requestAnimationFrame(resolve));
         
         // Update navigation buttons
         console.log('🎯 ClubService: Updating gameweek navigation for:', gameweek);

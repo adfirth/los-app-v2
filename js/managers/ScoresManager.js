@@ -453,7 +453,7 @@ class ScoresManager {
     }
 
     async renderFixturesInBatches(container) {
-        const batchSize = 4; // Process 4 fixtures at a time
+        const batchSize = 2; // Reduced from 4 to 2 for better performance
         const totalFixtures = this.currentFixtures.length;
         
         for (let i = 0; i < totalFixtures; i += batchSize) {
@@ -463,11 +463,12 @@ class ScoresManager {
             const batchHTML = batch.map(fixture => this.createFixtureScore(fixture)).join('');
             container.insertAdjacentHTML('beforeend', batchHTML);
             
-            // Yield control to browser between batches
-            if (i + batchSize < totalFixtures) {
-                await new Promise(resolve => requestAnimationFrame(resolve));
-            }
+            // Yield control to browser between every batch
+            await new Promise(resolve => requestAnimationFrame(resolve));
         }
+        
+        // Yield control before initializing vidiprinter
+        await new Promise(resolve => requestAnimationFrame(resolve));
         
         // Initialize vidiprinter display
         this.initializeVidiprinterDisplay();
