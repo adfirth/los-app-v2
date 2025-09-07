@@ -370,6 +370,7 @@ class AuthManager {
                         } catch (error) {
                             console.log(`AuthManager: Error searching club ${clubId}:`, error);
                         }
+                        }
                     }
                 } catch (error) {
                     console.error('AuthManager: Error accessing global settings:', error);
