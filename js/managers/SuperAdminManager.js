@@ -1416,27 +1416,37 @@ class SuperAdminManager {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
             
             // Get clubs from ClubService
-            if (window.losApp?.managers?.club?.isReady) {
-                const clubs = window.losApp.managers.club.clubs;
+            if (window.losApp?.managers?.club) {
+                const clubService = window.losApp.managers.club;
+                
+                // Get clubs from ClubService's clubData
+                const clubs = Object.keys(clubService.clubData).map(clubId => ({
+                    id: clubId,
+                    ...clubService.clubData[clubId]
+                }));
+                
                 console.log('🔧 Found clubs for current fixtures:', clubs.length);
                 
                 clubs.forEach(club => {
-                    const option = document.createElement('option');
-                    option.value = club.id;
-                    option.textContent = club.name;
-                    clubSelect.appendChild(option);
+                    if (club.isActive !== false) { // Include clubs that are active or don't have isActive set
+                        const option = document.createElement('option');
+                        option.value = club.id;
+                        option.textContent = club.name;
+                        clubSelect.appendChild(option);
+                    }
                 });
                 
                 console.log('✅ Populated current fixtures club dropdown');
             } else {
-                console.warn('⚠️ ClubService not ready, this should not happen after waitForClubServiceReady');
+                console.warn('⚠️ ClubService not available for populating current fixtures dropdowns');
+                clubSelect.innerHTML = '<option value="">ClubService not available</option>';
             }
         } catch (error) {
             console.error('❌ Error populating current fixtures dropdowns:', error);
         }
     }
 
-    populateFixtureClubDropdowns() {
+    async populateFixtureClubDropdowns() {
         const fixtureClubSelect = document.getElementById('fixtureClubSelect');
         const scoreClubSelect = document.getElementById('scoreClubSelect');
         
@@ -1445,20 +1455,43 @@ class SuperAdminManager {
             fixtureClubSelect.innerHTML = '<option value="">Choose a club...</option>';
             scoreClubSelect.innerHTML = '<option value="">Choose a club...</option>';
             
-            // Add club options
-            this.clubs.forEach(club => {
-                if (club.isActive) {
-                    const fixtureOption = document.createElement('option');
-                    fixtureOption.value = club.id;
-                    fixtureOption.textContent = club.name;
-                    fixtureClubSelect.appendChild(fixtureOption);
+            try {
+                // Use ClubService to get clubs instead of this.clubs
+                if (window.losApp?.managers?.club) {
+                    const clubService = window.losApp.managers.club;
                     
-                    const scoreOption = document.createElement('option');
-                    scoreOption.value = club.id;
-                    scoreOption.textContent = club.name;
-                    scoreClubSelect.appendChild(scoreOption);
+                    // Get clubs from ClubService
+                    const clubs = Object.keys(clubService.clubData).map(clubId => ({
+                        id: clubId,
+                        ...clubService.clubData[clubId]
+                    }));
+                    
+                    console.log('🔧 SuperAdmin: Populating fixture club dropdowns with', clubs.length, 'clubs');
+                    
+                    // Add club options
+                    clubs.forEach(club => {
+                        if (club.isActive !== false) { // Include clubs that are active or don't have isActive set
+                            const fixtureOption = document.createElement('option');
+                            fixtureOption.value = club.id;
+                            fixtureOption.textContent = club.name;
+                            fixtureClubSelect.appendChild(fixtureOption);
+                            
+                            const scoreOption = document.createElement('option');
+                            scoreOption.value = club.id;
+                            scoreOption.textContent = club.name;
+                            scoreClubSelect.appendChild(scoreOption);
+                        }
+                    });
+                } else {
+                    console.warn('⚠️ SuperAdmin: ClubService not available for populating club dropdowns');
+                    fixtureClubSelect.innerHTML = '<option value="">ClubService not available</option>';
+                    scoreClubSelect.innerHTML = '<option value="">ClubService not available</option>';
                 }
-            });
+            } catch (error) {
+                console.error('❌ SuperAdmin: Error populating fixture club dropdowns:', error);
+                fixtureClubSelect.innerHTML = '<option value="">Error loading clubs</option>';
+                scoreClubSelect.innerHTML = '<option value="">Error loading clubs</option>';
+            }
         }
     }
 
