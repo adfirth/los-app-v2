@@ -392,13 +392,20 @@ class ScoresManager {
             return;
         }
 
-        // Create the scores display with vidiprinter
+        // Use performance-optimized rendering
+        this.renderScoresOptimized(scoresList);
+    }
+
+    async renderScoresOptimized(container) {
+        const startTime = performance.now();
+        
+        // Create the main container structure
         const scoresHTML = `
             <div class="scores-container">
                 <div class="scores-section">
                     <h3 class="section-title">Live Scores</h3>
-                    <div class="fixtures-scores">
-                        ${this.currentFixtures.map(fixture => this.createFixtureScore(fixture)).join('')}
+                    <div class="fixtures-scores" id="fixturesScoresContainer">
+                        <!-- Fixtures will be loaded here in batches -->
                     </div>
                 </div>
                 
@@ -433,7 +440,34 @@ class ScoresManager {
             </div>
         `;
 
-        scoresList.innerHTML = scoresHTML;
+        container.innerHTML = scoresHTML;
+        
+        // Render fixtures in batches
+        const fixturesContainer = document.getElementById('fixturesScoresContainer');
+        if (fixturesContainer) {
+            await this.renderFixturesInBatches(fixturesContainer);
+        }
+        
+        const endTime = performance.now();
+        console.log(`🚀 ScoresManager: Rendered scores in ${Math.round(endTime - startTime)}ms`);
+    }
+
+    async renderFixturesInBatches(container) {
+        const batchSize = 4; // Process 4 fixtures at a time
+        const totalFixtures = this.currentFixtures.length;
+        
+        for (let i = 0; i < totalFixtures; i += batchSize) {
+            const batch = this.currentFixtures.slice(i, i + batchSize);
+            
+            // Process batch
+            const batchHTML = batch.map(fixture => this.createFixtureScore(fixture)).join('');
+            container.insertAdjacentHTML('beforeend', batchHTML);
+            
+            // Yield control to browser between batches
+            if (i + batchSize < totalFixtures) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+            }
+        }
         
         // Initialize vidiprinter display
         this.initializeVidiprinterDisplay();

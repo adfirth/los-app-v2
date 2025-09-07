@@ -1,329 +1,292 @@
-/**
- * PerformanceOptimizer - Service for optimizing app performance
- * Handles lazy loading, image optimization, and performance monitoring
- */
 class PerformanceOptimizer {
     constructor() {
         this.isInitialized = false;
-        this.performanceMetrics = {
-            pageLoadTime: 0,
-            firstContentfulPaint: 0,
-            largestContentfulPaint: 0,
-            cumulativeLayoutShift: 0
-        };
-        this.observers = new Map();
+        this.performanceObserver = null;
+        this.longTaskThreshold = 50; // 50ms threshold for long tasks
+        this.batchSize = 10; // Process items in batches of 10
+        this.rafQueue = [];
+        this.isProcessing = false;
     }
 
-    /**
-     * Initialize performance optimization
-     */
-    async initialize() {
-        if (this.isInitialized) {
-            return;
-        }
-
-        try {
-            console.log('🚀 PerformanceOptimizer: Initializing...');
-            
-            // Set up performance monitoring
-            this.setupPerformanceMonitoring();
-            
-            // Set up lazy loading
-            this.setupLazyLoading();
-            
-            // Set up image optimization
-            this.setupImageOptimization();
-            
-            // Set up intersection observer for content loading
-            this.setupIntersectionObserver();
-            
-            this.isInitialized = true;
-            console.log('✅ PerformanceOptimizer: Initialized successfully');
-            
-        } catch (error) {
-            console.error('❌ PerformanceOptimizer: Initialization failed:', error);
-        }
+    initialize() {
+        if (this.isInitialized) return;
+        
+        console.log('🚀 PerformanceOptimizer: Initializing...');
+        
+        // Set up performance monitoring
+        this.setupPerformanceMonitoring();
+        
+        // Set up RAF-based batching
+        this.setupRAFQueue();
+        
+        this.isInitialized = true;
+        console.log('✅ PerformanceOptimizer: Initialized successfully');
     }
 
-    /**
-     * Set up performance monitoring
-     */
     setupPerformanceMonitoring() {
-        // Monitor page load performance
-        window.addEventListener('load', () => {
-            this.measurePageLoadPerformance();
-        });
-
-        // Monitor Core Web Vitals
-        if ('PerformanceObserver' in window) {
-            this.observeCoreWebVitals();
-        }
-
         // Monitor long tasks
-        this.observeLongTasks();
-    }
-
-    /**
-     * Measure page load performance
-     */
-    measurePageLoadPerformance() {
-        try {
-            const navigation = performance.getEntriesByType('navigation')[0];
-            if (navigation) {
-                this.performanceMetrics.pageLoadTime = navigation.loadEventEnd - navigation.navigationStart;
-                console.log(`📊 Page load time: ${this.performanceMetrics.pageLoadTime}ms`);
-            }
-
-            // Measure First Contentful Paint
-            const paintEntries = performance.getEntriesByType('paint');
-            const fcpEntry = paintEntries.find(entry => entry.name === 'first-contentful-paint');
-            if (fcpEntry) {
-                this.performanceMetrics.firstContentfulPaint = fcpEntry.startTime;
-                console.log(`📊 First Contentful Paint: ${this.performanceMetrics.firstContentfulPaint}ms`);
-            }
-
-        } catch (error) {
-            console.warn('⚠️ PerformanceOptimizer: Could not measure page load performance:', error);
-        }
-    }
-
-    /**
-     * Observe Core Web Vitals
-     */
-    observeCoreWebVitals() {
-        // Largest Contentful Paint
         if ('PerformanceObserver' in window) {
             try {
-                const lcpObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    const lastEntry = entries[entries.length - 1];
-                    this.performanceMetrics.largestContentfulPaint = lastEntry.startTime;
-                    console.log(`📊 Largest Contentful Paint: ${this.performanceMetrics.largestContentfulPaint}ms`);
-                });
-                lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-                this.observers.set('lcp', lcpObserver);
-            } catch (error) {
-                console.warn('⚠️ PerformanceOptimizer: Could not observe LCP:', error);
-            }
-
-            // Cumulative Layout Shift
-            try {
-                const clsObserver = new PerformanceObserver((list) => {
-                    let clsValue = 0;
+                this.performanceObserver = new PerformanceObserver((list) => {
                     for (const entry of list.getEntries()) {
-                        if (!entry.hadRecentInput) {
-                            clsValue += entry.value;
+                        if (entry.duration > this.longTaskThreshold) {
+                            console.warn(`⚠️ Long task detected: ${Math.round(entry.duration)}ms`);
+                            this.optimizeLongTask(entry);
                         }
                     }
-                    this.performanceMetrics.cumulativeLayoutShift = clsValue;
-                    console.log(`📊 Cumulative Layout Shift: ${this.performanceMetrics.cumulativeLayoutShift}`);
                 });
-                clsObserver.observe({ entryTypes: ['layout-shift'] });
-                this.observers.set('cls', clsObserver);
+                
+                this.performanceObserver.observe({ entryTypes: ['longtask'] });
             } catch (error) {
-                console.warn('⚠️ PerformanceOptimizer: Could not observe CLS:', error);
+                console.warn('PerformanceObserver not supported:', error);
             }
         }
     }
 
-    /**
-     * Observe long tasks
-     */
-    observeLongTasks() {
-        if ('PerformanceObserver' in window) {
-            try {
-                const longTaskObserver = new PerformanceObserver((list) => {
-                    for (const entry of list.getEntries()) {
-                        console.warn(`⚠️ Long task detected: ${entry.duration}ms`);
-                        // Could implement task splitting or optimization here
+    setupRAFQueue() {
+        // Process RAF queue efficiently
+        const processQueue = () => {
+            if (this.rafQueue.length > 0) {
+                const batch = this.rafQueue.splice(0, this.batchSize);
+                batch.forEach(task => {
+                    try {
+                        task();
+                    } catch (error) {
+                        console.error('Error in RAF task:', error);
                     }
                 });
-                longTaskObserver.observe({ entryTypes: ['longtask'] });
-                this.observers.set('longtask', longTaskObserver);
-            } catch (error) {
-                console.warn('⚠️ PerformanceOptimizer: Could not observe long tasks:', error);
             }
-        }
-    }
-
-    /**
-     * Set up lazy loading for images and content
-     */
-    setupLazyLoading() {
-        // Lazy load images
-        if ('IntersectionObserver' in window) {
-            const imageObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        if (img.dataset.src) {
-                            img.src = img.dataset.src;
-                            img.removeAttribute('data-src');
-                            imageObserver.unobserve(img);
-                        }
-                    }
-                });
-            }, {
-                rootMargin: '50px 0px',
-                threshold: 0.01
-            });
-
-            // Observe all images with data-src attribute
-            document.querySelectorAll('img[data-src]').forEach(img => {
-                imageObserver.observe(img);
-            });
-
-            this.observers.set('images', imageObserver);
-        }
-    }
-
-    /**
-     * Set up image optimization
-     */
-    setupImageOptimization() {
-        // Add loading="lazy" to images that don't have it
-        document.querySelectorAll('img:not([loading])').forEach(img => {
-            img.setAttribute('loading', 'lazy');
-        });
-
-        // Add decoding="async" to images
-        document.querySelectorAll('img:not([decoding])').forEach(img => {
-            img.setAttribute('decoding', 'async');
-        });
-    }
-
-    /**
-     * Set up intersection observer for content loading
-     */
-    setupIntersectionObserver() {
-        if ('IntersectionObserver' in window) {
-            const contentObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const element = entry.target;
-                        
-                        // Load content when it becomes visible
-                        if (element.dataset.loadContent) {
-                            this.loadContent(element);
-                        }
-                        
-                        // Add animation class when visible
-                        if (element.dataset.animate) {
-                            element.classList.add('animate-in');
-                        }
-                    }
-                });
-            }, {
-                rootMargin: '100px 0px',
-                threshold: 0.1
-            });
-
-            // Observe elements that need lazy loading
-            document.querySelectorAll('[data-load-content], [data-animate]').forEach(el => {
-                contentObserver.observe(el);
-            });
-
-            this.observers.set('content', contentObserver);
-        }
-    }
-
-    /**
-     * Load content for a specific element
-     */
-    async loadContent(element) {
-        try {
-            const contentType = element.dataset.loadContent;
-            console.log(`🔄 Loading content: ${contentType}`);
             
-            // Dispatch custom event for content loading
-            const event = new CustomEvent('loadContent', {
-                detail: { contentType, element }
-            });
-            window.dispatchEvent(event);
-            
-        } catch (error) {
-            console.error('❌ PerformanceOptimizer: Error loading content:', error);
-        }
-    }
-
-    /**
-     * Optimize bundle size by deferring non-critical scripts
-     */
-    deferNonCriticalScripts() {
-        // Defer scripts that are not critical for initial page load
-        const nonCriticalScripts = [
-            'js/services/EmailService.js',
-            'js/services/TeamBadgeService.js',
-            'js/modules/api/developmentHelper.js'
-        ];
-
-        nonCriticalScripts.forEach(scriptSrc => {
-            const script = document.querySelector(`script[src*="${scriptSrc}"]`);
-            if (script && !script.defer) {
-                script.defer = true;
+            if (this.rafQueue.length > 0) {
+                requestAnimationFrame(processQueue);
+            } else {
+                this.isProcessing = false;
             }
-        });
-    }
+        };
 
-    /**
-     * Preload critical resources
-     */
-    preloadCriticalResources() {
-        const criticalResources = [
-            { href: 'css/styles.css', as: 'style' },
-            { href: 'css/components.css', as: 'style' },
-            { href: 'js/app.js', as: 'script' }
-        ];
-
-        criticalResources.forEach(resource => {
-            const link = document.createElement('link');
-            link.rel = 'preload';
-            link.href = resource.href;
-            link.as = resource.as;
-            document.head.appendChild(link);
-        });
-    }
-
-    /**
-     * Get performance metrics
-     */
-    getPerformanceMetrics() {
-        return { ...this.performanceMetrics };
-    }
-
-    /**
-     * Check if performance is good
-     */
-    isPerformanceGood() {
-        const metrics = this.performanceMetrics;
-        
-        return {
-            pageLoad: metrics.pageLoadTime < 3000, // < 3 seconds
-            fcp: metrics.firstContentfulPaint < 1800, // < 1.8 seconds
-            lcp: metrics.largestContentfulPaint < 2500, // < 2.5 seconds
-            cls: metrics.cumulativeLayoutShift < 0.1 // < 0.1
+        // Override requestAnimationFrame to use our batching system
+        const originalRAF = window.requestAnimationFrame;
+        window.requestAnimationFrame = (callback) => {
+            this.rafQueue.push(callback);
+            if (!this.isProcessing) {
+                this.isProcessing = true;
+                originalRAF(processQueue);
+            }
         };
     }
 
-    /**
-     * Clean up observers
-     */
-    destroy() {
-        console.log('🧹 PerformanceOptimizer: Cleaning up observers...');
+    optimizeLongTask(entry) {
+        // Log performance issues for debugging
+        console.warn(`Long task optimization needed: ${entry.name} took ${Math.round(entry.duration)}ms`);
         
-        this.observers.forEach((observer, name) => {
-            try {
-                observer.disconnect();
-                console.log(`🧹 Disconnected observer: ${name}`);
-            } catch (error) {
-                console.warn(`⚠️ Error disconnecting observer ${name}:`, error);
+        // Could implement specific optimizations here
+        // For now, just log for monitoring
+    }
+
+    // Batch DOM operations to reduce reflows
+    batchDOMOperations(operations) {
+        return new Promise((resolve) => {
+            // Use DocumentFragment for efficient DOM manipulation
+            const fragment = document.createDocumentFragment();
+            const tempContainer = document.createElement('div');
+            
+            // Process operations in batches
+            const processBatch = (startIndex) => {
+                const endIndex = Math.min(startIndex + this.batchSize, operations.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const operation = operations[i];
+                    if (operation.type === 'createElement') {
+                        const element = this.createElement(operation.tag, operation.attributes, operation.content);
+                        if (operation.parent) {
+                            operation.parent.appendChild(element);
+                        } else {
+                            tempContainer.appendChild(element);
+                        }
+                    } else if (operation.type === 'innerHTML') {
+                        operation.element.innerHTML = operation.content;
+                    }
+                }
+                
+                if (endIndex < operations.length) {
+                    // Process next batch
+                    requestAnimationFrame(() => processBatch(endIndex));
+                } else {
+                    // All operations complete
+                    resolve();
+                }
+            };
+            
+            processBatch(0);
+        });
+    }
+
+    createElement(tag, attributes = {}, content = '') {
+        const element = document.createElement(tag);
+        
+        // Set attributes efficiently
+        Object.entries(attributes).forEach(([key, value]) => {
+            if (key === 'className') {
+                element.className = value;
+            } else if (key === 'innerHTML') {
+                element.innerHTML = value;
+            } else {
+                element.setAttribute(key, value);
             }
         });
         
-        this.observers.clear();
-        this.isInitialized = false;
+        if (content && typeof content === 'string') {
+            element.textContent = content;
+        } else if (content && typeof content === 'object') {
+            element.appendChild(content);
+        }
+        
+        return element;
+    }
+
+    // Optimize fixture rendering with virtual scrolling
+    createVirtualScroller(container, items, itemHeight, renderItem) {
+        const scroller = {
+            container,
+            items,
+            itemHeight,
+            renderItem,
+            visibleStart: 0,
+            visibleEnd: 0,
+            buffer: 5, // Extra items to render outside viewport
+            
+            init() {
+                this.updateVisibleRange();
+                this.render();
+                this.setupScrollListener();
+            },
+            
+            updateVisibleRange() {
+                const containerHeight = this.container.clientHeight;
+                const visibleCount = Math.ceil(containerHeight / this.itemHeight);
+                
+                this.visibleStart = Math.max(0, Math.floor(this.container.scrollTop / this.itemHeight) - this.buffer);
+                this.visibleEnd = Math.min(this.items.length, this.visibleStart + visibleCount + this.buffer * 2);
+            },
+            
+            render() {
+                // Clear container
+                this.container.innerHTML = '';
+                
+                // Create spacer for items before visible range
+                if (this.visibleStart > 0) {
+                    const spacer = document.createElement('div');
+                    spacer.style.height = `${this.visibleStart * this.itemHeight}px`;
+                    this.container.appendChild(spacer);
+                }
+                
+                // Render visible items
+                for (let i = this.visibleStart; i < this.visibleEnd; i++) {
+                    const item = this.items[i];
+                    const element = this.renderItem(item, i);
+                    this.container.appendChild(element);
+                }
+                
+                // Create spacer for items after visible range
+                const remainingItems = this.items.length - this.visibleEnd;
+                if (remainingItems > 0) {
+                    const spacer = document.createElement('div');
+                    spacer.style.height = `${remainingItems * this.itemHeight}px`;
+                    this.container.appendChild(spacer);
+                }
+            },
+            
+            setupScrollListener() {
+                let ticking = false;
+                
+                const handleScroll = () => {
+                    if (!ticking) {
+                        requestAnimationFrame(() => {
+                            this.updateVisibleRange();
+                            this.render();
+                            ticking = false;
+                        });
+                        ticking = true;
+                    }
+                };
+                
+                this.container.addEventListener('scroll', handleScroll, { passive: true });
+            }
+        };
+        
+        return scroller;
+    }
+
+    // Debounce function for performance
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Throttle function for performance
+    throttle(func, limit) {
+        let inThrottle;
+        return function executedFunction(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    // Optimize string concatenation
+    buildHTMLString(template, data) {
+        // Use template literals more efficiently
+        if (typeof template === 'function') {
+            return template(data);
+        }
+        
+        // For large datasets, use array join instead of string concatenation
+        if (Array.isArray(data)) {
+            return data.map(item => template(item)).join('');
+        }
+        
+        return template;
+    }
+
+    // Memory management
+    cleanup() {
+        if (this.performanceObserver) {
+            this.performanceObserver.disconnect();
+            this.performanceObserver = null;
+        }
+        
+        this.rafQueue = [];
+        this.isProcessing = false;
+    }
+
+    // Performance metrics
+    getPerformanceMetrics() {
+        const metrics = {
+            longTasks: 0,
+            averageTaskDuration: 0,
+            memoryUsage: 0
+        };
+        
+        if ('performance' in window && 'memory' in performance) {
+            metrics.memoryUsage = performance.memory.usedJSHeapSize;
+        }
+        
+        return metrics;
     }
 }
 
 // Export for use in other modules
-window.PerformanceOptimizer = PerformanceOptimizer;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PerformanceOptimizer;
+} else {
+    window.PerformanceOptimizer = PerformanceOptimizer;
+}

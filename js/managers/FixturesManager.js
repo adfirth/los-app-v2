@@ -456,7 +456,6 @@ class FixturesManager {
     }
 
     async displayFixtures() {
-        
         const fixturesList = document.getElementById('fixturesList');
         if (!fixturesList) {
             return;
@@ -474,18 +473,44 @@ class FixturesManager {
             // Silently handle badge preload errors
         }
 
+        // Use performance-optimized rendering
+        await this.renderFixturesOptimized(fixturesList);
+    }
 
-        fixturesList.innerHTML = '';
-
-        this.currentFixtures.forEach((fixture, index) => {
-
-            const fixtureCard = this.createFixtureCard(fixture, index);
-            fixturesList.appendChild(fixtureCard);
-        });
+    async renderFixturesOptimized(container) {
+        const startTime = performance.now();
         
-
+        // Clear container efficiently
+        container.innerHTML = '';
         
-
+        // Use DocumentFragment for efficient DOM manipulation
+        const fragment = document.createDocumentFragment();
+        
+        // Process fixtures in batches to avoid long tasks
+        const batchSize = 5; // Process 5 fixtures at a time
+        const totalFixtures = this.currentFixtures.length;
+        
+        for (let i = 0; i < totalFixtures; i += batchSize) {
+            const batch = this.currentFixtures.slice(i, i + batchSize);
+            
+            // Process batch
+            batch.forEach((fixture, batchIndex) => {
+                const globalIndex = i + batchIndex;
+                const fixtureCard = this.createFixtureCard(fixture, globalIndex);
+                fragment.appendChild(fixtureCard);
+            });
+            
+            // Yield control to browser between batches
+            if (i + batchSize < totalFixtures) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+            }
+        }
+        
+        // Single DOM operation to add all fixtures
+        container.appendChild(fragment);
+        
+        const endTime = performance.now();
+        console.log(`🚀 FixturesManager: Rendered ${totalFixtures} fixtures in ${Math.round(endTime - startTime)}ms`);
     }
 
     createFixtureCard(fixture, index) {

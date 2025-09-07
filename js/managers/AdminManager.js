@@ -1559,16 +1559,13 @@ class AdminManager {
         }
     }
 
-    displayFixturesList(fixtures) {
+    async displayFixturesList(fixtures) {
         const fixturesList = document.getElementById('adminFixturesList');
         
         console.log('🔧 AdminManager: displayFixturesList called with', fixtures.length, 'fixtures');
-        console.log('🔧 AdminManager: Looking for adminFixturesList element...');
-        console.log('🔧 AdminManager: All elements with "fixtures" in ID:', Array.from(document.querySelectorAll('[id*="fixtures"]')).map(el => el.id));
         
         if (!fixturesList) {
             console.error('❌ AdminManager: adminFixturesList element not found!');
-            console.log('🔧 AdminManager: Available elements in admin panel:', Array.from(document.querySelectorAll('#adminPanel *')).map(el => el.id || el.className));
             return;
         }
         
@@ -1582,8 +1579,19 @@ class AdminManager {
             `;
             return;
         }
+
+        // Use performance-optimized rendering
+        await this.renderAdminFixturesOptimized(fixturesList, fixtures);
+    }
+
+    async renderAdminFixturesOptimized(container, fixtures) {
+        const startTime = performance.now();
         
-        const fixturesHtml = `
+        // Clear container
+        container.innerHTML = '';
+        
+        // Create header first
+        const headerHTML = `
             <div class="fixtures-header">
                 <h4>Found ${fixtures.length} Fixtures</h4>
                 <div class="fixtures-actions">
@@ -1595,78 +1603,91 @@ class AdminManager {
                     </button>
                 </div>
             </div>
-            <div class="fixtures-grid">
-                ${fixtures.map(fixture => {
-                    console.log('🔧 AdminManager: Processing fixture for display:', fixture);
-                    
-                    // Handle different date field names with UK format (DD/MM/YY)
-                    let dateStr = 'No date';
-                    if (fixture.date) {
-                        try {
-                            const date = new Date(fixture.date);
-                            dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
-                        } catch (e) {
-                            dateStr = fixture.date.toString();
-                        }
-                    } else if (fixture.fixtureDate) {
-                        try {
-                            const date = new Date(fixture.fixtureDate);
-                            dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
-                        } catch (e) {
-                            dateStr = fixture.fixtureDate.toString();
-                        }
-                    } else if (fixture.scheduledDate) {
-                        try {
-                            const date = new Date(fixture.scheduledDate);
-                            dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
-                        } catch (e) {
-                            dateStr = fixture.scheduledDate.toString();
-                        }
-                    }
-                    
-                    const status = fixture.status || 'scheduled';
-                    const score = fixture.homeScore !== null && fixture.awayScore !== null 
-                        ? `${fixture.homeScore} - ${fixture.awayScore}` 
-                        : 'TBD';
-                    const gameweek = fixture.gameweek || 'Unknown';
-                    
-                    return `
-                        <div class="fixture-card">
-                            <div class="fixture-header">
-                                <span class="fixture-gameweek">GW ${gameweek}</span>
-                                <span class="fixture-status status-${status}">${status}</span>
-                            </div>
-                            <div class="fixture-teams">
-                                ${this.createTeamWithBadgeHTML(fixture.homeTeam, 'small', '')} vs ${this.createTeamWithBadgeHTML(fixture.awayTeam, 'small', '')}
-                            </div>
-                            <div class="fixture-details">
-                                <div class="fixture-date">
-                                    <i class="fas fa-calendar"></i> ${dateStr}
-                                </div>
-                                ${(fixture.kickOffTime || fixture.kickoffTime || fixture.time || fixture.startTime) ? `
-                                    <div class="fixture-time">
-                                        <i class="fas fa-clock"></i> ${fixture.kickOffTime || fixture.kickoffTime || fixture.time || fixture.startTime}
-                                    </div>
-                                ` : ''}
-                                <div class="fixture-score">
-                                    <i class="fas fa-futbol"></i> ${score}
-                                </div>
-                            </div>
-                            <div class="fixture-actions">
-                                <button class="btn btn-sm btn-secondary" onclick="console.log('Edit fixture:', '${fixture.fixtureId || fixture.id || 'unknown'}')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="console.log('Delete fixture:', '${fixture.fixtureId || fixture.id || 'unknown'}')">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
         `;
         
-        fixturesList.innerHTML = fixturesHtml;
+        container.innerHTML = headerHTML;
+        
+        // Create fixtures grid container
+        const fixturesGrid = document.createElement('div');
+        fixturesGrid.className = 'fixtures-grid';
+        container.appendChild(fixturesGrid);
+        
+        // Process fixtures in batches to avoid long tasks
+        const batchSize = 3; // Smaller batches for admin fixtures (they're more complex)
+        const totalFixtures = fixtures.length;
+        
+        for (let i = 0; i < totalFixtures; i += batchSize) {
+            const batch = fixtures.slice(i, i + batchSize);
+            
+            // Process batch
+            const batchHTML = batch.map(fixture => this.createAdminFixtureHTML(fixture)).join('');
+            fixturesGrid.insertAdjacentHTML('beforeend', batchHTML);
+            
+            // Yield control to browser between batches
+            if (i + batchSize < totalFixtures) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+            }
+        }
+        
+        const endTime = performance.now();
+        console.log(`🚀 AdminManager: Rendered ${totalFixtures} admin fixtures in ${Math.round(endTime - startTime)}ms`);
+    }
+
+    createAdminFixtureHTML(fixture) {
+        // Handle different date field names with UK format (DD/MM/YY)
+        let dateStr = 'No date';
+        if (fixture.date) {
+            try {
+                const date = new Date(fixture.date);
+                dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
+            } catch (e) {
+                dateStr = fixture.date.toString();
+            }
+        } else if (fixture.fixtureDate) {
+            try {
+                const date = new Date(fixture.fixtureDate);
+                dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
+            } catch (e) {
+                dateStr = fixture.fixtureDate.toString();
+            }
+        } else if (fixture.scheduledDate) {
+            try {
+                const date = new Date(fixture.scheduledDate);
+                dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
+            } catch (e) {
+                dateStr = fixture.scheduledDate.toString();
+            }
+        }
+        
+        const status = fixture.status || 'scheduled';
+        const score = fixture.homeScore !== null && fixture.awayScore !== null 
+            ? `${fixture.homeScore} - ${fixture.awayScore}` 
+            : 'TBD';
+        const gameweek = fixture.gameweek || 'Unknown';
+        
+        return `
+            <div class="fixture-card">
+                <div class="fixture-header">
+                    <span class="fixture-date">${dateStr}</span>
+                    <span class="fixture-status status-${status}">${status}</span>
+                </div>
+                <div class="fixture-teams">
+                    <div class="team home-team">
+                        <span class="team-name">${fixture.homeTeam || 'TBD'}</span>
+                        <span class="team-score">${fixture.homeScore !== null ? fixture.homeScore : '-'}</span>
+                    </div>
+                    <div class="vs">vs</div>
+                    <div class="team away-team">
+                        <span class="team-name">${fixture.awayTeam || 'TBD'}</span>
+                        <span class="team-score">${fixture.awayScore !== null ? fixture.awayScore : '-'}</span>
+                    </div>
+                </div>
+                <div class="fixture-meta">
+                    <span class="gameweek">GW ${gameweek}</span>
+                    <span class="fixture-id">ID: ${fixture.fixtureId || 'N/A'}</span>
+                </div>
+            </div>
+        `;
     }
 
     async populateScoreClubDropdown() {
