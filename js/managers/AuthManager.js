@@ -298,13 +298,48 @@ class AuthManager {
                     const activeClubs = globalSettings.exists ? globalSettings.data().activeClubs : [];
                     
                     if (!activeClubs || activeClubs.length === 0) {
-                        console.log('⚠️ No active clubs found in global settings');
-                        // Don't retry here, just show auth screen
-                        this.showAuthScreen();
-                        return;
-                    }
-                    
-                    for (const clubId of activeClubs) {
+                        console.log('⚠️ No active clubs found in global settings, trying ClubService fallback...');
+                        
+                        // Try to get clubs from ClubService as fallback
+                        if (window.losApp?.managers?.club?.clubData) {
+                            const clubService = window.losApp.managers.club;
+                            const clubIds = Object.keys(clubService.clubData);
+                            console.log('🔧 AuthManager: Using ClubService fallback with', clubIds.length, 'clubs');
+                            
+                            if (clubIds.length > 0) {
+                                // Use ClubService clubs instead of global settings
+                                for (const clubId of clubIds) {
+                                    try {
+                                        const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
+                                            .collection('editions').get();
+                                        
+                                        for (const editionDoc of editionsSnapshot.docs) {
+                                            const userDoc = await this.db.collection('clubs').doc(clubId)
+                                                .collection('editions').doc(editionDoc.id)
+                                                .collection('users').doc(this.currentUser.uid).get();
+                                            
+                                            if (userDoc.exists) {
+                                                userData = userDoc.data();
+                                                userFound = true;
+                                                break;
+                                            }
+                                        }
+                                        if (userFound) break;
+                                    } catch (error) {
+                                        console.error(`AuthManager: Error searching club ${clubId}:`, error);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (!userFound) {
+                            console.log('⚠️ User not found in any club, showing auth screen');
+                            this.showAuthScreen();
+                            return;
+                        }
+                    } else {
+                        // Use global settings active clubs
+                        for (const clubId of activeClubs) {
                         try {
                             const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
                                 .collection('editions').get();
