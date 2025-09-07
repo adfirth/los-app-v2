@@ -56,6 +56,12 @@ class ClubService {
             this.forceFixClubLoading();
         };
         
+        // Add function to manually load clubs
+        window.loadClubs = () => {
+            console.log('🔧 ClubService: Manual club loading triggered...');
+            this.loadClubsFallback();
+        };
+        
         // Add test function for club changes
         window.testClubChange = (clubId) => {
             console.log(`🧪 ClubService: Testing club change to: ${clubId}`);
@@ -193,6 +199,37 @@ class ClubService {
                 // If there's an error, try to create the default structure
                 this.createDefaultGlobalSettings();
             });
+        
+        // Also try to load clubs immediately as a fallback
+        this.loadClubsFallback();
+    }
+
+    async loadClubsFallback() {
+        // Fallback method to load clubs directly if global settings aren't ready
+        try {
+            console.log('🔧 ClubService: Loading clubs fallback...');
+            const clubsSnapshot = await this.db.collection('clubs').get();
+            
+            if (!clubsSnapshot.empty) {
+                const clubIds = clubsSnapshot.docs.map(doc => doc.id);
+                console.log('🔧 ClubService: Found clubs in fallback:', clubIds);
+                
+                // Load club data
+                for (const clubId of clubIds) {
+                    const clubDoc = clubsSnapshot.docs.find(doc => doc.id === clubId);
+                    if (clubDoc) {
+                        this.clubData[clubId] = clubDoc.data();
+                    }
+                }
+                
+                this.availableClubs = clubIds;
+                this.updateClubSelectors();
+            } else {
+                console.log('🔧 ClubService: No clubs found in fallback');
+            }
+        } catch (error) {
+            console.error('🔧 ClubService: Error in loadClubsFallback:', error);
+        }
     }
 
     async loadClubData() {
