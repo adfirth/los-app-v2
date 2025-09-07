@@ -1253,7 +1253,7 @@ To set up sample clubs, run:
             // Use cached fixtures if available to avoid Firebase query
             if (this.cachedFixtures && this.cachedFixtures.length > 0) {
                 console.log('🎯 ClubService: Using cached fixtures for gameweek calculation');
-                return this.calculateGameweekFromCachedFixtures();
+                return await this.calculateGameweekFromCachedFixtures();
             }
             
             // Get all fixtures for the current edition
@@ -1272,7 +1272,7 @@ To set up sample clubs, run:
             // Cache fixtures for future use
             this.cachedFixtures = fixturesSnapshot.docs.map(doc => doc.data());
             
-            return this.calculateGameweekFromCachedFixtures();
+            return await this.calculateGameweekFromCachedFixtures();
             
         } catch (error) {
             console.error('🎯 ClubService: Error calculating current gameweek:', error);
@@ -1284,7 +1284,7 @@ To set up sample clubs, run:
     }
 
     // Optimized gameweek calculation from cached fixtures
-    calculateGameweekFromCachedFixtures() {
+    async calculateGameweekFromCachedFixtures() {
         const now = new Date();
         let currentGameweek = 1;
         
