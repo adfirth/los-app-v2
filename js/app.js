@@ -51,10 +51,14 @@ class LOSApp {
             // Initialize core services
             this.uiService = new UIService();
             this.performanceService = new PerformanceService();
-            this.performanceOptimizer = new PerformanceOptimizer();
             
-            // Initialize performance optimization
-            this.performanceOptimizer.initialize();
+            // Initialize performance optimizer if available
+            if (typeof PerformanceOptimizer !== 'undefined') {
+                this.performanceOptimizer = new PerformanceOptimizer();
+                this.performanceOptimizer.initialize();
+            } else {
+                console.warn('⚠️ PerformanceOptimizer not available, skipping performance optimization');
+            }
             
             // Initialize managers
             this.initializeManagers();
