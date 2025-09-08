@@ -634,7 +634,15 @@ class FixtureManagementManager {
             const response = await this.getFixtures(competitionId, season);
             console.log(`✅ Scores fetched successfully:`, response);
             
-            return response;
+            // Transform the response to match the expected format for bulkUpdateScores
+            if (response && response['fixtures-results']) {
+                return {
+                    matches: response['fixtures-results'],
+                    total: response.total
+                };
+            }
+            
+            return { matches: [], total: 0 };
         } catch (error) {
             console.error('❌ Error fetching scores:', error);
             throw error;
@@ -986,21 +994,31 @@ class FixtureManagementManager {
                 // Extract team names from the match data
                 let homeTeam, awayTeam, homeScore, awayScore, matchStatus;
                 
-                if (match.home && match.away) {
+                if (match['home-team'] && match['away-team']) {
+                    // New API structure
+                    homeTeam = match['home-team'].name;
+                    awayTeam = match['away-team'].name;
+                    homeScore = match['home-team'].score;
+                    awayScore = match['away-team'].score;
+                    matchStatus = match.status?.short === 'FT' ? 'finished' : 'unknown';
+                } else if (match.home && match.away) {
+                    // Old API structure
                     homeTeam = match.home;
                     awayTeam = match.away;
+                    homeScore = match.homeScore || match.homeGoals || null;
+                    awayScore = match.awayScore || match.awayGoals || null;
+                    matchStatus = match.status || 'unknown';
                 } else if (match.homeTeam && match.awayTeam) {
+                    // Alternative structure
                     homeTeam = match.homeTeam;
                     awayTeam = match.awayTeam;
+                    homeScore = match.homeScore || match.homeGoals || null;
+                    awayScore = match.awayScore || match.awayGoals || null;
+                    matchStatus = match.status || 'unknown';
                 } else {
                     console.warn(`⚠️ Skipping match with missing team names:`, match);
                     continue;
                 }
-                
-                // Extract score and status information
-                homeScore = match.homeScore || match.homeGoals || null;
-                awayScore = match.awayScore || match.awayGoals || null;
-                matchStatus = match.status || 'unknown';
                 
                 // Try to find a matching fixture in our database
                 const matchingFixture = existingFixtures.find(fixture => {
@@ -1133,21 +1151,31 @@ class FixtureManagementManager {
                         // Extract team names from the match data
                         let homeTeam, awayTeam, homeScore, awayScore, matchStatus;
                         
-                        if (match.home && match.away) {
+                        if (match['home-team'] && match['away-team']) {
+                            // New API structure
+                            homeTeam = match['home-team'].name;
+                            awayTeam = match['away-team'].name;
+                            homeScore = match['home-team'].score;
+                            awayScore = match['away-team'].score;
+                            matchStatus = match.status?.short === 'FT' ? 'finished' : 'unknown';
+                        } else if (match.home && match.away) {
+                            // Old API structure
                             homeTeam = match.home;
                             awayTeam = match.away;
+                            homeScore = match.homeScore || match.homeGoals || null;
+                            awayScore = match.awayScore || match.awayGoals || null;
+                            matchStatus = match.status || 'unknown';
                         } else if (match.homeTeam && match.awayTeam) {
+                            // Alternative structure
                             homeTeam = match.homeTeam;
                             awayTeam = match.awayTeam;
+                            homeScore = match.homeScore || match.homeGoals || null;
+                            awayScore = match.awayScore || match.awayGoals || null;
+                            matchStatus = match.status || 'unknown';
                         } else {
                             console.warn(`⚠️ Skipping match with missing team names:`, match);
                             continue;
                         }
-                        
-                        // Extract score and status information
-                        homeScore = match.homeScore || match.homeGoals || null;
-                        awayScore = match.awayScore || match.awayGoals || null;
-                        matchStatus = match.status || 'unknown';
                         
                         // Try to find a matching fixture in our database for this gameweek
                         const matchingFixture = existingFixtures.find(fixture => {
