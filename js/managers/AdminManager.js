@@ -185,18 +185,19 @@ class AdminManager {
     }
 
     insertAdminButton(retryCount = 0) {
-        // Wait for DOM to be ready and app container to be visible
-        if (document.readyState !== 'complete' || !document.getElementById('appContainer') || document.getElementById('appContainer').classList.contains('hidden')) {
+        // Wait for DOM to be ready
+        if (document.readyState !== 'complete') {
             if (retryCount < 100) { // Max 100 retries (10 seconds)
                 setTimeout(() => this.insertAdminButton(retryCount + 1), 100);
                 return;
             } else {
-                console.error('❌ AdminManager: App container not ready after 10 seconds');
+                console.error('❌ AdminManager: DOM not ready after 10 seconds');
                 return;
             }
         }
 
         const adminButtonsContainer = document.getElementById('adminButtonsContainer');
+        console.log('🔍 AdminManager: Admin buttons container found:', !!adminButtonsContainer, 'Retry:', retryCount);
         
         if (adminButtonsContainer) {
             const adminBtn = document.createElement('button');
@@ -207,6 +208,7 @@ class AdminManager {
             adminBtn.style.marginRight = '10px'; // Add some spacing
             adminBtn.style.cursor = 'pointer'; // Ensure cursor shows it's clickable
             adminBtn.style.pointerEvents = 'auto'; // Ensure clicks are captured
+            adminBtn.style.display = 'inline-block'; // Ensure button is visible
             
             // Add click event listener with better error handling
             adminBtn.addEventListener('click', (event) => {
@@ -231,6 +233,9 @@ class AdminManager {
             
             adminButtonsContainer.appendChild(adminBtn);
             console.log('✅ AdminManager: Admin button inserted successfully');
+            console.log('🔍 AdminManager: Button element:', adminBtn);
+            console.log('🔍 AdminManager: Button display style:', adminBtn.style.display);
+            console.log('🔍 AdminManager: Container children count:', adminButtonsContainer.children.length);
         } else if (retryCount < 50) { // Max 50 retries (5 seconds)
             // Retry after a short delay if container not found
             console.log('⏳ AdminManager: Admin buttons container not found, retrying in 100ms... (Attempt ' + (retryCount + 1) + '/50)');

@@ -55,13 +55,13 @@ class SuperAdminManager {
     }
 
     insertSuperAdminToggle(toggle, retryCount = 0) {
-        // Wait for DOM to be ready and app container to be visible
-        if (document.readyState !== 'complete' || !document.getElementById('appContainer') || document.getElementById('appContainer').classList.contains('hidden')) {
+        // Wait for DOM to be ready
+        if (document.readyState !== 'complete') {
             if (retryCount < 100) { // Max 100 retries (10 seconds)
                 setTimeout(() => this.insertSuperAdminToggle(toggle, retryCount + 1), 100);
                 return;
             } else {
-                console.error('❌ SuperAdminManager: App container not ready after 10 seconds');
+                console.error('❌ SuperAdminManager: DOM not ready after 10 seconds');
                 return;
             }
         }
@@ -73,6 +73,15 @@ class SuperAdminManager {
             // Insert the super admin toggle button
             adminButtonsContainer.appendChild(toggle);
             console.log('✅ SuperAdminManager: Toggle button inserted into admin buttons container');
+            console.log('🔍 SuperAdminManager: Toggle element:', toggle);
+            console.log('🔍 SuperAdminManager: Toggle display style:', toggle.style.display);
+            console.log('🔍 SuperAdminManager: Container children count:', adminButtonsContainer.children.length);
+            
+            // If user is already confirmed as super admin, show the button immediately
+            if (this.isSuperAdmin) {
+                console.log('👑 SuperAdminManager: User is super admin, showing toggle button immediately');
+                toggle.style.display = 'inline-block';
+            }
         } else if (retryCount < 50) { // Max 50 retries (5 seconds)
             // Debug DOM state only on first few attempts
             if (retryCount < 3) {
