@@ -322,3 +322,4 @@ class BaseManager {
 
 // Export for use in other modules
 window.BaseManager = BaseManager;
+

@@ -1337,6 +1337,21 @@ class SuperAdminManager {
 
         document.body.appendChild(modal);
         this.populateFixtureModalData();
+        
+        // Ensure selectors are populated immediately
+        this.ensureSelectorsPopulated();
+    }
+
+    async ensureSelectorsPopulated() {
+        console.log('🔧 SuperAdmin: Ensuring selectors are populated...');
+        
+        // Use ClubService to populate club dropdowns
+        if (window.losApp?.managers?.club) {
+            await window.losApp.managers.club.ensureSuperAdminSelectorsPopulated();
+        } else {
+            console.warn('⚠️ SuperAdmin: ClubService not available, using fallback method');
+            await this.populateFixtureClubDropdowns();
+        }
     }
 
     async populateFixtureModalData() {
@@ -1346,8 +1361,13 @@ class SuperAdminManager {
             // Wait for ClubService to be ready before populating dropdowns
             await this.waitForClubServiceReady();
             
-            // Populate club dropdowns
-            await this.populateFixtureClubDropdowns();
+            // Use ClubService to populate club dropdowns
+            if (window.losApp?.managers?.club) {
+                await window.losApp.managers.club.ensureSuperAdminSelectorsPopulated();
+            } else {
+                // Fallback to original method if ClubService not available
+                await this.populateFixtureClubDropdowns();
+            }
             
             // Populate competition dropdowns
             await this.populateCompetitionDropdown();

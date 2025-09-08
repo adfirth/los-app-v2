@@ -338,6 +338,63 @@ class ClubService {
                 }
             });
         }
+
+        // Update Super Admin selectors
+        this.updateSuperAdminSelectors();
+    }
+
+    updateSuperAdminSelectors() {
+        // Update Super Admin fixture and score selectors
+        const superAdminSelectors = [
+            'fixtureClubSelect',
+            'scoreClubSelect',
+            'currentFixturesClubSelect'
+        ];
+
+        superAdminSelectors.forEach(selectorId => {
+            const selector = document.getElementById(selectorId);
+            if (selector) {
+                // Clear existing options except the first one
+                const firstOption = selector.querySelector('option[value=""]');
+                selector.innerHTML = '';
+                if (firstOption) {
+                    selector.appendChild(firstOption);
+                } else {
+                    // Add default option if none exists
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Choose a club...';
+                    selector.appendChild(defaultOption);
+                }
+
+                // Add club options
+                this.availableClubs.forEach(clubId => {
+                    const club = this.clubData[clubId];
+                    if (club && club.isActive) {
+                        const option = document.createElement('option');
+                        option.value = clubId;
+                        option.textContent = club.name;
+                        selector.appendChild(option);
+                    }
+                });
+            }
+        });
+    }
+
+    // Method specifically for Super Admin Manager to call
+    async ensureSuperAdminSelectorsPopulated() {
+        console.log('🔧 ClubService: Ensuring Super Admin selectors are populated...');
+        
+        // If we don't have clubs loaded yet, try to load them
+        if (!this.availableClubs.length) {
+            console.log('🔧 ClubService: No clubs loaded, attempting to load...');
+            await this.loadClubsFallback();
+        }
+        
+        // Update the selectors
+        this.updateSuperAdminSelectors();
+        
+        console.log('🔧 ClubService: Super Admin selectors updated');
     }
 
     async onClubChange(clubId) {
