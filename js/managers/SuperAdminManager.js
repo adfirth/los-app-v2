@@ -49,19 +49,56 @@ class SuperAdminManager {
             
             // Try to insert into the admin buttons container with retry mechanism
             this.insertSuperAdminToggle(toggle);
+            
+            // Also set up a retry mechanism when app container becomes visible
+            this.setupAppContainerVisibilityListener(toggle);
         } else {
             console.log('ℹ️ SuperAdminManager: Toggle button already exists or header not found');
         }
     }
+    
+    setupAppContainerVisibilityListener(toggle) {
+        // If app container is hidden, wait for it to become visible
+        const appContainer = document.getElementById('appContainer');
+        if (appContainer && appContainer.classList.contains('hidden')) {
+            console.log('🔍 SuperAdminManager: App container is hidden, setting up visibility listener');
+            
+            // Use MutationObserver to watch for class changes
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const target = mutation.target;
+                        if (target.id === 'appContainer' && !target.classList.contains('hidden')) {
+                            console.log('🔍 SuperAdminManager: App container became visible, retrying toggle insertion');
+                            observer.disconnect(); // Stop observing
+                            setTimeout(() => this.insertSuperAdminToggle(toggle), 100); // Small delay to ensure DOM is ready
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(appContainer, { attributes: true, attributeFilter: ['class'] });
+            
+            // Also set a timeout as fallback
+            setTimeout(() => {
+                observer.disconnect();
+                if (!document.getElementById('superAdminToggle')) {
+                    console.log('🔍 SuperAdminManager: Fallback timeout reached, retrying toggle insertion');
+                    this.insertSuperAdminToggle(toggle);
+                }
+            }, 2000);
+        }
+    }
 
     insertSuperAdminToggle(toggle, retryCount = 0) {
-        // Wait for DOM to be ready
-        if (document.readyState !== 'complete') {
+        // Wait for DOM to be ready and app container to be visible
+        const appContainer = document.getElementById('appContainer');
+        if (document.readyState !== 'complete' || !appContainer || appContainer.classList.contains('hidden')) {
             if (retryCount < 100) { // Max 100 retries (10 seconds)
                 setTimeout(() => this.insertSuperAdminToggle(toggle, retryCount + 1), 100);
                 return;
             } else {
-                console.error('❌ SuperAdminManager: DOM not ready after 10 seconds');
+                console.error('❌ SuperAdminManager: App container not ready after 10 seconds');
                 return;
             }
         }

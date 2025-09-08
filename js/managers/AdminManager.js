@@ -181,17 +181,54 @@ class AdminManager {
         // Add admin button to header if not already present
         if (!document.getElementById('adminBtn')) {
             this.insertAdminButton();
+            
+            // Also set up a retry mechanism when app container becomes visible
+            this.setupAppContainerVisibilityListener();
+        }
+    }
+    
+    setupAppContainerVisibilityListener() {
+        // If app container is hidden, wait for it to become visible
+        const appContainer = document.getElementById('appContainer');
+        if (appContainer && appContainer.classList.contains('hidden')) {
+            console.log('🔍 AdminManager: App container is hidden, setting up visibility listener');
+            
+            // Use MutationObserver to watch for class changes
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const target = mutation.target;
+                        if (target.id === 'appContainer' && !target.classList.contains('hidden')) {
+                            console.log('🔍 AdminManager: App container became visible, retrying button insertion');
+                            observer.disconnect(); // Stop observing
+                            setTimeout(() => this.insertAdminButton(), 100); // Small delay to ensure DOM is ready
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(appContainer, { attributes: true, attributeFilter: ['class'] });
+            
+            // Also set a timeout as fallback
+            setTimeout(() => {
+                observer.disconnect();
+                if (!document.getElementById('adminBtn')) {
+                    console.log('🔍 AdminManager: Fallback timeout reached, retrying button insertion');
+                    this.insertAdminButton();
+                }
+            }, 2000);
         }
     }
 
     insertAdminButton(retryCount = 0) {
-        // Wait for DOM to be ready
-        if (document.readyState !== 'complete') {
+        // Wait for DOM to be ready and app container to be visible
+        const appContainer = document.getElementById('appContainer');
+        if (document.readyState !== 'complete' || !appContainer || appContainer.classList.contains('hidden')) {
             if (retryCount < 100) { // Max 100 retries (10 seconds)
                 setTimeout(() => this.insertAdminButton(retryCount + 1), 100);
                 return;
             } else {
-                console.error('❌ AdminManager: DOM not ready after 10 seconds');
+                console.error('❌ AdminManager: App container not ready after 10 seconds');
                 return;
             }
         }
