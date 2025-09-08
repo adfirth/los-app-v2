@@ -236,6 +236,29 @@ class AdminManager {
         const adminButtonsContainer = document.getElementById('adminButtonsContainer');
         console.log('🔍 AdminManager: Admin buttons container found:', !!adminButtonsContainer, 'Retry:', retryCount);
         
+        // Additional debugging for first few attempts
+        if (retryCount < 3) {
+            console.log('🔍 AdminManager: Debugging DOM state...');
+            console.log('🔍 AdminManager: document.readyState:', document.readyState);
+            console.log('🔍 AdminManager: appContainer visible:', !document.getElementById('appContainer')?.classList.contains('hidden'));
+            console.log('🔍 AdminManager: .app-header exists:', !!document.querySelector('.app-header'));
+            console.log('🔍 AdminManager: .header-controls exists:', !!document.querySelector('.header-controls'));
+            console.log('🔍 AdminManager: All elements with "admin" in ID:', Array.from(document.querySelectorAll('[id*="admin"]')).map(el => el.id));
+            
+            // Additional debugging
+            const headerControls = document.querySelector('.header-controls');
+            if (headerControls) {
+                console.log('🔍 AdminManager: .header-controls found, checking children...');
+                console.log('🔍 AdminManager: .header-controls children:', Array.from(headerControls.children).map(el => el.id || el.className));
+                const adminContainer = headerControls.querySelector('#adminButtonsContainer');
+                console.log('🔍 AdminManager: adminButtonsContainer inside header-controls:', !!adminContainer);
+            } else {
+                console.log('🔍 AdminManager: .header-controls not found, checking all header elements...');
+                const allHeaders = document.querySelectorAll('[class*="header"]');
+                console.log('🔍 AdminManager: All header elements:', Array.from(allHeaders).map(el => el.className));
+            }
+        }
+        
         if (adminButtonsContainer) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'adminBtn';

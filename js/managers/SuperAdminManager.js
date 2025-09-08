@@ -128,6 +128,19 @@ class SuperAdminManager {
                 console.log('🔍 SuperAdminManager: .app-header exists:', !!document.querySelector('.app-header'));
                 console.log('🔍 SuperAdminManager: .header-controls exists:', !!document.querySelector('.header-controls'));
                 console.log('🔍 SuperAdminManager: All elements with "admin" in ID:', Array.from(document.querySelectorAll('[id*="admin"]')).map(el => el.id));
+                
+                // Additional debugging
+                const headerControls = document.querySelector('.header-controls');
+                if (headerControls) {
+                    console.log('🔍 SuperAdminManager: .header-controls found, checking children...');
+                    console.log('🔍 SuperAdminManager: .header-controls children:', Array.from(headerControls.children).map(el => el.id || el.className));
+                    const adminContainer = headerControls.querySelector('#adminButtonsContainer');
+                    console.log('🔍 SuperAdminManager: adminButtonsContainer inside header-controls:', !!adminContainer);
+                } else {
+                    console.log('🔍 SuperAdminManager: .header-controls not found, checking all header elements...');
+                    const allHeaders = document.querySelectorAll('[class*="header"]');
+                    console.log('🔍 SuperAdminManager: All header elements:', Array.from(allHeaders).map(el => el.className));
+                }
             }
             
             // Retry after a short delay if container not found
