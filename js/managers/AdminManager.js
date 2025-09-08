@@ -233,7 +233,28 @@ class AdminManager {
             }
         }
 
-        const adminButtonsContainer = document.getElementById('adminButtonsContainer');
+        // Try to find adminButtonsContainer first
+        let adminButtonsContainer = document.getElementById('adminButtonsContainer');
+        
+        // If adminButtonsContainer doesn't exist, try to find an alternative container
+        if (!adminButtonsContainer) {
+            console.log('🔍 AdminManager: adminButtonsContainer not found, looking for alternative container...');
+            
+            // Try to find header-content as an alternative
+            const headerContent = document.querySelector('.header-content');
+            if (headerContent) {
+                console.log('🔍 AdminManager: Found header-content, using as container');
+                adminButtonsContainer = headerContent;
+            } else {
+                // Try to find app-header as last resort
+                const appHeader = document.querySelector('.app-header');
+                if (appHeader) {
+                    console.log('🔍 AdminManager: Found app-header, using as container');
+                    adminButtonsContainer = appHeader;
+                }
+            }
+        }
+        
         console.log('🔍 AdminManager: Admin buttons container found:', !!adminButtonsContainer, 'Retry:', retryCount);
         
         // Additional debugging for first few attempts
