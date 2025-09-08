@@ -256,6 +256,21 @@ class AdminManager {
                 console.log('🔍 AdminManager: .header-controls not found, checking all header elements...');
                 const allHeaders = document.querySelectorAll('[class*="header"]');
                 console.log('🔍 AdminManager: All header elements:', Array.from(allHeaders).map(el => el.className));
+                
+                // Check the app-header structure
+                const appHeader = document.querySelector('.app-header');
+                if (appHeader) {
+                    console.log('🔍 AdminManager: app-header found, checking its children...');
+                    console.log('🔍 AdminManager: app-header children:', Array.from(appHeader.children).map(el => el.className));
+                    
+                    // Look for header-row elements
+                    const headerRows = appHeader.querySelectorAll('.header-row');
+                    console.log('🔍 AdminManager: header-row elements found:', headerRows.length);
+                    headerRows.forEach((row, index) => {
+                        console.log(`🔍 AdminManager: header-row ${index}:`, row.className);
+                        console.log(`🔍 AdminManager: header-row ${index} children:`, Array.from(row.children).map(el => el.className));
+                    });
+                }
             }
         }
         

@@ -140,6 +140,21 @@ class SuperAdminManager {
                     console.log('🔍 SuperAdminManager: .header-controls not found, checking all header elements...');
                     const allHeaders = document.querySelectorAll('[class*="header"]');
                     console.log('🔍 SuperAdminManager: All header elements:', Array.from(allHeaders).map(el => el.className));
+                    
+                    // Check the app-header structure
+                    const appHeader = document.querySelector('.app-header');
+                    if (appHeader) {
+                        console.log('🔍 SuperAdminManager: app-header found, checking its children...');
+                        console.log('🔍 SuperAdminManager: app-header children:', Array.from(appHeader.children).map(el => el.className));
+                        
+                        // Look for header-row elements
+                        const headerRows = appHeader.querySelectorAll('.header-row');
+                        console.log('🔍 SuperAdminManager: header-row elements found:', headerRows.length);
+                        headerRows.forEach((row, index) => {
+                            console.log(`🔍 SuperAdminManager: header-row ${index}:`, row.className);
+                            console.log(`🔍 SuperAdminManager: header-row ${index} children:`, Array.from(row.children).map(el => el.className));
+                        });
+                    }
                 }
             }
             
