@@ -1026,22 +1026,34 @@ class FixtureManagementManager {
                 });
                 
                 if (matchingFixture && matchStatus === 'finished' && homeScore !== null && awayScore !== null) {
-                    // Update the fixture with new scores
-                    const fixtureRef = this.db.collection('clubs').doc(clubId)
-                        .collection('editions').doc(editionId)
-                        .collection('fixtures').doc(matchingFixture.fixtureId);
+                    // Check if the fixture needs updating (either has null scores or placeholder 0-0 scores)
+                    const needsUpdate = (
+                        matchingFixture.homeScore === null || 
+                        matchingFixture.awayScore === null ||
+                        (matchingFixture.homeScore === 0 && matchingFixture.awayScore === 0) ||
+                        matchingFixture.status !== 'finished'
+                    );
                     
-                    const updateData = {
-                        homeScore: homeScore,
-                        awayScore: awayScore,
-                        status: 'finished',
-                        lastUpdated: new Date().toISOString()
-                    };
-                    
-                    batch.update(fixtureRef, updateData);
-                    updatedCount++;
-                    
-                    console.log(`✅ Updated fixture: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam}`);
+                    if (needsUpdate) {
+                        // Update the fixture with new scores
+                        const fixtureRef = this.db.collection('clubs').doc(clubId)
+                            .collection('editions').doc(editionId)
+                            .collection('fixtures').doc(matchingFixture.fixtureId);
+                        
+                        const updateData = {
+                            homeScore: homeScore,
+                            awayScore: awayScore,
+                            status: 'finished',
+                            lastUpdated: new Date().toISOString()
+                        };
+                        
+                        batch.update(fixtureRef, updateData);
+                        updatedCount++;
+                        
+                        console.log(`✅ Updated fixture: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam} - Previous: ${matchingFixture.homeScore}-${matchingFixture.awayScore}`);
+                    } else {
+                        console.log(`ℹ️ Fixture already up to date: ${homeTeam} ${matchingFixture.homeScore}-${matchingFixture.awayScore} ${awayTeam}`);
+                    }
                 } else if (matchingFixture) {
                     console.log(`ℹ️ Skipping ${homeTeam} vs ${awayTeam}: status=${matchStatus}, scores=${homeScore}-${awayScore}`);
                 } else {
@@ -1166,22 +1178,34 @@ class FixtureManagementManager {
                         });
                         
                         if (matchingFixture && matchStatus === 'finished' && homeScore !== null && awayScore !== null) {
-                            // Update the fixture with new scores
-                            const fixtureRef = this.db.collection('clubs').doc(clubId)
-                                .collection('editions').doc(editionId)
-                                .collection('fixtures').doc(matchingFixture.fixtureId);
+                            // Check if the fixture needs updating (either has null scores or placeholder 0-0 scores)
+                            const needsUpdate = (
+                                matchingFixture.homeScore === null || 
+                                matchingFixture.awayScore === null ||
+                                (matchingFixture.homeScore === 0 && matchingFixture.awayScore === 0) ||
+                                matchingFixture.status !== 'finished'
+                            );
                             
-                            const updateData = {
-                                homeScore: homeScore,
-                                awayScore: awayScore,
-                                status: 'finished',
-                                lastUpdated: new Date().toISOString()
-                            };
-                            
-                            batch.update(fixtureRef, updateData);
-                            updatedCount++;
-                            
-                            console.log(`✅ Updated fixture: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam} (Game Week ${gameweek})`);
+                            if (needsUpdate) {
+                                // Update the fixture with new scores
+                                const fixtureRef = this.db.collection('clubs').doc(clubId)
+                                    .collection('editions').doc(editionId)
+                                    .collection('fixtures').doc(matchingFixture.fixtureId);
+                                
+                                const updateData = {
+                                    homeScore: homeScore,
+                                    awayScore: awayScore,
+                                    status: 'finished',
+                                    lastUpdated: new Date().toISOString()
+                                };
+                                
+                                batch.update(fixtureRef, updateData);
+                                updatedCount++;
+                                
+                                console.log(`✅ Updated fixture: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam} (Game Week ${gameweek}) - Previous: ${matchingFixture.homeScore}-${matchingFixture.awayScore}`);
+                            } else {
+                                console.log(`ℹ️ Fixture already up to date: ${homeTeam} ${matchingFixture.homeScore}-${matchingFixture.awayScore} ${awayTeam}`);
+                            }
                         } else if (matchingFixture) {
                             console.log(`ℹ️ Skipping ${homeTeam} vs ${awayTeam}: status=${matchStatus}, scores=${homeScore}-${awayScore}`);
                         } else {
