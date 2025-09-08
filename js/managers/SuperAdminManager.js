@@ -1221,9 +1221,19 @@ class SuperAdminManager {
                                     </select>
                                 </div>
                                 <div style="margin-bottom: 15px;">
-                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Competition:</label>
-                                    <select id="score-competition-select" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
-                                        <option value="">Choose a competition...</option>
+                                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Game Week:</label>
+                                    <select id="score-gameweek-select" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+                                        <option value="">Choose a game week...</option>
+                                        <option value="1">Game Week 1</option>
+                                        <option value="2">Game Week 2</option>
+                                        <option value="3">Game Week 3</option>
+                                        <option value="4">Game Week 4</option>
+                                        <option value="5">Game Week 5</option>
+                                        <option value="6">Game Week 6</option>
+                                        <option value="7">Game Week 7</option>
+                                        <option value="8">Game Week 8</option>
+                                        <option value="9">Game Week 9</option>
+                                        <option value="10">Game Week 10</option>
                                     </select>
                                 </div>
                                 <button onclick="window.losApp.managers.superAdmin.bulkUpdateScoresFromAPI()" class="btn btn-secondary" style="width: 100%;">🔄 Bulk Update Scores</button>
@@ -1371,7 +1381,6 @@ class SuperAdminManager {
             
             // Populate competition dropdowns
             await this.populateCompetitionDropdown();
-            await this.populateScoreCompetitionDropdown();
             
             // Populate current fixtures club and edition dropdowns
             await this.populateCurrentFixturesDropdowns();
@@ -1459,60 +1468,6 @@ class SuperAdminManager {
         }
     }
 
-    async populateScoreCompetitionDropdown() {
-        try {
-            const competitionSelect = document.getElementById('score-competition-select');
-            if (!competitionSelect) {
-                console.warn('⚠️ Score competition select element not found');
-                return;
-            }
-            
-            // Clear existing options
-            competitionSelect.innerHTML = '<option value="">Select Competition</option>';
-            
-            // Get competitions from config with fallback
-            let competitions = {};
-            if (window.APIConfig && window.APIConfig.competitions) {
-                competitions = window.APIConfig.competitions;
-            } else if (window.FOOTBALL_WEBPAGES_CONFIG && window.FOOTBALL_WEBPAGES_CONFIG.LEAGUES) {
-                // Fallback to FOOTBALL_WEBPAGES_CONFIG
-                competitions = window.FOOTBALL_WEBPAGES_CONFIG.LEAGUES;
-            } else {
-                // Hardcoded fallback
-                competitions = {
-                    'national-league': { id: '5', name: 'National League', description: 'English National League (5th tier)' },
-                    'premier-league': { id: '1', name: 'Premier League', description: 'English Premier League (1st tier)' },
-                    'championship': { id: '2', name: 'EFL Championship', description: 'English Championship (2nd tier)' },
-                    'league-one': { id: '3', name: 'EFL League One', description: 'English League One (3rd tier)' },
-                    'league-two': { id: '4', name: 'EFL League Two', description: 'English League Two (4th tier)' }
-                };
-            }
-            
-            // Add competition options
-            Object.entries(competitions).forEach(([key, comp]) => {
-                const option = document.createElement('option');
-                option.value = comp.id;
-                option.textContent = `${comp.name} (${comp.description || ''})`;
-                competitionSelect.appendChild(option);
-            });
-            
-            console.log(`✅ Populated score competition dropdown with ${Object.keys(competitions).length} competitions`);
-        } catch (error) {
-            console.error('❌ Error populating score competition dropdown:', error);
-            // Add fallback options even if there's an error
-            const competitionSelect = document.getElementById('score-competition-select');
-            if (competitionSelect) {
-                competitionSelect.innerHTML = `
-                    <option value="">Select Competition</option>
-                    <option value="5">National League (English National League)</option>
-                    <option value="1">Premier League (English Premier League)</option>
-                    <option value="2">EFL Championship (English Championship)</option>
-                    <option value="3">EFL League One (English League One)</option>
-                    <option value="4">EFL League Two (English League Two)</option>
-                `;
-            }
-        }
-    }
 
     async populateCurrentFixturesDropdowns() {
         try {
@@ -2824,23 +2779,19 @@ class SuperAdminManager {
         }
     }
 
-    // Bulk update scores from API
+    // Bulk update scores from API by gameweek
     async bulkUpdateScoresFromAPI() {
         try {
             const clubId = document.getElementById('scoreClubSelect').value;
             const editionId = document.getElementById('scoreEditionSelect').value;
-            const competitionId = document.getElementById('score-competition-select').value;
+            const gameweek = document.getElementById('score-gameweek-select').value;
             
-            if (!clubId || !editionId || !competitionId) {
-                alert('❌ Please select a club, edition, and competition');
+            if (!clubId || !editionId || !gameweek) {
+                alert('❌ Please select a club, edition, and game week');
                 return;
             }
             
-            // Get competition name for display
-            const competition = Object.values(window.APIConfig.competitions).find(comp => comp.id === competitionId);
-            const competitionName = competition ? competition.name : `Competition ${competitionId}`;
-            
-            console.log(`🔄 Starting bulk score update for ${competitionName} (ID: ${competitionId})`);
+            console.log(`🔄 Starting bulk score update for Game Week ${gameweek}`);
             
             // Show loading state
             const updateButton = document.querySelector('.score-updates-section button[onclick="window.losApp.managers.superAdmin.bulkUpdateScoresFromAPI()"]');
@@ -2857,16 +2808,16 @@ class SuperAdminManager {
                 
                 const fixtureManager = window.losApp.managers.fixtureManagement;
                 
-                // Bulk update scores
-                const result = await fixtureManager.bulkUpdateScores(competitionId, clubId, editionId);
+                // Bulk update scores by gameweek
+                const result = await fixtureManager.bulkUpdateScoresByGameweek(parseInt(gameweek), clubId, editionId);
                 
                 if (result.updated > 0) {
-                    alert(`✅ Successfully updated ${result.updated} out of ${result.total} fixture scores for ${competitionName}`);
+                    alert(`✅ Successfully updated ${result.updated} out of ${result.total} fixture scores for Game Week ${gameweek}`);
                 } else {
-                    alert(`ℹ️ No fixtures needed updating for ${competitionName}`);
+                    alert(`ℹ️ No fixtures needed updating for Game Week ${gameweek}`);
                 }
                 
-                console.log(`✅ Bulk score update completed: ${result.updated}/${result.total} fixtures updated`);
+                console.log(`✅ Bulk score update completed: ${result.updated}/${result.total} fixtures updated for Game Week ${gameweek}`);
                 
                 // Refresh the fixtures list if viewing
                 this.loadFixturesForClub(clubId, editionId);

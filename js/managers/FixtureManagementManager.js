@@ -1080,6 +1080,186 @@ class FixtureManagementManager {
         }
     }
 
+    // Bulk update scores by gameweek
+    async bulkUpdateScoresByGameweek(gameweek, clubId, editionId) {
+        try {
+            console.log(`🔄 Bulk updating scores for Game Week ${gameweek}, club ${clubId}, edition ${editionId}`);
+            
+            // Get existing fixtures from Firebase for the specific gameweek
+            const existingFixtures = await this.getFixturesFromFirebaseByGameweek(clubId, editionId, gameweek);
+            console.log(`📊 Found ${existingFixtures.length} existing fixtures for Game Week ${gameweek}`);
+            
+            if (existingFixtures.length === 0) {
+                console.log(`ℹ️ No fixtures found for Game Week ${gameweek}`);
+                return { updated: 0, total: 0 };
+            }
+            
+            // Get all competitions that might have fixtures for this gameweek
+            const competitions = this.getCompetitionsForGameweek(existingFixtures);
+            console.log(`📊 Found fixtures from ${competitions.length} competitions: ${competitions.join(', ')}`);
+            
+            let updatedCount = 0;
+            const batch = this.db.batch();
+            
+            // Process each competition
+            for (const competitionId of competitions) {
+                try {
+                    console.log(`🔄 Fetching scores for competition ${competitionId}...`);
+                    
+                    // Get the latest scores from the API for this competition
+                    const apiResponse = await this.getScores(competitionId);
+                    
+                    if (!apiResponse || !apiResponse.matches) {
+                        console.log(`⚠️ No matches found in API response for competition ${competitionId}`);
+                        continue;
+                    }
+                    
+                    console.log(`📊 API response contains ${apiResponse.matches.length} matches for competition ${competitionId}`);
+                    
+                    // Process each match from the API
+                    for (const match of apiResponse.matches) {
+                        // Extract team names from the match data
+                        let homeTeam, awayTeam, homeScore, awayScore, matchStatus;
+                        
+                        if (match.home && match.away) {
+                            homeTeam = match.home;
+                            awayTeam = match.away;
+                        } else if (match.homeTeam && match.awayTeam) {
+                            homeTeam = match.homeTeam;
+                            awayTeam = match.awayTeam;
+                        } else {
+                            console.warn(`⚠️ Skipping match with missing team names:`, match);
+                            continue;
+                        }
+                        
+                        // Extract score and status information
+                        homeScore = match.homeScore || match.homeGoals || null;
+                        awayScore = match.awayScore || match.awayGoals || null;
+                        matchStatus = match.status || 'unknown';
+                        
+                        // Try to find a matching fixture in our database for this gameweek
+                        const matchingFixture = existingFixtures.find(fixture => {
+                            // Check if it's the right gameweek first
+                            if (fixture.gameWeek !== gameweek) {
+                                return false;
+                            }
+                            
+                            // Try exact match first
+                            if (fixture.homeTeam === homeTeam && fixture.awayTeam === awayTeam) {
+                                return true;
+                            }
+                            
+                            // Try case-insensitive match
+                            if (fixture.homeTeam.toLowerCase() === homeTeam.toLowerCase() && 
+                                fixture.awayTeam.toLowerCase() === awayTeam.toLowerCase()) {
+                                return true;
+                            }
+                            
+                            // Try partial match (in case of slight naming differences)
+                            if (fixture.homeTeam.includes(homeTeam) || homeTeam.includes(fixture.homeTeam)) {
+                                if (fixture.awayTeam.includes(awayTeam) || awayTeam.includes(fixture.awayTeam)) {
+                                    return true;
+                                }
+                            }
+                            
+                            return false;
+                        });
+                        
+                        if (matchingFixture && matchStatus === 'finished' && homeScore !== null && awayScore !== null) {
+                            // Update the fixture with new scores
+                            const fixtureRef = this.db.collection('clubs').doc(clubId)
+                                .collection('editions').doc(editionId)
+                                .collection('fixtures').doc(matchingFixture.fixtureId);
+                            
+                            const updateData = {
+                                homeScore: homeScore,
+                                awayScore: awayScore,
+                                status: 'finished',
+                                lastUpdated: new Date().toISOString()
+                            };
+                            
+                            batch.update(fixtureRef, updateData);
+                            updatedCount++;
+                            
+                            console.log(`✅ Updated fixture: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam} (Game Week ${gameweek})`);
+                        } else if (matchingFixture) {
+                            console.log(`ℹ️ Skipping ${homeTeam} vs ${awayTeam}: status=${matchStatus}, scores=${homeScore}-${awayScore}`);
+                        } else {
+                            console.log(`⚠️ No matching fixture found for: ${homeTeam} vs ${awayTeam} in Game Week ${gameweek}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`❌ Error processing competition ${competitionId}:`, error);
+                    // Continue with other competitions
+                }
+            }
+            
+            // Commit all updates
+            if (updatedCount > 0) {
+                await batch.commit();
+                console.log(`✅ Successfully updated ${updatedCount} fixture scores for Game Week ${gameweek}`);
+                
+                // Log audit event
+                if (window.losApp && window.losApp.managers.superAdmin) {
+                    await window.losApp.managers.superAdmin.logAuditEvent(
+                        'super_admin',
+                        'bulk_update_scores_by_gameweek',
+                        {
+                            gameweek: gameweek,
+                            clubId: clubId,
+                            editionId: editionId,
+                            updatedCount: updatedCount,
+                            totalFixtures: existingFixtures.length,
+                            updatedAt: new Date().toISOString()
+                        }
+                    );
+                }
+            } else {
+                console.log(`ℹ️ No fixtures needed updating for Game Week ${gameweek}`);
+            }
+            
+            return { updated: updatedCount, total: existingFixtures.length };
+        } catch (error) {
+            console.error('❌ Error bulk updating scores by gameweek:', error);
+            throw error;
+        }
+    }
+
+    // Get fixtures from Firebase by gameweek
+    async getFixturesFromFirebaseByGameweek(clubId, editionId, gameweek) {
+        try {
+            const fixturesSnapshot = await this.db.collection('clubs').doc(clubId)
+                .collection('editions').doc(editionId)
+                .collection('fixtures')
+                .where('gameWeek', '==', gameweek)
+                .get();
+            
+            const fixtures = [];
+            fixturesSnapshot.forEach(doc => {
+                fixtures.push({
+                    fixtureId: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            return fixtures;
+        } catch (error) {
+            console.error('❌ Error getting fixtures from Firebase by gameweek:', error);
+            throw error;
+        }
+    }
+
+    // Get unique competitions from fixtures
+    getCompetitionsForGameweek(fixtures) {
+        const competitions = new Set();
+        fixtures.forEach(fixture => {
+            if (fixture.competitionId) {
+                competitions.add(fixture.competitionId);
+            }
+        });
+        return Array.from(competitions);
+    }
+
     // Get fixtures from Firebase
     async getFixturesFromFirebase(clubId, editionId) {
         if (!this.db) {
