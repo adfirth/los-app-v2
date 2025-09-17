@@ -740,7 +740,4 @@ class EditionService {
     }
 }
 
-// Initialize EditionService when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.editionService = new EditionService();
-});
+// EditionService will be initialized by the main app

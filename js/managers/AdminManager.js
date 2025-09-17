@@ -2807,9 +2807,8 @@ class AdminManager {
     }
 }
 
-// Initialize AdminManager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.adminManager = new AdminManager();
+// AdminManager will be initialized by the main app
+// Global debug functions for admin access issues
     
     // Add global debug function for admin access issues
     window.debugAdminAccess = () => {
@@ -2873,4 +2872,3 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
         };
-});

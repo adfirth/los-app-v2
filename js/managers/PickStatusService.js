@@ -804,7 +804,4 @@ class PickStatusService {
     }
 }
 
-// Initialize PickStatusService when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.pickStatusService = new PickStatusService();
-});
+// PickStatusService will be initialized by the main app

@@ -2184,45 +2184,43 @@ class ScoresManager {
     }
 }
 
-// Initialize ScoresManager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.scoresManager = new ScoresManager();
+// ScoresManager will be initialized by the main app
+// Global helper functions for debugging
     
-    // Add global helper functions for debugging
-    window.testScoreImport = async (gameweek = 1) => {
-        console.log('🧪 Testing score import for gameweek:', gameweek);
-        if (window.scoresManager) {
-            try {
-                const result = await window.scoresManager.importScoresFromAPI(gameweek);
-                console.log('✅ Score import test result:', result);
-                return result;
-            } catch (error) {
-                console.error('❌ Score import test failed:', error);
-                return false;
-            }
-        } else {
-            console.error('❌ ScoresManager not available');
+// Global helper functions for debugging
+window.testScoreImport = async (gameweek = 1) => {
+    console.log('🧪 Testing score import for gameweek:', gameweek);
+    if (window.scoresManager) {
+        try {
+            const result = await window.scoresManager.importScoresFromAPI(gameweek);
+            console.log('✅ Score import test result:', result);
+            return result;
+        } catch (error) {
+            console.error('❌ Score import test failed:', error);
             return false;
         }
-    };
-    
-    window.reloadAPIConfig = () => {
-        if (window.scoresManager) {
-            return window.scoresManager.reloadAPIConfiguration();
-        } else {
-            console.error('❌ ScoresManager not available');
-            return false;
-        }
-    };
-    
-    window.debugAPIConfig = () => {
-        if (window.scoresManager) {
-            return window.scoresManager.debugAPIConfiguration();
-        } else {
-            console.error('❌ ScoresManager not available');
-            return false;
-        }
-    };
-    
-    // Global helper functions available: testScoreImport(gameweek), reloadAPIConfig(), debugAPIConfig()
-});
+    } else {
+        console.error('❌ ScoresManager not available');
+        return false;
+    }
+};
+
+window.reloadAPIConfig = () => {
+    if (window.scoresManager) {
+        return window.scoresManager.reloadAPIConfiguration();
+    } else {
+        console.error('❌ ScoresManager not available');
+        return false;
+    }
+};
+
+window.debugAPIConfig = () => {
+    if (window.scoresManager) {
+        return window.scoresManager.debugAPIConfiguration();
+    } else {
+        console.error('❌ ScoresManager not available');
+        return false;
+    }
+};
+
+// Global helper functions available: testScoreImport(gameweek), reloadAPIConfig(), debugAPIConfig()

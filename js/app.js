@@ -90,6 +90,15 @@ class LOSApp {
                 { key: 'fixtureManagement', class: FixtureManagementManager }
             ];
 
+            // Check if all manager classes are available
+            const missingClasses = managerConfigs.filter(config => typeof config.class !== 'function');
+            if (missingClasses.length > 0) {
+                console.warn(`⚠️ Some manager classes not available yet: ${missingClasses.map(c => c.key).join(', ')}`);
+                console.log('🔄 Retrying manager initialization in 1 second...');
+                setTimeout(() => this.initializeManagers(), 1000);
+                return;
+            }
+
             // Initialize each manager with error handling
             for (const config of managerConfigs) {
                 try {
@@ -111,9 +120,23 @@ class LOSApp {
             // Wait for all managers to be ready
             await this.waitForManagersReady();
             
+            // Add fallback mechanism to ensure managers are initialized
+            setTimeout(() => {
+                if (Object.keys(this.managers).length === 0) {
+                    console.log('🔄 Fallback: Retrying manager initialization...');
+                    this.initializeManagers();
+                }
+            }, 3000);
+            
         } catch (error) {
             console.error('Error initializing managers:', error);
             this.handleError(error, 'manager initialization');
+            
+            // Add fallback retry on error
+            setTimeout(() => {
+                console.log('🔄 Fallback: Retrying manager initialization after error...');
+                this.initializeManagers();
+            }, 2000);
         }
     }
 

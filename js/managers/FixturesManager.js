@@ -1187,7 +1187,4 @@ class FixturesManager {
     }
 }
 
-// Initialize FixturesManager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.fixturesManager = new FixturesManager();
-});
+// FixturesManager will be initialized by the main app

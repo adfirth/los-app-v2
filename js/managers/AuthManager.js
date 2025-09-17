@@ -748,7 +748,4 @@ updateUserDisplay() {
     }
 }
 
-// Initialize AuthManager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.authManager = new AuthManager();
-});
+// AuthManager will be initialized by the main app

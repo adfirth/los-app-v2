@@ -607,9 +607,8 @@ class GameLogicManager {
     }
 }
 
-// Initialize GameLogicManager when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.gameLogicManager = new GameLogicManager();
+// GameLogicManager will be initialized by the main app
+// Global helper functions for debugging
     
     // Add global helper functions for debugging
     window.testStandings = () => {
@@ -1319,5 +1318,4 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('❌ Error inspecting all picks:', error);
             }
         };
-});
 

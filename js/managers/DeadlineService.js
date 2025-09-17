@@ -868,9 +868,8 @@ class DeadlineService {
     }
 }
 
-// Initialize DeadlineService when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.deadlineService = new DeadlineService();
+// DeadlineService will be initialized by the main app
+// Global helper functions for debugging
     
     // Add global helper functions for debugging
     window.assignAutoPicks = (gameweek) => {
@@ -962,5 +961,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // Global helper functions available: window.assignAutoPicks(gameweek), window.checkAllDeadlines(), window.renameTimeToKickOffTime()
-});
+// Global helper functions available: window.assignAutoPicks(gameweek), window.checkAllDeadlines(), window.renameTimeToKickOffTime()
