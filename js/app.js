@@ -70,7 +70,7 @@ class LOSApp {
     async initializeApp() {
         try {
             // Initialize Environment
-            await EnvironmentLoader.init();
+            EnvironmentLoader.loadEnvironment();
 
             // Initialize core services
             this.uiService = new UIService();
