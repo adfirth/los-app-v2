@@ -1,18 +1,18 @@
-class PickStatusService {
+export default class PickStatusService {
     constructor() {
         this.isInitialized = false;
         this.dataLoaded = false; // Track if data has been loaded
         this.userPicks = {};
         this.pickHistory = [];
         this.db = null;
-        
+
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
     }
 
     initBasic() {
         if (this.isInitialized) return;
-        
+
         // Only set up basic structure, don't load data yet
         this.isInitialized = true;
         console.log('PickStatusService basic initialization complete');
@@ -20,10 +20,10 @@ class PickStatusService {
 
     init() {
         if (this.isInitialized && this.dataLoaded) return;
-        
+
         // Set up Firebase database reference
         this.db = window.firebaseDB;
-        
+
         // Load data
         this.loadUserPicks();
         this.loadPickHistory();
@@ -40,7 +40,7 @@ class PickStatusService {
     clearListeners() {
         // Clear any existing Firebase listeners
         console.log('PickStatusService: Clearing listeners...');
-        
+
         // Unregister from the main app's listener tracking if needed
         if (window.losApp) {
             window.losApp.unregisterListener('pickStatus-user');
@@ -67,13 +67,13 @@ class PickStatusService {
             // Get current club and edition from ClubService
             const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
             const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
-            
+
             if (!currentClubId || !currentEdition) {
                 console.log('⚠️ PickStatusService: No club or edition available for loading picks');
                 this.userPicks = {};
                 return;
             }
-            
+
             console.log(`🔍 PickStatusService: Fetching picks from /clubs/${currentClubId}/editions/${currentEdition}/picks...`);
             const picksSnapshot = await this.db.collection('clubs').doc(currentClubId)
                 .collection('editions').doc(currentEdition)
@@ -81,15 +81,15 @@ class PickStatusService {
                 .where('userId', '==', userId)
                 .orderBy('gameweek')
                 .get();
-            
+
             console.log('🔍 PickStatusService: Picks snapshot size:', picksSnapshot.size);
-            
+
             // Convert picks to the expected format and normalize gameweek keys
             this.userPicks = {};
             picksSnapshot.forEach(doc => {
                 const pickData = doc.data();
                 console.log('🔍 PickStatusService: Processing pick:', pickData);
-                
+
                 // Normalize gameweek format to always use 'gw1' format
                 let normalizedGameweek = pickData.gameweek;
                 if (typeof normalizedGameweek === 'number') {
@@ -97,15 +97,15 @@ class PickStatusService {
                 } else if (typeof normalizedGameweek === 'string' && !normalizedGameweek.startsWith('gw')) {
                     normalizedGameweek = `gw${normalizedGameweek}`;
                 }
-                
+
                 console.log('🔍 PickStatusService: Normalized gameweek:', pickData.gameweek, '→', normalizedGameweek);
-                
+
                 // If we already have a pick for this gameweek, keep the most recent one
                 if (this.userPicks[normalizedGameweek]) {
                     const existingPick = this.userPicks[normalizedGameweek];
                     const existingTime = existingPick.savedAt?.toDate?.() || new Date(existingPick.savedAt);
                     const newTime = pickData.savedAt?.toDate?.() || new Date(pickData.savedAt);
-                    
+
                     if (newTime > existingTime) {
                         console.log('🔍 PickStatusService: Replacing older pick with newer one for', normalizedGameweek);
                         this.userPicks[normalizedGameweek] = {
@@ -126,11 +126,11 @@ class PickStatusService {
                     };
                 }
             });
-            
+
             console.log('🔍 PickStatusService: Processed user picks:', this.userPicks);
             console.log('🔍 PickStatusService: Calling displayPicks()...');
             this.displayPicks();
-            
+
             // Run migration to clean up old users.picks data
             this.migrateFromUsersPicks();
         } catch (error) {
@@ -138,7 +138,7 @@ class PickStatusService {
             if (window.handleFirebaseError) {
                 window.handleFirebaseError(error, 'PickStatusService-loadUserPicks');
             }
-            
+
             if (error.message && error.message.includes('Target ID already exists')) {
                 console.log('Picks loading conflict detected, retrying in 2 seconds...');
                 setTimeout(() => this.loadUserPicks(), 2000);
@@ -152,11 +152,11 @@ class PickStatusService {
     async loadPickHistory(retryCount = 0) {
         try {
             const userId = window.authManager.getCurrentUserId();
-            
+
             // Get current club and edition from ClubService
             const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
             const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
-            
+
             if (!userId || !currentClubId || !currentEdition) return;
 
             const picksSnapshot = await this.db.collection('clubs').doc(currentClubId)
@@ -175,17 +175,17 @@ class PickStatusService {
             });
         } catch (error) {
             console.error('Error loading pick history:', error);
-            
+
             // Handle Firebase connection errors with retry logic
             if (error.message.includes('Target ID already exists') && retryCount < 2) {
                 const delay = Math.min(2000 * Math.pow(2, retryCount), 8000);
-                console.log(`Pick history loading conflict detected, retrying in ${delay/1000} seconds... (attempt ${retryCount + 1}/2)`);
+                console.log(`Pick history loading conflict detected, retrying in ${delay / 1000} seconds... (attempt ${retryCount + 1}/2)`);
                 setTimeout(() => {
                     this.loadPickHistory(retryCount + 1);
                 }, delay);
                 return;
             }
-            
+
             // If we've exhausted retries, try to reset connection
             if (retryCount >= 2 && window.losApp) {
                 console.log('Pick history loading failed, attempting connection reset...');
@@ -353,37 +353,37 @@ class PickStatusService {
             if (!userId) return;
 
             console.log('🔧 PickStatusService: Starting migration from users.picks...');
-            
+
             // Get user document to check for old picks data
             const userDoc = await this.db.collection('users').doc(userId).get();
             if (!userDoc.exists) return;
-            
+
             const userData = userDoc.data();
             const oldPicks = userData.picks || {};
-            
+
             if (Object.keys(oldPicks).length === 0) {
                 console.log('🔧 PickStatusService: No old picks data to migrate');
                 return;
             }
-            
+
             console.log('🔧 PickStatusService: Found old picks data:', oldPicks);
-            
+
             // Check if picks already exist in picks collection
             const existingPicksSnapshot = await this.db.collection('picks')
                 .where('userId', '==', userId)
                 .where('edition', '==', window.editionService.getCurrentEdition())
                 .get();
-            
+
             const existingPicks = {};
             existingPicksSnapshot.forEach(doc => {
                 const pickData = doc.data();
                 existingPicks[pickData.gameweek] = true;
             });
-            
+
             // Migrate old picks that don't exist in picks collection
             const batch = this.db.batch();
             let migratedCount = 0;
-            
+
             Object.entries(oldPicks).forEach(([gameweek, teamPicked]) => {
                 if (!existingPicks[gameweek] && teamPicked) {
                     const pickRef = this.db.collection('picks').doc();
@@ -398,20 +398,20 @@ class PickStatusService {
                     migratedCount++;
                 }
             });
-            
+
             if (migratedCount > 0) {
                 await batch.commit();
                 console.log(`🔧 PickStatusService: Migrated ${migratedCount} picks to picks collection`);
-                
+
                 // Remove old picks data from users collection
                 await this.db.collection('users').doc(userId).update({
                     picks: firebase.firestore.FieldValue.delete()
                 });
                 console.log('🔧 PickStatusService: Removed old picks data from users collection');
             }
-            
+
             console.log('🔧 PickStatusService: Migration completed');
-            
+
         } catch (error) {
             console.error('PickStatusService: Migration error:', error);
         }
@@ -450,15 +450,15 @@ class PickStatusService {
         console.log('🔍 PickStatusService: Creating picks HTML...');
         const picksHTML = Object.entries(this.userPicks).map(([gameweek, pick]) => {
             console.log(`🔍 PickStatusService: Processing pick for gameweek ${gameweek}:`, pick);
-            
+
             // New format: "gw1": { teamPicked: "Liverpool", isAutopick: false, savedAt: timestamp }
             const teamName = pick.teamPicked || 'No pick made';
             const isAutopick = pick.isAutopick || false;
             const savedAt = pick.savedAt;
-            
+
             // Clean up gameweek display - remove 'gw' prefix if present
             const cleanGameweek = gameweek.toString().replace(/^gw/i, '');
-            
+
             // Handle date formatting properly with debugging - London timezone
             let formattedDate = 'Unknown';
             if (savedAt) {
@@ -479,9 +479,9 @@ class PickStatusService {
                         console.log('🔍 PickStatusService: Converting regular date');
                         dateToFormat = new Date(savedAt);
                     }
-                    
+
                     console.log('🔍 PickStatusService: Date to format:', dateToFormat);
-                    
+
                     // Check if the date is valid
                     if (!isNaN(dateToFormat.getTime())) {
                         // Format in London timezone (Europe/London)
@@ -491,7 +491,7 @@ class PickStatusService {
                             month: '2-digit',
                             year: 'numeric'
                         });
-                        
+
                         // Add time in London timezone
                         const timeString = dateToFormat.toLocaleTimeString('en-GB', {
                             timeZone: 'Europe/London',
@@ -499,7 +499,7 @@ class PickStatusService {
                             minute: '2-digit',
                             hour12: false
                         });
-                        
+
                         formattedDate = `${formattedDate} ${timeString}`;
                         console.log('🔍 PickStatusService: Formatted date (London):', formattedDate);
                     } else {
@@ -511,7 +511,7 @@ class PickStatusService {
             } else {
                 console.log('🔍 PickStatusService: No savedAt value');
             }
-            
+
             return `
             <div class="pick-item">
                 <div class="pick-header">
@@ -547,7 +547,7 @@ class PickStatusService {
                 `;
             }
         }
-        
+
         // Fallback to just team name if no service available
         return `<span class="team-name">${teamName}</span>`;
     }
@@ -560,7 +560,7 @@ class PickStatusService {
                 return `<img src="${badgeUrl}" alt="${teamName}" class="team-badge team-badge-${size} ${additionalClasses}" loading="lazy">`;
             }
         }
-        
+
         // Fallback to empty if no service available
         return '';
     }
@@ -614,7 +614,7 @@ class PickStatusService {
     isTeamAvailable(teamName, gameweek) {
         const previousGameweek = parseInt(gameweek) - 1;
         if (previousGameweek < 1) return true;
-        
+
         // Check if team was picked in previous gameweek (handle both old and new formats)
         const previousPick = this.userPicks[`gw${previousGameweek}`];
         if (typeof previousPick === 'string') {
@@ -624,7 +624,7 @@ class PickStatusService {
             // New format: object with teamPicked property
             return previousPick.teamPicked !== teamName;
         }
-        
+
         return true;
     }
 
@@ -662,7 +662,7 @@ class PickStatusService {
             // Get current club and edition from ClubService
             const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
             const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
-            
+
             if (!currentClubId || !currentEdition) {
                 throw new Error('No club or edition available for updating pick');
             }
@@ -722,36 +722,36 @@ class PickStatusService {
     async assignAutoPick(userId, gameweek) {
         try {
             const currentEdition = window.editionService.getCurrentEdition();
-            
+
             // Get available teams for this gameweek
             const fixturesDoc = await this.db.collection('fixtures')
                 .doc(`${currentEdition}_gw${gameweek}`)
                 .get();
-            
+
             if (!fixturesDoc.exists) {
                 throw new Error('No fixtures found for this gameweek');
             }
-            
+
             const fixturesData = fixturesDoc.data();
             const fixtures = fixturesData.fixtures || [];
-            
+
             // Get all available teams
             const availableTeams = [];
             fixtures.forEach(fixture => {
                 availableTeams.push(fixture.homeTeam, fixture.awayTeam);
             });
-            
+
             // Get user's previous picks
             const userDoc = await this.db.collection('users').doc(userId).get();
             const userData = userDoc.data();
             const userPicks = userData.picks || {};
-            
+
             // Assign auto-pick
             const autoPick = this.getAutoPick(userPicks, availableTeams, gameweek);
-            
+
             if (autoPick) {
                 await this.updateUserPick(userId, gameweek, autoPick);
-                
+
                 // Mark as auto-pick in analytics
                 const picksSnapshot = await this.db.collection('picks')
                     .where('userId', '==', userId)
@@ -759,14 +759,14 @@ class PickStatusService {
                     .where('edition', '==', currentEdition)
                     .limit(1)
                     .get();
-                
+
                 if (!picksSnapshot.empty) {
                     await picksSnapshot.docs[0].ref.update({
                         isAutopick: true
                     });
                 }
             }
-            
+
             return autoPick;
         } catch (error) {
             console.error('Error assigning auto-pick:', error);
@@ -783,16 +783,16 @@ class PickStatusService {
             // For subsequent gameweeks, pick next team alphabetically after previous pick
             const previousGameweek = parseInt(gameweek) - 1;
             const previousPick = userPicks[`gw${previousGameweek}`];
-            
+
             if (!previousPick) {
                 // If no previous pick, pick first team alphabetically
                 return availableTeams.sort()[0];
             }
-            
+
             // Find teams that come after the previous pick alphabetically
             const sortedTeams = availableTeams.sort();
             const previousPickIndex = sortedTeams.indexOf(previousPick);
-            
+
             if (previousPickIndex === -1 || previousPickIndex === sortedTeams.length - 1) {
                 // If previous pick not found or was last, pick first team
                 return sortedTeams[0];

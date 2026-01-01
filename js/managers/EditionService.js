@@ -1,4 +1,4 @@
-class EditionService {
+export default class EditionService {
     constructor() {
         this.isInitialized = false;
         this.dataLoaded = false; // Track if data has been loaded
@@ -8,34 +8,34 @@ class EditionService {
         this.gameweekDeadline = '2024-08-10T11:00:00Z';
         this.settings = {};
         this.availableEditions = ['2024-25'];
-        
+
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
     }
 
     initBasic() {
         // initBasic() called
-        
+
         if (this.isInitialized) {
             console.log('⚠️ EditionService already initialized, skipping initBasic()');
             return;
         }
-        
+
         // Setting up basic structure...
-        
+
         // Only set up basic structure, don't load data yet
         this.setupTabNavigation();
-        
+
         this.isInitialized = true;
         // Basic initialization complete
     }
 
     init() {
         if (this.isInitialized && this.settingsLoaded) return;
-        
+
         // Set up Firebase database reference
         this.db = window.firebaseDB;
-        
+
         // Load data and set up real-time listeners
         this.loadSettings();
         this.setupRealtimeListeners();
@@ -47,11 +47,11 @@ class EditionService {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
 
-        
+
         // Reset retry counters when Firebase connection is restored
         this.loadSettingsRetryCount = 0;
         this.setupListenersRetryCount = 0;
-        
+
         // Don't set up real-time listeners here - they will be set up by the main app
         // after Firebase is fully ready to prevent connection conflicts
     }
@@ -60,13 +60,13 @@ class EditionService {
         // Ensure Firebase is ready
         if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
             console.log(`EditionService: Firebase not ready for listeners - firebaseReady: ${window.firebaseReady}, db: ${!!this.db}, collection: ${this.db ? typeof this.db.collection : 'undefined'}, retrying in 2 seconds...`);
-            
+
             // Try to update our database reference if Firebase is ready but we don't have it
             if (window.firebaseReady && window.firebaseDB && !this.db) {
                 console.log('EditionService: Updating database reference for listeners from global Firebase...');
                 this.db = window.firebaseDB;
             }
-            
+
             // Only retry if we haven't exceeded max retries
             if (!this.setupListenersRetryCount) {
                 this.setupListenersRetryCount = 0;
@@ -101,7 +101,7 @@ class EditionService {
                         this.currentEdition = settings.currentEdition || '2024-25';
                         this.currentGameweek = settings.currentGameweek || 1;
                         this.gameweekDeadline = settings.gameweekDeadline || '2024-08-10T11:00:00Z';
-                        
+
                         // Update UI
                         this.updateEditionDisplay();
                     }
@@ -111,7 +111,7 @@ class EditionService {
                     if (window.handleFirebaseError) {
                         window.handleFirebaseError(error, 'EditionService-settings');
                     }
-                    
+
                     // If it's a "Target ID already exists" error, clear and retry
                     if (error.message && error.message.includes('Target ID already exists')) {
                         console.log('EditionService: Target ID conflict detected, clearing and retrying...');
@@ -119,7 +119,7 @@ class EditionService {
                         setTimeout(() => this.setupRealtimeListeners(), 1000);
                     }
                 });
-                
+
             console.log('EditionService: Settings real-time listener established');
         } catch (error) {
             console.error('EditionService: Error setting up real-time listeners:', error);
@@ -134,13 +134,13 @@ class EditionService {
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
                 console.log(`EditionService: Firebase not ready - firebaseReady: ${window.firebaseReady}, db: ${!!this.db}, collection: ${this.db ? typeof this.db.collection : 'undefined'}, retrying in 2 seconds...`);
-                
+
                 // Try to update our database reference if Firebase is ready but we don't have it
                 if (window.firebaseReady && window.firebaseDB && !this.db) {
                     console.log('EditionService: Updating database reference from global Firebase...');
                     this.db = window.firebaseDB;
                 }
-                
+
                 // Only retry if we haven't exceeded max retries
                 if (!this.loadSettingsRetryCount) {
                     this.loadSettingsRetryCount = 0;
@@ -167,22 +167,22 @@ class EditionService {
             }
 
             const settingsDoc = await this.db.collection('settings').doc('current').get();
-            
+
             if (settingsDoc.exists) {
                 const settings = settingsDoc.data();
                 this.currentEdition = settings.currentEdition || '2024-25';
                 this.currentGameweek = settings.currentGameweek || 1;
                 this.gameweekDeadline = settings.gameweekDeadline || '2024-08-10T11:00:00Z';
-                
+
                 console.log(`Settings loaded: Edition ${this.currentEdition}, Gameweek ${this.currentGameweek}`);
             } else {
                 // Create default settings if none exist
                 await this.createDefaultSettings();
             }
-            
+
             // Update UI
             this.updateEditionDisplay();
-            
+
         } catch (error) {
             if (error.message.includes('Target ID already exists')) {
                 console.log('Settings loading conflict detected, retrying in 2 seconds... (attempt 1/3)');
@@ -194,11 +194,11 @@ class EditionService {
             }
         }
     }
-    
+
     async loadSettingsFallback() {
         try {
             console.log('Attempting fallback settings loading...');
-            
+
             // Try to get settings with a one-time listener instead of get()
             return new Promise((resolve) => {
                 const unsubscribe = this.db.collection('settings').doc('currentCompetition')
@@ -208,13 +208,13 @@ class EditionService {
                             this.settings = data;
                             this.currentEdition = data.active_edition || '1';
                             this.availableEditions = data.available_editions || [];
-                            
+
                             // Update UI with current gameweek
                             this.updateGameweekDisplay();
-                            
+
                             // Load current edition data
                             this.loadCurrentEditionData();
-                            
+
                             unsubscribe(); // Clean up immediately
                             resolve();
                         } else {
@@ -271,7 +271,7 @@ class EditionService {
         this.currentEdition = '2024-25';
         this.currentGameweek = 1;
         this.gameweekDeadline = '2024-08-10T11:00:00Z';
-        
+
         // Update UI
         this.updateEditionDisplay();
     }
@@ -281,20 +281,20 @@ class EditionService {
         if (currentGameweekElement) {
             currentGameweekElement.textContent = this.currentGameweek || '1';
         }
-        
+
         const deadlineTextElement = document.getElementById('deadlineText');
         if (deadlineTextElement && this.gameweekDeadline) {
             const deadline = new Date(this.gameweekDeadline);
             const now = new Date();
             const timeUntilDeadline = deadline - now;
-            
+
             if (timeUntilDeadline <= 0) {
                 deadlineTextElement.textContent = 'Deadline: PASSED';
                 deadlineTextElement.style.color = '#dc3545';
             } else {
                 const hours = Math.floor(timeUntilDeadline / (1000 * 60 * 60));
                 const minutes = Math.floor((timeUntilDeadline % (1000 * 60 * 60)) / (1000 * 60));
-                
+
                 if (hours > 24) {
                     const days = Math.floor(hours / 24);
                     deadlineTextElement.textContent = `Deadline: ${days} days remaining`;
@@ -303,7 +303,7 @@ class EditionService {
                 } else {
                     deadlineTextElement.textContent = `Deadline: ${minutes}m remaining`;
                 }
-                
+
                 deadlineTextElement.style.color = hours < 1 ? '#ffc107' : '#28a745';
             }
         }
@@ -320,7 +320,7 @@ class EditionService {
     async loadCurrentEditionData() {
         try {
             const editionDoc = await this.db.collection('editions').doc(this.currentEdition).get();
-            
+
             if (editionDoc.exists) {
                 const editionData = editionDoc.data();
                 this.currentEditionData = editionData;
@@ -362,21 +362,21 @@ class EditionService {
         if (currentGameweekElement) {
             currentGameweekElement.textContent = this.currentGameweek || '1';
         }
-        
+
         // Also update the gameweek navigation
         this.updateGameweekNavigation();
     }
 
     setupTabNavigation() {
         const navTabs = document.querySelectorAll('.nav-tab');
-        
+
         navTabs.forEach((tab, index) => {
             tab.addEventListener('click', () => {
                 const targetTab = tab.getAttribute('data-tab');
                 this.switchTab(targetTab);
             });
         });
-        
+
         // Setup gameweek navigation
         this.setupGameweekNavigation();
     }
@@ -385,26 +385,26 @@ class EditionService {
         const prevButton = document.getElementById('prevGameweek');
         const nextButton = document.getElementById('nextGameweek');
         const gameweekSelect = document.getElementById('gameweekSelect');
-        
+
         if (prevButton) {
             prevButton.addEventListener('click', () => {
                 this.navigateGameweek('prev');
             });
         }
-        
+
         if (nextButton) {
             nextButton.addEventListener('click', () => {
                 this.navigateGameweek('next');
             });
         }
-        
+
         if (gameweekSelect) {
             gameweekSelect.addEventListener('change', (e) => {
                 const selectedGameweek = parseInt(e.target.value);
                 this.setCurrentGameweek(selectedGameweek);
             });
         }
-        
+
         // Initialize gameweek display
         this.updateGameweekNavigation();
     }
@@ -412,14 +412,14 @@ class EditionService {
     navigateGameweek(direction) {
         const currentGameweek = this.getCurrentGameweek();
         const totalGameweeks = this.getTotalGameweeks();
-        
+
         let newGameweek;
         if (direction === 'prev') {
             newGameweek = Math.max(1, currentGameweek - 1);
         } else {
             newGameweek = Math.min(totalGameweeks, currentGameweek + 1);
         }
-        
+
         if (newGameweek !== currentGameweek) {
             this.setCurrentGameweek(newGameweek);
         }
@@ -428,13 +428,13 @@ class EditionService {
     setCurrentGameweek(gameweek) {
         console.log('🎯 EditionService: setCurrentGameweek called with:', gameweek);
         console.log('🎯 EditionService: Previous gameweek was:', this.currentGameweek);
-        
+
         this.currentGameweek = gameweek;
         console.log('🎯 EditionService: Updated currentGameweek to:', this.currentGameweek);
-        
+
         this.updateGameweekDisplay();
         this.updateGameweekNavigation();
-        
+
         // Reload fixtures for the new gameweek
         console.log('🎯 EditionService: Reloading fixtures for gameweek:', gameweek);
         if (window.losApp?.managers?.fixtures) {
@@ -450,21 +450,21 @@ class EditionService {
         const prevButton = document.getElementById('prevGameweek');
         const nextButton = document.getElementById('nextGameweek');
         const gameweekSelect = document.getElementById('gameweekSelect');
-        
+
         const currentGameweek = this.getCurrentGameweek();
         const totalGameweeks = this.getTotalGameweeks();
-        
+
         // Update navigation buttons
         if (prevButton) {
             prevButton.disabled = currentGameweek <= 1;
             prevButton.style.opacity = currentGameweek <= 1 ? '0.5' : '1';
         }
-        
+
         if (nextButton) {
             nextButton.disabled = currentGameweek >= totalGameweeks;
             nextButton.style.opacity = currentGameweek >= totalGameweeks ? '0.5' : '1';
         }
-        
+
         // Update select dropdown
         if (gameweekSelect) {
             gameweekSelect.value = currentGameweek;
@@ -475,11 +475,11 @@ class EditionService {
         // Remove active class from all tabs and content
         const allTabs = document.querySelectorAll('.nav-tab');
         const allContent = document.querySelectorAll('.tab-content');
-        
+
         allTabs.forEach((tab, index) => {
             tab.classList.remove('active');
         });
-        
+
         allContent.forEach((content, index) => {
             content.classList.remove('active');
         });
@@ -674,19 +674,19 @@ class EditionService {
     // Utility methods
     clearListeners() {
         console.log('EditionService: Clearing listeners...');
-        
+
         if (this.settingsListener) {
             this.settingsListener();
             this.settingsListener = null;
             console.log('EditionService: Settings listener cleared');
         }
-        
+
         // Unregister from the main app's listener tracking
         if (window.losApp) {
             window.losApp.unregisterListener('edition-settings');
         }
     }
-    
+
     formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-GB', {
@@ -739,5 +739,3 @@ class EditionService {
         return parseInt(gameweek) > parseInt(this.getCurrentGameweek());
     }
 }
-
-// EditionService will be initialized by the main app

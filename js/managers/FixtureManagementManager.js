@@ -1,4 +1,4 @@
-class FixtureManagementManager {
+export default class FixtureManagementManager {
     constructor() {
         this.isInitialized = false;
         this.isSuperAdmin = false;
@@ -16,7 +16,7 @@ class FixtureManagementManager {
 
     initBasic() {
         if (this.isInitialized) return;
-        
+
         // Basic initialization...
         this.setupBasicStructure();
         console.log('✅ FixtureManagementManager: Basic initialization complete');
@@ -24,10 +24,10 @@ class FixtureManagementManager {
 
     setupBasicStructure() {
         // Setting up basic structure...
-        
+
         // Set up API key from environment or config
         this.setupAPIKey();
-        
+
         // Basic structure setup complete
     }
 
@@ -74,10 +74,10 @@ class FixtureManagementManager {
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
-            
+
             this.lastRequestTime = Date.now();
             console.log(`🔍 Making API request to: ${url.toString()}`);
-            
+
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -89,7 +89,7 @@ class FixtureManagementManager {
             if (!response.ok) {
                 if (response.status === 429) {
                     const waitTime = 15000; // 15 seconds for rate limiting
-                    console.log(`⚠️ Rate limited, waiting ${waitTime/1000} seconds before retry...`);
+                    console.log(`⚠️ Rate limited, waiting ${waitTime / 1000} seconds before retry...`);
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                     throw new Error(`API request failed: ${response.status} ${response.statusText} - Rate limited`);
                 } else if (response.status === 403) {
@@ -104,18 +104,18 @@ class FixtureManagementManager {
             return jsonResponse;
         } catch (error) {
             console.error('FixtureManagementManager: API request error:', error);
-            
+
             // If CORS error, try using a CORS proxy for development
             if (error.message.includes('CORS') || error.message.includes('cors') || error.message.includes('Failed to fetch')) {
                 console.warn('⚠️ CORS error detected, trying CORS proxy for development...');
                 return await this.makeAPIRequestWithProxy(url);
             }
-            
+
             throw error;
         }
     }
 
-        async makeAPIRequestWithProxy(url) {
+    async makeAPIRequestWithProxy(url) {
         // Try multiple CORS proxies
         const proxies = [
             'https://api.allorigins.win/raw?url=',
@@ -123,13 +123,13 @@ class FixtureManagementManager {
             'https://api.codetabs.com/v1/proxy?quest=',
             'https://cors-anywhere.herokuapp.com/'
         ];
-        
+
         for (let i = 0; i < proxies.length; i++) {
             const proxy = proxies[i];
             const proxyUrl = proxy + url.toString();
-            
+
             console.log(`🔍 FixtureManagementManager: Trying CORS proxy ${i + 1}/${proxies.length}: ${proxyUrl}`);
-            
+
             try {
                 const response = await fetch(proxyUrl, {
                     method: 'GET',
@@ -139,7 +139,7 @@ class FixtureManagementManager {
                         'Origin': window.location.origin
                     }
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     console.log(`✅ FixtureManagementManager: CORS proxy ${i + 1} successful`);
@@ -151,7 +151,7 @@ class FixtureManagementManager {
                 console.warn(`⚠️ FixtureManagementManager: CORS proxy ${i + 1} error:`, error.message);
             }
         }
-        
+
         throw new Error('All CORS proxies failed');
     }
 
@@ -159,11 +159,11 @@ class FixtureManagementManager {
     async getCompetitions() {
         try {
             console.log('🔍 Fetching available competitions...');
-            
+
             // Use the predefined competitions from config
             const competitions = window.APIConfig.competitions;
             console.log('✅ Available competitions loaded from config:', competitions);
-            
+
             return Object.entries(competitions).map(([key, comp]) => ({
                 id: comp.id,
                 name: comp.name,
@@ -178,7 +178,7 @@ class FixtureManagementManager {
 
     async getFixtures(competitionId, season = '2024-25') {
         console.log(`🔍 Fetching fixtures for competition ${competitionId}, season ${season}...`);
-        
+
         // Try different endpoint patterns and season formats
         const endpoints = [
             // Standard endpoints with season
@@ -199,24 +199,24 @@ class FixtureManagementManager {
             { path: 'results.json', params: { comp: competitionId, season: season } },
             { path: 'results.json', params: { comp: competitionId } }
         ];
-        
+
         for (let i = 0; i < endpoints.length; i++) {
             const endpoint = endpoints[i];
             console.log(`🔍 Trying endpoint ${i + 1}/${endpoints.length}: ${endpoint.path} with params:`, endpoint.params);
-            
+
             // Add exponential backoff retry for each endpoint
             let retryCount = 0;
             const maxRetries = 2;
-            
+
             while (retryCount <= maxRetries) {
                 try {
                     const url = new URL(`https://football-web-pages1.p.rapidapi.com/${endpoint.path}`);
-                    
+
                     // Add parameters
                     Object.entries(endpoint.params).forEach(([key, value]) => {
                         url.searchParams.set(key, value);
                     });
-                    
+
                     const data = await this.makeAPIRequest(url);
                     console.log(`✅ Endpoint ${endpoint.path} successful:`, data);
                     console.log(`🔍 Full API response structure:`, JSON.stringify(data, null, 2));
@@ -224,19 +224,19 @@ class FixtureManagementManager {
                 } catch (error) {
                     retryCount++;
                     console.log(`❌ Endpoint ${endpoint.path} failed (attempt ${retryCount}/${maxRetries + 1}):`, error.message);
-                    
+
                     if (retryCount <= maxRetries) {
                         const backoffDelay = Math.pow(2, retryCount) * 5000; // 10s, 20s, 40s
-                        console.log(`⏳ Retrying in ${backoffDelay/1000} seconds...`);
+                        console.log(`⏳ Retrying in ${backoffDelay / 1000} seconds...`);
                         await new Promise(resolve => setTimeout(resolve, backoffDelay));
                     }
                 }
             }
         }
-        
+
         // If all API endpoints failed, try using Netlify function as fallback (like working scores import)
         console.log('⚠️ All direct API endpoints failed, trying Netlify function fallback...');
-        
+
         try {
             const netlifyData = await this.tryNetlifyFunction(competitionId, season);
             if (netlifyData) {
@@ -246,10 +246,10 @@ class FixtureManagementManager {
         } catch (error) {
             console.error('❌ Netlify function fallback also failed:', error);
         }
-        
+
         // If Netlify function also failed, try sample fixtures
         console.log('⚠️ Netlify function failed, trying sample fixtures fallback...');
-        
+
         // Try to create sample fixtures based on competition
         try {
             const sampleFixtures = this.createSampleFixturesForCompetition(competitionId, season);
@@ -260,7 +260,7 @@ class FixtureManagementManager {
         } catch (error) {
             console.error('❌ Sample fixture generation failed:', error);
         }
-        
+
         // Try mock data if available
         if (window.devConfig && window.devConfig.getConfig().MOCK_DATA_ENABLED) {
             try {
@@ -270,7 +270,7 @@ class FixtureManagementManager {
                     const today = new Date();
                     const startDate = today.toISOString().split('T')[0];
                     const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                    
+
                     const mockData = DevelopmentHelper.getMockFixtures(competitionId, season, startDate, endDate);
                     console.log('✅ Using mock data as fallback:', mockData);
                     return this.transformFixturesData(mockData, competitionId, season);
@@ -279,7 +279,7 @@ class FixtureManagementManager {
                 console.error('❌ Mock data fallback also failed:', error);
             }
         }
-        
+
         throw new Error('All endpoints failed and no fallback data available. The API may have blocked access to this competition.');
     }
 
@@ -287,20 +287,20 @@ class FixtureManagementManager {
     async tryNetlifyFunction(competitionId, season) {
         try {
             console.log(`🔍 FixtureManagementManager: Trying Netlify function for competition ${competitionId}`);
-            
+
             // Try different endpoints via Netlify function
             const endpoints = [
                 'fixtures-results.json',
-                'fixtures.json', 
+                'fixtures.json',
                 'matches.json',
                 'competition.json'
             ];
-            
+
             for (const endpoint of endpoints) {
                 try {
                     const url = `/.netlify/functions/fetch-fixtures?endpoint=${endpoint}&comp=${competitionId}&season=${season}`;
                     console.log(`🔍 Trying Netlify function with ${endpoint}: ${url}`);
-                    
+
                     const response = await fetch(url);
                     if (response.ok) {
                         const data = await response.json();
@@ -313,10 +313,10 @@ class FixtureManagementManager {
                     console.log(`⚠️ Netlify function ${endpoint} error:`, error.message);
                 }
             }
-            
+
             console.log('❌ All Netlify function endpoints failed');
             return null;
-            
+
         } catch (error) {
             console.error('❌ Error in tryNetlifyFunction:', error);
             return null;
@@ -326,10 +326,10 @@ class FixtureManagementManager {
     // Transform API response data to our fixture format
     transformFixturesData(data, competitionId, season) {
         console.log('🔍 Transforming fixtures data:', data);
-        
+
         // Handle different response formats
         let fixtures = [];
-        
+
         if (data.fixtures) {
             fixtures = data.fixtures;
         } else if (data.matches) {
@@ -341,7 +341,7 @@ class FixtureManagementManager {
             console.log('🔍 fixtures-results type:', typeof fixturesResults);
             console.log('🔍 fixtures-results is array:', Array.isArray(fixturesResults));
             console.log('🔍 fixtures-results keys:', Object.keys(fixturesResults || {}));
-            
+
             // Check if fixtures-results contains fixtures or matches
             if (fixturesResults.fixtures) {
                 fixtures = fixturesResults.fixtures;
@@ -352,7 +352,7 @@ class FixtureManagementManager {
             } else {
                 // If fixtures-results is an object with other properties, try to find fixtures
                 console.log('🔍 fixtures-results keys:', Object.keys(fixturesResults));
-                
+
                 // Look for any array that might contain fixtures
                 for (const key of Object.keys(fixturesResults)) {
                     const value = fixturesResults[key];
@@ -374,19 +374,19 @@ class FixtureManagementManager {
             console.log('🔍 Available keys:', Object.keys(data));
             return { fixtures: [], total: 0 };
         }
-        
+
         console.log(`✅ Transformed ${fixtures.length} fixtures`);
-        
+
         // Return the structure that SuperAdminManager expects
         if (fixtures.length > 0) {
-            return { 
+            return {
                 'fixtures-results': fixtures,
-                total: fixtures.length 
+                total: fixtures.length
             };
         } else {
-            return { 
+            return {
                 'fixtures-results': [],
-                total: 0 
+                total: 0
             };
         }
     }
@@ -395,33 +395,33 @@ class FixtureManagementManager {
     async getFixturesForDate(competitionId, date, season = null) {
         try {
             console.log(`🔍 Fetching fixtures for competition ${competitionId} on ${date}...`);
-            
+
             // First get all fixtures for the competition
             const allFixtures = await this.getFixtures(competitionId, season);
-            
+
             if (!allFixtures || !allFixtures.matches) {
                 console.log('⚠️ No fixtures found in API response');
                 return { fixtures: [], total: 0 };
             }
-            
+
             // Filter fixtures by specific date
             const filteredFixtures = allFixtures.matches.filter(fixture => {
                 if (!fixture.date) return false;
-                
+
                 const fixtureDate = new Date(fixture.date);
                 const targetDate = new Date(date);
-                
+
                 // Set time to start/end of day for accurate comparison
                 targetDate.setHours(0, 0, 0, 0);
                 const nextDay = new Date(targetDate);
                 nextDay.setDate(nextDay.getDate() + 1);
-                
+
                 return fixtureDate >= targetDate && fixtureDate < nextDay;
             });
-            
+
             console.log(`✅ Found ${filteredFixtures.length} fixtures on ${date}`);
             return { fixtures: filteredFixtures, total: filteredFixtures.length };
-            
+
         } catch (error) {
             console.error('❌ Error fetching fixtures for date:', error);
             throw error;
@@ -432,33 +432,33 @@ class FixtureManagementManager {
     async getFixturesForDates(competitionId, startDate, endDate, season = null) {
         try {
             console.log(`🔍 Fetching fixtures for competition ${competitionId} from ${startDate} to ${endDate}...`);
-            
+
             // First get all fixtures for the competition
             const allFixtures = await this.getFixtures(competitionId, season);
-            
+
             if (!allFixtures || !allFixtures.matches) {
                 console.log('⚠️ No fixtures found in API response');
                 return { fixtures: [], total: 0 };
             }
-            
+
             // Filter fixtures by date range
             const filteredFixtures = allFixtures.matches.filter(fixture => {
                 if (!fixture.date) return false;
-                
+
                 const fixtureDate = new Date(fixture.date);
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                
+
                 // Set time to start/end of day for accurate comparison
                 start.setHours(0, 0, 0, 0);
                 end.setHours(23, 59, 59, 999);
-                
+
                 return fixtureDate >= start && fixtureDate <= end;
             });
-            
+
             console.log(`✅ Found ${filteredFixtures.length} fixtures between ${startDate} and ${endDate}`);
             return { fixtures: filteredFixtures, total: filteredFixtures.length };
-            
+
         } catch (error) {
             console.error('❌ Error fetching fixtures for dates:', error);
             throw error;
@@ -469,21 +469,21 @@ class FixtureManagementManager {
     async getFixturesForGameWeek(competitionId, gameWeek, season = null) {
         try {
             console.log(`🔍 Fetching fixtures for competition ${competitionId}, Game Week ${gameWeek}...`);
-            
+
             // Define game week date ranges (you can customize these)
             const gameWeekDates = this.getGameWeekDates(gameWeek, season);
-            
+
             if (!gameWeekDates) {
                 throw new Error(`Invalid game week: ${gameWeek}`);
             }
-            
+
             return await this.getFixturesForDates(
-                competitionId, 
-                gameWeekDates.startDate, 
-                gameWeekDates.endDate, 
+                competitionId,
+                gameWeekDates.startDate,
+                gameWeekDates.endDate,
                 season
             );
-            
+
         } catch (error) {
             console.error('❌ Error fetching fixtures for game week:', error);
             throw error;
@@ -494,7 +494,7 @@ class FixtureManagementManager {
     getGameWeekDates(gameWeek, season = null) {
         // Default to 2025-26 season if none specified
         const targetSeason = season || '2025-26';
-        
+
         // Define game week date ranges (customize based on your league structure)
         const gameWeekRanges = {
             '2025-26': {
@@ -506,20 +506,20 @@ class FixtureManagementManager {
                 // Add more game weeks as needed
             }
         };
-        
+
         const seasonRanges = gameWeekRanges[targetSeason];
         if (!seasonRanges || !seasonRanges[gameWeek]) {
             console.warn(`⚠️ No date range defined for ${targetSeason} Game Week ${gameWeek}`);
             return null;
         }
-        
+
         return seasonRanges[gameWeek];
     }
 
     // Get all available game weeks for a season
     getAvailableGameWeeks(season = null) {
         const targetSeason = season || '2025-26';
-        
+
         const gameWeekRanges = {
             '2025-26': {
                 1: { startDate: '2025-08-19', endDate: '2025-08-20', description: 'National League GW1' },
@@ -530,12 +530,12 @@ class FixtureManagementManager {
                 // Add more game weeks as needed
             }
         };
-        
+
         const seasonRanges = gameWeekRanges[targetSeason];
         if (!seasonRanges) {
             return [];
         }
-        
+
         return Object.entries(seasonRanges).map(([week, dates]) => ({
             week: parseInt(week),
             startDate: dates.startDate,
@@ -548,15 +548,15 @@ class FixtureManagementManager {
     async importFixturesForGameWeek(competitionId, clubId, editionId, gameWeek, season = null) {
         try {
             console.log(`📥 Importing fixtures for Game Week ${gameWeek} to Firebase...`);
-            
+
             // Get fixtures for the specific game week
             const gameWeekFixtures = await this.getFixturesForGameWeek(competitionId, gameWeek, season);
-            
+
             if (!gameWeekFixtures.fixtures || gameWeekFixtures.fixtures.length === 0) {
                 console.log(`⚠️ No fixtures found for Game Week ${gameWeek}`);
                 return [];
             }
-            
+
             // Import the filtered fixtures
             return await this.importFixturesToFirebase(
                 competitionId,
@@ -564,7 +564,7 @@ class FixtureManagementManager {
                 editionId,
                 gameWeekFixtures.fixtures
             );
-            
+
         } catch (error) {
             console.error('❌ Error importing fixtures for game week:', error);
             throw error;
@@ -575,15 +575,15 @@ class FixtureManagementManager {
     async importFixturesForDate(competitionId, clubId, editionId, date, season = null) {
         try {
             console.log(`📥 Importing fixtures for ${date} to Firebase...`);
-            
+
             // Get fixtures for the specific date
             const dateFixtures = await this.getFixturesForDate(competitionId, date, season);
-            
+
             if (!dateFixtures.fixtures || dateFixtures.fixtures.length === 0) {
                 console.log(`⚠️ No fixtures found for ${date}`);
                 return [];
             }
-            
+
             // Import the filtered fixtures
             return await this.importFixturesToFirebase(
                 competitionId,
@@ -591,7 +591,7 @@ class FixtureManagementManager {
                 editionId,
                 dateFixtures.fixtures
             );
-            
+
         } catch (error) {
             console.error('❌ Error importing fixtures for date:', error);
             throw error;
@@ -602,15 +602,15 @@ class FixtureManagementManager {
     async importFixturesForDateRange(competitionId, clubId, editionId, startDate, endDate, season = null) {
         try {
             console.log(`📥 Importing fixtures from ${startDate} to ${endDate} to Firebase...`);
-            
+
             // Get fixtures for the specific date range
             const dateRangeFixtures = await this.getFixturesForDates(competitionId, startDate, endDate, season);
-            
+
             if (!dateRangeFixtures.fixtures || dateRangeFixtures.fixtures.length === 0) {
                 console.log(`⚠️ No fixtures found between ${startDate} and ${endDate}`);
                 return [];
             }
-            
+
             // Import the filtered fixtures
             return await this.importFixturesToFirebase(
                 competitionId,
@@ -618,7 +618,7 @@ class FixtureManagementManager {
                 editionId,
                 dateRangeFixtures.fixtures
             );
-            
+
         } catch (error) {
             console.error('❌ Error importing fixtures for date range:', error);
             throw error;
@@ -628,12 +628,12 @@ class FixtureManagementManager {
     async getScores(competitionId, season) {
         try {
             console.log(`🔍 Fetching scores for competition ${competitionId}, season ${season}...`);
-            
+
             // The fixtures-results endpoint returns both fixtures and results
             // We'll filter for finished matches in the importFixturesToFirebase method
             const response = await this.getFixtures(competitionId, season);
             console.log(`✅ Scores fetched successfully:`, response);
-            
+
             // Transform the response to match the expected format for bulkUpdateScores
             if (response && response['fixtures-results']) {
                 return {
@@ -641,7 +641,7 @@ class FixtureManagementManager {
                     total: response.total
                 };
             }
-            
+
             return { matches: [], total: 0 };
         } catch (error) {
             console.error('❌ Error fetching scores:', error);
@@ -653,29 +653,29 @@ class FixtureManagementManager {
     async importFixturesToFirebase(competitionId, clubId, editionId, fixtures, gameWeek = 1) {
         try {
             console.log(`📥 Importing ${fixtures.length} fixtures to Firebase for club ${clubId}, edition ${editionId}`);
-            
+
             if (!this.db) {
                 throw new Error('Firebase database not initialized');
             }
-            
+
             // Validate required parameters
             if (!clubId || !editionId) {
                 throw new Error('Missing required parameters: clubId and editionId are required');
             }
-            
+
             // Check batch size limit (Firestore limit is 500 operations per batch)
             if (fixtures.length > 500) {
                 throw new Error(`Too many fixtures (${fixtures.length}). Firestore batch limit is 500 operations.`);
             }
-            
+
             const batch = this.db.batch();
             const importedFixtures = [];
-            
+
             // Transform API fixtures to our Firebase format
             fixtures.forEach((fixture, index) => {
                 console.log(`🔍 Processing fixture ${index}:`, fixture);
                 console.log(`🔍 Fixture keys:`, Object.keys(fixture));
-                
+
                 // Deep inspect key properties for debugging
                 if (fixture.competition) {
                     console.log(`🔍 Competition object:`, fixture.competition);
@@ -689,52 +689,52 @@ class FixtureManagementManager {
                     console.log(`🔍 Fixture object:`, fixture.fixture);
                     console.log(`🔍 Fixture keys:`, Object.keys(fixture.fixture));
                 }
-                
+
                 // Create a unique fixture ID (ensure it's valid for Firestore)
                 const timestamp = Date.now();
                 const fixtureId = `fixture_${timestamp}_${index}`.replace(/[^a-zA-Z0-9_-]/g, '_');
-                
+
                 // Handle different possible API response formats
                 let homeTeam, awayTeam, matchDate, matchTime, venue, status, homeScore, awayScore;
-                
+
                 // Try multiple possible team name formats
                 if (fixture['home-team'] && fixture['away-team']) {
                     // Format: { "home-team": { name: "Team A" }, "away-team": { name: "Team B" }, ... } (HYPHENATED - MOST COMMON)
                     // Check if they're objects with name properties
                     if (typeof fixture['home-team'] === 'object') {
                         // Try multiple possible team name properties
-                        homeTeam = fixture['home-team'].name || 
-                                  fixture['home-team'].title || 
-                                  fixture['home-team'].displayName || 
-                                  fixture['home-team'].teamName ||
-                                  fixture['home-team'].fullName ||
-                                  fixture['home-team'].shortName ||
-                                  JSON.stringify(fixture['home-team']);
+                        homeTeam = fixture['home-team'].name ||
+                            fixture['home-team'].title ||
+                            fixture['home-team'].displayName ||
+                            fixture['home-team'].teamName ||
+                            fixture['home-team'].fullName ||
+                            fixture['home-team'].shortName ||
+                            JSON.stringify(fixture['home-team']);
                     } else if (typeof fixture['home-team'] === 'string') {
                         homeTeam = fixture['home-team'];
                     } else {
                         homeTeam = JSON.stringify(fixture['home-team']);
                     }
-                    
+
                     if (typeof fixture['away-team'] === 'object') {
                         // Try multiple possible team name properties
-                        awayTeam = fixture['away-team'].name || 
-                                  fixture['away-team'].title || 
-                                  fixture['away-team'].displayName || 
-                                  fixture['away-team'].teamName ||
-                                  fixture['away-team'].fullName ||
-                                  fixture['away-team'].shortName ||
-                                  JSON.stringify(fixture['away-team']);
+                        awayTeam = fixture['away-team'].name ||
+                            fixture['away-team'].title ||
+                            fixture['away-team'].displayName ||
+                            fixture['away-team'].teamName ||
+                            fixture['away-team'].fullName ||
+                            fixture['away-team'].shortName ||
+                            JSON.stringify(fixture['away-team']);
                     } else if (typeof fixture['away-team'] === 'string') {
                         awayTeam = fixture['away-team'];
                     } else {
                         awayTeam = JSON.stringify(fixture['away-team']);
                     }
-                    
+
                     console.log(`✅ Found home-team/away-team format: ${homeTeam} vs ${awayTeam}`);
                     console.log(`🔍 Home team object:`, fixture['home-team']);
                     console.log(`🔍 Away team object:`, fixture['away-team']);
-                    
+
                     // Debug: Check what properties are available in team objects
                     if (typeof fixture['home-team'] === 'object') {
                         console.log(`🔍 Home team properties:`, Object.keys(fixture['home-team']));
@@ -807,7 +807,7 @@ class FixtureManagementManager {
                     }
                     return;
                 }
-                
+
                 // Extract other fields with fallbacks
                 // Handle date parsing - convert US format (MM/DD/YYYY) to ISO format
                 let rawDate = fixture.date || fixture.matchDate || fixture.kickOff;
@@ -830,11 +830,11 @@ class FixtureManagementManager {
                 } else {
                     matchDate = new Date().toISOString().split('T')[0];
                 }
-                
+
                 // Handle kick-off time
                 matchTime = fixture.time || fixture.matchTime || fixture.kickOffTime || 'TBD';
                 venue = fixture.venue || 'TBD';
-                
+
                 // Handle status - ensure it's a string, not an object
                 let rawStatus = fixture.status;
                 if (typeof rawStatus === 'object' && rawStatus !== null) {
@@ -845,10 +845,10 @@ class FixtureManagementManager {
                 } else {
                     status = 'scheduled';
                 }
-                
+
                 homeScore = fixture['home-score'] || fixture.homeScore || fixture.homeGoals || null;
                 awayScore = fixture['away-score'] || fixture.awayScore || fixture.awayGoals || null;
-                
+
                 // Transform the fixture data to match our structure
                 const transformedFixture = {
                     fixtureId: fixtureId,
@@ -869,18 +869,18 @@ class FixtureManagementManager {
                     // Store original API data for reference
                     apiData: fixture
                 };
-                
+
                 // Add to batch
                 const fixtureRef = this.db.collection('clubs').doc(clubId)
                     .collection('editions').doc(editionId)
                     .collection('fixtures').doc(fixtureId);
-                
+
                 batch.set(fixtureRef, transformedFixture);
                 importedFixtures.push(transformedFixture);
-                
+
                 console.log(`📝 Prepared fixture: ${homeTeam} vs ${awayTeam} (${status})`);
             });
-            
+
             // Commit the batch
             try {
                 await batch.commit();
@@ -889,7 +889,7 @@ class FixtureManagementManager {
                 console.error('❌ Batch commit failed:', batchError);
                 throw new Error(`Failed to commit batch to Firestore: ${batchError.message}`);
             }
-            
+
             // Log audit event
             if (window.losApp && window.losApp.managers.superAdmin) {
                 await window.losApp.managers.superAdmin.logAuditEvent(
@@ -904,7 +904,7 @@ class FixtureManagementManager {
                     }
                 );
             }
-            
+
             return importedFixtures;
         } catch (error) {
             console.error('❌ Error importing fixtures to Firebase:', error);
@@ -971,29 +971,29 @@ class FixtureManagementManager {
     async bulkUpdateScores(competitionId, clubId, editionId) {
         try {
             console.log(`🔄 Bulk updating scores for competition ${competitionId}, club ${clubId}, edition ${editionId}`);
-            
+
             // Get the latest scores from the API
             const apiResponse = await this.getScores(competitionId);
-            
+
             if (!apiResponse || !apiResponse.matches) {
                 console.log('⚠️ No matches found in API response');
                 return { updated: 0, total: 0 };
             }
-            
+
             console.log(`📊 API response contains ${apiResponse.matches.length} matches`);
-            
+
             // Get existing fixtures from Firebase
             const existingFixtures = await this.getFixturesFromFirebase(clubId, editionId);
             console.log(`📊 Found ${existingFixtures.length} existing fixtures in Firebase`);
-            
+
             let updatedCount = 0;
             const batch = this.db.batch();
-            
+
             // Process each match from the API
             for (const match of apiResponse.matches) {
                 // Extract team names from the match data
                 let homeTeam, awayTeam, homeScore, awayScore, matchStatus;
-                
+
                 if (match['home-team'] && match['away-team']) {
                     // New API structure
                     homeTeam = match['home-team'].name;
@@ -1019,55 +1019,55 @@ class FixtureManagementManager {
                     console.warn(`⚠️ Skipping match with missing team names:`, match);
                     continue;
                 }
-                
+
                 // Try to find a matching fixture in our database
                 const matchingFixture = existingFixtures.find(fixture => {
                     // Try exact match first
                     if (fixture.homeTeam === homeTeam && fixture.awayTeam === awayTeam) {
                         return true;
                     }
-                    
+
                     // Try case-insensitive match
-                    if (fixture.homeTeam.toLowerCase() === homeTeam.toLowerCase() && 
+                    if (fixture.homeTeam.toLowerCase() === homeTeam.toLowerCase() &&
                         fixture.awayTeam.toLowerCase() === awayTeam.toLowerCase()) {
                         return true;
                     }
-                    
+
                     // Try partial match (in case of slight naming differences)
                     if (fixture.homeTeam.includes(homeTeam) || homeTeam.includes(fixture.homeTeam)) {
                         if (fixture.awayTeam.includes(awayTeam) || awayTeam.includes(fixture.awayTeam)) {
                             return true;
                         }
                     }
-                    
+
                     return false;
                 });
-                
+
                 if (matchingFixture && matchStatus === 'finished' && homeScore !== null && awayScore !== null) {
                     // Check if the fixture needs updating (either has null scores or placeholder 0-0 scores)
                     const needsUpdate = (
-                        matchingFixture.homeScore === null || 
+                        matchingFixture.homeScore === null ||
                         matchingFixture.awayScore === null ||
                         (matchingFixture.homeScore === 0 && matchingFixture.awayScore === 0) ||
                         matchingFixture.status !== 'finished'
                     );
-                    
+
                     if (needsUpdate) {
                         // Update the fixture with new scores
                         const fixtureRef = this.db.collection('clubs').doc(clubId)
                             .collection('editions').doc(editionId)
                             .collection('fixtures').doc(matchingFixture.fixtureId);
-                        
+
                         const updateData = {
                             homeScore: homeScore,
                             awayScore: awayScore,
                             status: 'finished',
                             lastUpdated: new Date().toISOString()
                         };
-                        
+
                         batch.update(fixtureRef, updateData);
                         updatedCount++;
-                        
+
                         console.log(`✅ Updated fixture: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam} - Previous: ${matchingFixture.homeScore}-${matchingFixture.awayScore}`);
                     } else {
                         console.log(`ℹ️ Fixture already up to date: ${homeTeam} ${matchingFixture.homeScore}-${matchingFixture.awayScore} ${awayTeam}`);
@@ -1078,12 +1078,12 @@ class FixtureManagementManager {
                     console.log(`⚠️ No matching fixture found for: ${homeTeam} vs ${awayTeam}`);
                 }
             }
-            
+
             // Commit all updates
             if (updatedCount > 0) {
                 await batch.commit();
                 console.log(`✅ Successfully updated ${updatedCount} fixture scores`);
-                
+
                 // Log audit event
                 if (window.losApp && window.losApp.managers.superAdmin) {
                     await window.losApp.managers.superAdmin.logAuditEvent(
@@ -1102,7 +1102,7 @@ class FixtureManagementManager {
             } else {
                 console.log('ℹ️ No fixtures needed updating');
             }
-            
+
             return { updated: updatedCount, total: existingFixtures.length };
         } catch (error) {
             console.error('❌ Error bulk updating scores:', error);
@@ -1114,43 +1114,43 @@ class FixtureManagementManager {
     async bulkUpdateScoresByGameweek(gameweek, clubId, editionId) {
         try {
             console.log(`🔄 Bulk updating scores for Game Week ${gameweek}, club ${clubId}, edition ${editionId}`);
-            
+
             // Get existing fixtures from Firebase for the specific gameweek
             const existingFixtures = await this.getFixturesFromFirebaseByGameweek(clubId, editionId, gameweek);
             console.log(`📊 Found ${existingFixtures.length} existing fixtures for Game Week ${gameweek}`);
-            
+
             if (existingFixtures.length === 0) {
                 console.log(`ℹ️ No fixtures found for Game Week ${gameweek}`);
                 return { updated: 0, total: 0 };
             }
-            
+
             // Get all competitions that might have fixtures for this gameweek
             const competitions = this.getCompetitionsForGameweek(existingFixtures);
             console.log(`📊 Found fixtures from ${competitions.length} competitions: ${competitions.join(', ')}`);
-            
+
             let updatedCount = 0;
             const batch = this.db.batch();
-            
+
             // Process each competition
             for (const competitionId of competitions) {
                 try {
                     console.log(`🔄 Fetching scores for competition ${competitionId}...`);
-                    
+
                     // Get the latest scores from the API for this competition
                     const apiResponse = await this.getScores(competitionId);
-                    
+
                     if (!apiResponse || !apiResponse.matches) {
                         console.log(`⚠️ No matches found in API response for competition ${competitionId}`);
                         continue;
                     }
-                    
+
                     console.log(`📊 API response contains ${apiResponse.matches.length} matches for competition ${competitionId}`);
-                    
+
                     // Process each match from the API
                     for (const match of apiResponse.matches) {
                         // Extract team names from the match data
                         let homeTeam, awayTeam, homeScore, awayScore, matchStatus;
-                        
+
                         if (match['home-team'] && match['away-team']) {
                             // New API structure
                             homeTeam = match['home-team'].name;
@@ -1176,60 +1176,60 @@ class FixtureManagementManager {
                             console.warn(`⚠️ Skipping match with missing team names:`, match);
                             continue;
                         }
-                        
+
                         // Try to find a matching fixture in our database for this gameweek
                         const matchingFixture = existingFixtures.find(fixture => {
                             // Check if it's the right gameweek first
                             if (fixture.gameWeek !== gameweek) {
                                 return false;
                             }
-                            
+
                             // Try exact match first
                             if (fixture.homeTeam === homeTeam && fixture.awayTeam === awayTeam) {
                                 return true;
                             }
-                            
+
                             // Try case-insensitive match
-                            if (fixture.homeTeam.toLowerCase() === homeTeam.toLowerCase() && 
+                            if (fixture.homeTeam.toLowerCase() === homeTeam.toLowerCase() &&
                                 fixture.awayTeam.toLowerCase() === awayTeam.toLowerCase()) {
                                 return true;
                             }
-                            
+
                             // Try partial match (in case of slight naming differences)
                             if (fixture.homeTeam.includes(homeTeam) || homeTeam.includes(fixture.homeTeam)) {
                                 if (fixture.awayTeam.includes(awayTeam) || awayTeam.includes(fixture.awayTeam)) {
                                     return true;
                                 }
                             }
-                            
+
                             return false;
                         });
-                        
+
                         if (matchingFixture && matchStatus === 'finished' && homeScore !== null && awayScore !== null) {
                             // Check if the fixture needs updating (either has null scores or placeholder 0-0 scores)
                             const needsUpdate = (
-                                matchingFixture.homeScore === null || 
+                                matchingFixture.homeScore === null ||
                                 matchingFixture.awayScore === null ||
                                 (matchingFixture.homeScore === 0 && matchingFixture.awayScore === 0) ||
                                 matchingFixture.status !== 'finished'
                             );
-                            
+
                             if (needsUpdate) {
                                 // Update the fixture with new scores
                                 const fixtureRef = this.db.collection('clubs').doc(clubId)
                                     .collection('editions').doc(editionId)
                                     .collection('fixtures').doc(matchingFixture.fixtureId);
-                                
+
                                 const updateData = {
                                     homeScore: homeScore,
                                     awayScore: awayScore,
                                     status: 'finished',
                                     lastUpdated: new Date().toISOString()
                                 };
-                                
+
                                 batch.update(fixtureRef, updateData);
                                 updatedCount++;
-                                
+
                                 console.log(`✅ Updated fixture: ${homeTeam} ${homeScore}-${awayScore} ${awayTeam} (Game Week ${gameweek}) - Previous: ${matchingFixture.homeScore}-${matchingFixture.awayScore}`);
                             } else {
                                 console.log(`ℹ️ Fixture already up to date: ${homeTeam} ${matchingFixture.homeScore}-${matchingFixture.awayScore} ${awayTeam}`);
@@ -1245,12 +1245,12 @@ class FixtureManagementManager {
                     // Continue with other competitions
                 }
             }
-            
+
             // Commit all updates
             if (updatedCount > 0) {
                 await batch.commit();
                 console.log(`✅ Successfully updated ${updatedCount} fixture scores for Game Week ${gameweek}`);
-                
+
                 // Log audit event
                 if (window.losApp && window.losApp.managers.superAdmin) {
                     await window.losApp.managers.superAdmin.logAuditEvent(
@@ -1269,7 +1269,7 @@ class FixtureManagementManager {
             } else {
                 console.log(`ℹ️ No fixtures needed updating for Game Week ${gameweek}`);
             }
-            
+
             return { updated: updatedCount, total: existingFixtures.length };
         } catch (error) {
             console.error('❌ Error bulk updating scores by gameweek:', error);
@@ -1285,7 +1285,7 @@ class FixtureManagementManager {
                 .collection('fixtures')
                 .where('gameWeek', '==', gameweek)
                 .get();
-            
+
             const fixtures = [];
             fixturesSnapshot.forEach(doc => {
                 fixtures.push({
@@ -1293,7 +1293,7 @@ class FixtureManagementManager {
                     ...doc.data()
                 });
             });
-            
+
             return fixtures;
         } catch (error) {
             console.error('❌ Error getting fixtures from Firebase by gameweek:', error);
@@ -1353,7 +1353,7 @@ class FixtureManagementManager {
 
         // Listen for fixtures
         this.setupFixturesListener(clubId, editionId);
-        
+
         // Listen for scores
         this.setupScoresListener(clubId, editionId);
     }
@@ -1442,7 +1442,7 @@ class FixtureManagementManager {
             console.log('✅ FixtureManagementManager: Firebase connection already available');
             return;
         }
-        
+
         if (window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
             console.log('✅ FixtureManagementManager: Restoring Firebase connection from global');
             this.db = window.firebaseDB;

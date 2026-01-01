@@ -1,27 +1,27 @@
-class ScoresManager {
+export default class ScoresManager {
     constructor() {
         this.isInitialized = false;
         this.dataLoaded = false; // Track if data has been loaded
         this.currentFixtures = [];
         this.currentScores = [];
         this.db = null;
-        
+
         // Vidiprinter properties
         this.vidiprinterData = [];
         this.vidiprinterInterval = null;
         this.lastVidiprinterUpdate = null;
         this.vidiprinterUpdateFrequency = 30000; // 30 seconds
-        
+
         // API configuration
         this.apiConfig = null;
         this.footballWebPagesAPI = null;
-        
+
         // Team badge service
         this.teamBadgeService = null;
-        
+
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
-        
+
         // Listen for API toggle changes
         this.setupAPIToggleListener();
     }
@@ -36,7 +36,7 @@ class ScoresManager {
                     return data.apiRequestsEnabled !== false; // Default to true if not set
                 }
             }
-            
+
             // Fallback: check if we can access the global settings through window
             if (window.losApp?.managers?.superAdmin?.db) {
                 const globalSettings = await window.losApp.managers.superAdmin.db
@@ -46,11 +46,11 @@ class ScoresManager {
                     return data.apiRequestsEnabled !== false;
                 }
             }
-            
+
             // Default to enabled if we can't check
             console.log('⚠️ ScoresManager: Could not check global API settings, defaulting to enabled');
             return true;
-            
+
         } catch (error) {
             console.error('❌ ScoresManager: Error checking API enablement:', error);
             // Default to enabled on error
@@ -63,7 +63,7 @@ class ScoresManager {
         window.addEventListener('apiToggleChanged', (event) => {
             const { enabled } = event.detail;
             console.log(`🔌 ScoresManager: API toggle changed to: ${enabled}`);
-            
+
             if (!enabled) {
                 // Clear any pending requests or show a message
                 console.log('🔌 ScoresManager: API requests are now disabled');
@@ -75,7 +75,7 @@ class ScoresManager {
 
     initBasic() {
         if (this.isInitialized) return;
-        
+
         // Only set up basic structure, don't load data yet
         this.isInitialized = true;
 
@@ -83,16 +83,16 @@ class ScoresManager {
 
     init() {
         if (this.isInitialized && this.dataLoaded) return;
-        
+
         // Set up Firebase database reference
         this.db = window.firebaseDB;
-        
+
         // Initialize API configuration
         this.initializeAPI();
-        
+
         // Initialize team badge service
         this.initializeTeamBadgeService();
-        
+
         // Load data and set up real-time listeners
         this.loadScores();
         this.setupRealtimeListeners();
@@ -105,7 +105,7 @@ class ScoresManager {
         try {
             // Load API configuration with multiple fallback sources
             this.apiConfig = this.loadAPIConfiguration();
-            
+
             if (this.apiConfig && this.apiConfig.RAPIDAPI_KEY) {
                 // API configuration loaded
             } else {
@@ -163,19 +163,14 @@ class ScoresManager {
 
     initializeTeamBadgeService() {
         try {
-            if (window.TeamBadgeService) {
-                this.teamBadgeService = new window.TeamBadgeService();
-                this.teamBadgeService.initialize().then(() => {
-                    // Team badge service initialized
-                    // Preload badges for current fixtures if available
-                    if (this.currentFixtures.length > 0) {
-                        this.preloadTeamBadges();
-                    }
-                }).catch(error => {
-                    console.warn('⚠️ ScoresManager: Team badge service initialization failed:', error);
-                });
+            if (window.losApp?.teamBadgeService) {
+                this.teamBadgeService = window.losApp.teamBadgeService;
+                // Preload badges for current fixtures if available
+                if (this.currentFixtures.length > 0) {
+                    this.preloadTeamBadges();
+                }
             } else {
-                console.warn('⚠️ ScoresManager: TeamBadgeService not available');
+                console.warn('⚠️ ScoresManager: TeamBadgeService not available in app');
             }
         } catch (error) {
             console.error('❌ ScoresManager: Error initializing team badge service:', error);
@@ -186,14 +181,14 @@ class ScoresManager {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
 
-        
+
         // Don't set up real-time listeners here - they will be set up by the main app
         // after Firebase is fully ready to prevent connection conflicts
     }
 
     clearListeners() {
         console.log('ScoresManager: Clearing listeners...');
-        
+
         if (this.fixturesListener) {
             this.fixturesListener();
             this.fixturesListener = null;
@@ -202,7 +197,7 @@ class ScoresManager {
 
         // Stop vidiprinter updates
         this.stopVidiprinterUpdates();
-        
+
         // Unregister from the main app's listener tracking
         if (window.losApp) {
             window.losApp.unregisterListener('scores-fixtures');
@@ -234,10 +229,10 @@ class ScoresManager {
             // Listen for fixture updates to refresh scores
             const currentEdition = window.editionService.getCurrentEdition();
             const currentGameweek = window.editionService.getCurrentGameweek();
-            
+
             // Get current club from ClubService
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
-            
+
             this.fixturesListener = this.db.collection('clubs')
                 .doc(currentClub)
                 .collection('editions')
@@ -262,7 +257,7 @@ class ScoresManager {
                     if (window.handleFirebaseError) {
                         window.handleFirebaseError(error, 'ScoresManager-fixtures');
                     }
-                    
+
                     // If it's a "Target ID already exists" error, clear and retry
                     if (error.message && error.message.includes('Target ID already exists')) {
                         console.log('ScoresManager: Target ID conflict detected, clearing and retry...');
@@ -270,7 +265,7 @@ class ScoresManager {
                         setTimeout(() => this.setupRealtimeListeners(), 1000);
                     }
                 });
-                
+
             console.log('ScoresManager: Fixtures real-time listener established');
         } catch (error) {
             console.error('ScoresManager: Error setting up real-time listeners:', error);
@@ -283,33 +278,33 @@ class ScoresManager {
     async loadScores() {
         try {
             // loadScores() called
-            
+
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
                 console.log('ScoresManager: Firebase not ready, retrying in 2 seconds...');
-                
+
                 // Try to update our database reference if Firebase is ready but we don't have it
                 if (window.firebaseReady && window.firebaseDB && !this.db) {
                     console.log('ScoresManager: Updating database reference from global Firebase...');
                     this.db = window.firebaseDB;
                 }
-                
+
                 setTimeout(() => this.loadScores(), 2000);
                 return;
             }
-            
+
             // Show loading state
             this.showLoadingState();
-            
+
             // Get current club from ClubService
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
-            
+
             // Get current gameweek and edition from EditionService
             const currentGameweek = window.losApp?.managers?.edition?.getCurrentGameweek() || 1;
             const currentEdition = window.losApp?.managers?.edition?.getCurrentEdition() || '2025-26-national-league-1';
-            
+
             // Loading scores for current club/edition/gameweek
-            
+
             // Load scores for current gameweek from new club-based structure
             const fixturesSnapshot = await this.db.collection('clubs')
                 .doc(currentClub)
@@ -318,9 +313,9 @@ class ScoresManager {
                 .collection('fixtures')
                 .where('gameWeek', '==', currentGameweek)
                 .get();
-            
+
             // Database query completed
-            
+
             const fixtures = [];
             fixturesSnapshot.forEach(doc => {
                 const fixtureData = doc.data();
@@ -332,10 +327,10 @@ class ScoresManager {
             });
             this.currentScores = fixtures;
             this.currentFixtures = fixtures; // Also set currentFixtures for display methods
-            
+
             // Display scores
             this.displayScores();
-            
+
         } catch (error) {
             console.error('Error loading scores:', error);
             window.authManager.showError('Failed to load scores');
@@ -386,7 +381,7 @@ class ScoresManager {
                     </div>
                 </div>
             `;
-            
+
             // Set up refresh button even when no fixtures
             this.setupVidiprinterControls();
             return;
@@ -398,7 +393,7 @@ class ScoresManager {
 
     async renderScoresOptimized(container) {
         const startTime = performance.now();
-        
+
         // Create the main container structure
         const scoresHTML = `
             <div class="scores-container">
@@ -441,13 +436,13 @@ class ScoresManager {
         `;
 
         container.innerHTML = scoresHTML;
-        
+
         // Render fixtures in batches
         const fixturesContainer = document.getElementById('fixturesScoresContainer');
         if (fixturesContainer) {
             await this.renderFixturesInBatches(fixturesContainer);
         }
-        
+
         const endTime = performance.now();
         console.log(`🚀 ScoresManager: Rendered scores in ${Math.round(endTime - startTime)}ms`);
     }
@@ -455,21 +450,21 @@ class ScoresManager {
     async renderFixturesInBatches(container) {
         const batchSize = 2; // Reduced from 4 to 2 for better performance
         const totalFixtures = this.currentFixtures.length;
-        
+
         for (let i = 0; i < totalFixtures; i += batchSize) {
             const batch = this.currentFixtures.slice(i, i + batchSize);
-            
+
             // Process batch
             const batchHTML = batch.map(fixture => this.createFixtureScore(fixture)).join('');
             container.insertAdjacentHTML('beforeend', batchHTML);
-            
+
             // Yield control to browser between every batch
             await new Promise(resolve => requestAnimationFrame(resolve));
         }
-        
+
         // Yield control before initializing vidiprinter
         await new Promise(resolve => requestAnimationFrame(resolve));
-        
+
         // Initialize vidiprinter display
         this.initializeVidiprinterDisplay();
     }
@@ -478,20 +473,20 @@ class ScoresManager {
         // Handle status field properly - it can be a string or object
         let status = fixture.status || 'scheduled';
         let statusText = status;
-        
+
         // If status is an object, extract the text
         if (typeof status === 'object' && status !== null) {
             statusText = status.short || status.full || status.status || 'TBD';
             status = statusText; // Use the text for CSS class
         }
-        
+
         const homeScore = fixture.homeScore !== null ? fixture.homeScore : '-';
         const awayScore = fixture.awayScore !== null ? fixture.awayScore : '-';
-        
+
         // Create team displays with badges
         const homeTeamDisplay = this.createTeamWithBadgeHTML(fixture.homeTeam, 'small', 'home');
         const awayTeamDisplay = this.createTeamWithBadgeHTML(fixture.awayTeam, 'small', 'away');
-        
+
         return `
             <div class="score-fixture">
                 <div class="score-teams">
@@ -529,15 +524,15 @@ class ScoresManager {
         }
 
         // Starting vidiprinter updates...
-        
+
         // Initial load
         this.updateVidiprinter();
-        
+
         // Set up periodic updates
         this.vidiprinterInterval = setInterval(() => {
             this.updateVidiprinter();
         }, this.vidiprinterUpdateFrequency);
-        
+
         // Vidiprinter updates started
     }
 
@@ -565,31 +560,31 @@ class ScoresManager {
 
             // Get current date for API request
             const today = new Date().toISOString().split('T')[0];
-            
+
             // Fetch vidiprinter data from Football Web Pages API
             const vidiprinterData = await this.fetchVidiprinterData(today);
-            
+
             if (vidiprinterData && vidiprinterData.events) {
                 this.vidiprinterData = vidiprinterData.events;
                 this.updateVidiprinterDisplay();
                 this.lastVidiprinterUpdate = new Date();
-                
+
                 console.log(`✅ ScoresManager: Vidiprinter updated with ${this.vidiprinterData.length} events`);
-                
+
                 // Sync scores from vidiprinter data
                 await this.syncScoresFromVidiprinter();
-                
+
                 // Update timestamp display
                 this.updateLastUpdatedTimestamp();
             } else {
                 console.log('ℹ️ ScoresManager: No events found in vidiprinter data');
                 this.updateVidiprinterStatus('No Updates', 'idle');
             }
-            
+
         } catch (error) {
             console.error('❌ ScoresManager: Error updating vidiprinter:', error);
             this.updateVidiprinterStatus('Error', 'error');
-            
+
             // Show more specific error messages
             if (error.message.includes('API key')) {
                 this.updateVidiprinterStatus('Invalid API Key', 'error');
@@ -613,21 +608,21 @@ class ScoresManager {
             }
         } catch (error) {
             console.error('❌ ScoresManager: Error fetching vidiprinter data:', error);
-            
+
             // In development mode, try to load sample data
             if (this.isDevelopmentMode()) {
                 console.log('🔧 ScoresManager: Development mode detected, trying to load sample data...');
                 return this.loadSampleVidiprinterData();
             }
-            
+
             throw error;
         }
     }
 
     isDevelopmentMode() {
-        return window.location.hostname === '127.0.0.1' || 
-               window.location.hostname === 'localhost' || 
-               window.location.hostname.includes('5500');
+        return window.location.hostname === '127.0.0.1' ||
+            window.location.hostname === 'localhost' ||
+            window.location.hostname.includes('5500');
     }
 
     loadSampleVidiprinterData() {
@@ -687,7 +682,7 @@ class ScoresManager {
                 ]
             }
         };
-        
+
         console.log('✅ ScoresManager: Sample vidiprinter data loaded for development');
         return sampleData.vidiprinter;
     }
@@ -699,10 +694,10 @@ class ScoresManager {
                 console.log('🔌 ScoresManager: API requests are disabled globally');
                 throw new Error('API requests are currently disabled by system administrator');
             }
-            
+
             let url;
             let headers;
-            
+
             // Check if we're in development (Netlify functions not available)
             if (this.isDevelopmentMode()) {
                 console.log('🔧 ScoresManager: Development mode detected, using direct API call (may have CORS issues)');
@@ -719,9 +714,9 @@ class ScoresManager {
                     'Content-Type': 'application/json'
                 };
             }
-            
+
             console.log(`🔍 ScoresManager: Fetching vidiprinter data from: ${url}`);
-            
+
             const response = await fetch(url, {
                 method: 'GET',
                 headers: headers
@@ -733,7 +728,7 @@ class ScoresManager {
                     console.log(`⚠️ ScoresManager: Netlify function failed (${response.status}), trying direct API call as fallback...`);
                     return await this.makeDirectAPICall(date);
                 }
-                
+
                 const errorText = await response.text();
                 console.error(`❌ ScoresManager: API response error:`, errorText);
                 throw new Error(`API request failed: ${response.status} ${response.statusText}: ${errorText}`);
@@ -741,10 +736,10 @@ class ScoresManager {
 
             const data = await response.json();
             return data.vidiprinter || { events: [] };
-            
+
         } catch (error) {
             console.error('❌ ScoresManager: Direct vidiprinter request failed:', error);
-            
+
             // If Netlify function fails, try direct API call as fallback
             if (!this.isDevelopmentMode() && error.message.includes('404')) {
                 console.log('⚠️ ScoresManager: Netlify function failed, trying direct API call as fallback...');
@@ -754,20 +749,20 @@ class ScoresManager {
                     console.error('❌ ScoresManager: Direct API fallback also failed:', fallbackError);
                 }
             }
-            
+
             throw error;
         }
     }
 
     async makeDirectAPICall(date) {
         console.log('🔧 ScoresManager: Making direct API call...');
-        
+
         const url = `https://football-web-pages1.p.rapidapi.com/vidiprinter.json?comp=5&team=0&date=${date}`;
         const headers = {
             'X-RapidAPI-Key': this.apiConfig.RAPIDAPI_KEY,
             'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
         };
-        
+
         const response = await fetch(url, {
             method: 'GET',
             headers: headers
@@ -787,10 +782,10 @@ class ScoresManager {
 
         // Show initial loading state
         this.updateVidiprinterStatus('Loading...', 'loading');
-        
+
         // Set up refresh button event listener
         this.setupVidiprinterControls();
-        
+
         // If we have data, display it immediately
         if (this.vidiprinterData.length > 0) {
             this.updateVidiprinterDisplay();
@@ -802,11 +797,11 @@ class ScoresManager {
         if (refreshButton) {
             refreshButton.addEventListener('click', async () => {
                 console.log('🔄 ScoresManager: Manual vidiprinter refresh requested');
-                
+
                 // Disable button temporarily
                 refreshButton.disabled = true;
                 refreshButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
+
                 try {
                     await this.updateVidiprinter();
                     this.updateLastUpdatedTimestamp();
@@ -850,7 +845,7 @@ class ScoresManager {
         if (sampleDataButton) {
             sampleDataButton.addEventListener('click', () => {
                 console.log('🔧 ScoresManager: Loading sample data manually...');
-                
+
                 // Load sample data
                 const sampleData = this.loadSampleVidiprinterData();
                 this.vidiprinterData = sampleData.events;
@@ -858,11 +853,11 @@ class ScoresManager {
                 this.lastVidiprinterUpdate = new Date();
                 this.updateLastUpdatedTimestamp();
                 this.updateVidiprinterStatus('Sample Data', 'idle');
-                
+
                 console.log('✅ ScoresManager: Sample data loaded manually');
             });
         }
-        
+
         // Add additional development controls
         const additionalControls = document.createElement('div');
         additionalControls.className = 'additional-dev-controls';
@@ -879,9 +874,9 @@ class ScoresManager {
                 </button>
             </div>
         `;
-        
+
         vidiprinterContent.insertBefore(additionalControls, vidiprinterContent.firstChild);
-        
+
         // Add event listeners for additional controls
         const syncScoresBtn = document.getElementById('syncScoresBtn');
         if (syncScoresBtn) {
@@ -890,7 +885,7 @@ class ScoresManager {
                 await this.syncScoresFromVidiprinterManual();
             });
         }
-        
+
         const saveScoresBtn = document.getElementById('saveScoresBtn');
         if (saveScoresBtn) {
             saveScoresBtn.addEventListener('click', async () => {
@@ -898,7 +893,7 @@ class ScoresManager {
                 await this.saveCurrentScoresToDatabase();
             });
         }
-        
+
         const manualSyncBtn = document.getElementById('manualSyncBtn');
         if (manualSyncBtn) {
             manualSyncBtn.addEventListener('click', async () => {
@@ -908,7 +903,7 @@ class ScoresManager {
                 await this.syncScoresFromVidiprinter();
             });
         }
-        
+
         // Add team badge development controls
         const badgeControls = document.createElement('div');
         badgeControls.className = 'badge-dev-controls';
@@ -925,9 +920,9 @@ class ScoresManager {
                 </button>
             </div>
         `;
-        
+
         vidiprinterContent.insertBefore(badgeControls, vidiprinterContent.firstChild);
-        
+
         // Add event listeners for badge controls
         const preloadBadgesBtn = document.getElementById('preloadBadgesBtn');
         if (preloadBadgesBtn) {
@@ -936,7 +931,7 @@ class ScoresManager {
                 await this.preloadTeamBadges();
             });
         }
-        
+
         const clearBadgeCacheBtn = document.getElementById('clearBadgeCacheBtn');
         if (clearBadgeCacheBtn) {
             clearBadgeCacheBtn.addEventListener('click', () => {
@@ -946,7 +941,7 @@ class ScoresManager {
                 }
             });
         }
-        
+
         const testBadgeBtn = document.getElementById('testBadgeBtn');
         if (testBadgeBtn) {
             testBadgeBtn.addEventListener('click', async () => {
@@ -967,7 +962,7 @@ class ScoresManager {
             const now = new Date();
             const timeDiff = now - this.lastVidiprinterUpdate;
             const secondsAgo = Math.floor(timeDiff / 1000);
-            
+
             if (secondsAgo < 60) {
                 lastUpdatedElement.textContent = `Last updated: ${secondsAgo}s ago`;
             } else if (secondsAgo < 3600) {
@@ -1008,7 +1003,7 @@ class ScoresManager {
         const recentEvents = sortedEvents.slice(0, 20);
 
         const eventsHTML = recentEvents.map(event => this.createVidiprinterEvent(event)).join('');
-        
+
         vidiprinterContent.innerHTML = `
             <div class="vidiprinter-events">
                 ${eventsHTML}
@@ -1022,11 +1017,11 @@ class ScoresManager {
         const eventType = event.type || 'Unknown';
         const eventTime = this.formatEventTime(event['date/time']);
         const eventText = event.text || 'No description';
-        
+
         // Determine event type styling
         let eventClass = 'event-default';
         let eventIcon = 'fas fa-info-circle';
-        
+
         switch (eventType.toLowerCase()) {
             case 'goals':
                 eventClass = 'event-goal';
@@ -1067,7 +1062,7 @@ class ScoresManager {
                     const badgeHTML = this.createTeamBadgeHTML(fixture.homeTeam, 'tiny');
                     if (badgeHTML) {
                         enhancedEventText = enhancedEventText.replace(
-                            fixture.homeTeam, 
+                            fixture.homeTeam,
                             `${badgeHTML} ${fixture.homeTeam}`
                         );
                     }
@@ -1076,7 +1071,7 @@ class ScoresManager {
                     const badgeHTML = this.createTeamBadgeHTML(fixture.awayTeam, 'tiny');
                     if (badgeHTML) {
                         enhancedEventText = enhancedEventText.replace(
-                            fixture.awayTeam, 
+                            fixture.awayTeam,
                             `${badgeHTML} ${fixture.awayTeam}`
                         );
                     }
@@ -1099,10 +1094,10 @@ class ScoresManager {
     formatEventTime(dateTimeString) {
         try {
             const date = new Date(dateTimeString);
-            return date.toLocaleTimeString('en-GB', { 
-                hour: '2-digit', 
+            return date.toLocaleTimeString('en-GB', {
+                hour: '2-digit',
                 minute: '2-digit',
-                hour12: false 
+                hour12: false
             });
         } catch (error) {
             return dateTimeString;
@@ -1125,11 +1120,11 @@ class ScoresManager {
             }
 
             console.log('🔄 ScoresManager: Syncing scores from vidiprinter data...');
-            
+
             // Get current fixtures
             const currentGameweek = window.editionService.getCurrentGameweek();
             const currentEdition = window.editionService.getCurrentEdition();
-            
+
             if (!this.db) {
                 console.warn('⚠️ ScoresManager: Database not available for score sync');
                 return;
@@ -1137,7 +1132,7 @@ class ScoresManager {
 
             // Get current club from ClubService
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
-            
+
             // Get fixtures from new club-based structure
             const fixturesSnapshot = await this.db.collection('clubs')
                 .doc(currentClub)
@@ -1146,7 +1141,7 @@ class ScoresManager {
                 .collection('fixtures')
                 .where('gameWeek', '==', currentGameweek)
                 .get();
-            
+
             if (fixturesSnapshot.empty) {
                 console.log('ℹ️ ScoresManager: No fixtures found for current gameweek');
                 return;
@@ -1163,7 +1158,7 @@ class ScoresManager {
                 });
                 fixtureDocs.push(doc);
             });
-            
+
             let hasUpdates = false;
 
             // Process vidiprinter events to update scores
@@ -1178,7 +1173,7 @@ class ScoresManager {
                         hasAwayTeam: !!(event.match && event.match['away-team'])
                     });
                 }
-                
+
                 if (event.match && (event.type === 'Full-time' || event.type === 'Goals' || event.type === 'Kick-off' || event.type === 'Half-time')) {
                     // Update scores and status for all relevant event types
                     const updatedFixture = this.updateFixtureFromVidiprinterEvent(fixtures, event);
@@ -1203,15 +1198,15 @@ class ScoresManager {
                         updated_at: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 });
-                
+
                 await batch.commit();
-                
+
                 console.log('✅ ScoresManager: Scores synced from vidiprinter data');
-                
+
                 // Update local data and refresh display
                 this.currentFixtures = fixtures;
                 this.displayScores();
-                
+
                 // Save scores to database for persistence
                 console.log('💾 Saving synced scores to database...');
                 await this.saveScoresToDatabase();
@@ -1244,24 +1239,24 @@ class ScoresManager {
             if (fixture.homeTeam === homeTeamName && fixture.awayTeam === awayTeamName) {
                 return true;
             }
-            
+
             // Try case-insensitive match
-            if (fixture.homeTeam.toLowerCase() === homeTeamName.toLowerCase() && 
+            if (fixture.homeTeam.toLowerCase() === homeTeamName.toLowerCase() &&
                 fixture.awayTeam.toLowerCase() === awayTeamName.toLowerCase()) {
                 return true;
             }
-            
+
             // Try partial match (in case of slight naming differences)
-            const homeMatch = fixture.homeTeam.toLowerCase().includes(homeTeamName.toLowerCase()) || 
-                             homeTeamName.toLowerCase().includes(fixture.homeTeam.toLowerCase());
-            const awayMatch = fixture.awayTeam.toLowerCase().includes(awayTeamName.toLowerCase()) || 
-                             awayTeamName.toLowerCase().includes(fixture.awayTeam.toLowerCase());
-            
+            const homeMatch = fixture.homeTeam.toLowerCase().includes(homeTeamName.toLowerCase()) ||
+                homeTeamName.toLowerCase().includes(fixture.homeTeam.toLowerCase());
+            const awayMatch = fixture.awayTeam.toLowerCase().includes(awayTeamName.toLowerCase()) ||
+                awayTeamName.toLowerCase().includes(fixture.awayTeam.toLowerCase());
+
             if (homeMatch && awayMatch) {
                 console.log(`🔍 ScoresManager: Found partial match: "${fixture.homeTeam}" vs "${fixture.awayTeam}" for event "${homeTeamName}" vs "${awayTeamName}"`);
                 return true;
             }
-            
+
             return false;
         });
 
@@ -1357,10 +1352,10 @@ class ScoresManager {
 
     getGameweekStatus(fixtures) {
         if (fixtures.length === 0) return 'no-fixtures';
-        
+
         const completedFixtures = fixtures.filter(f => f.status === 'completed').length;
         const liveFixtures = fixtures.filter(f => f.status === 'live').length;
-        
+
         if (completedFixtures === fixtures.length) {
             return 'completed';
         } else if (liveFixtures > 0) {
@@ -1400,54 +1395,54 @@ class ScoresManager {
     }
 
     // Admin methods for managing scores
-    
+
     // Public method to save current scores to database
     async saveCurrentScoresToDatabase() {
         return await this.saveScoresToDatabase();
     }
-    
+
     // Public method to manually sync scores from vidiprinter data
     async syncScoresFromVidiprinterManual() {
         // Load sample data if in development mode
         if (this.isDevelopmentMode()) {
             this.loadSampleVidiprinterData();
         }
-        
+
         // Ensure we have fixtures loaded
         if (!this.currentFixtures || this.currentFixtures.length === 0) {
             this.currentFixtures = [...window.losApp.managers.fixtures.currentFixtures];
         }
-        
+
         return await this.syncScoresFromVidiprinter();
     }
 
     // Team badge methods
     async preloadTeamBadges() {
         if (!this.currentFixtures || !this.currentFixtures.length) return;
-        
+
         try {
             const teamNames = [];
             this.currentFixtures.forEach(fixture => {
                 if (fixture.homeTeam) teamNames.push(fixture.homeTeam);
                 if (fixture.awayTeam) teamNames.push(fixture.awayTeam);
             });
-            
+
             // Remove duplicates
             const uniqueTeamNames = [...new Set(teamNames)];
-            
+
             console.log(`🏆 ScoresManager: Preloading badges for ${uniqueTeamNames.length} teams`);
-            
+
             // Check if local badge service is available
             if (window.getLocalTeamBadge) {
                 console.log(`✅ ScoresManager: Local badge service available for ${uniqueTeamNames.length} teams`);
                 return; // Local service is instant, no need to preload
             }
-            
+
             // Fallback to TeamBadgeService if available
             if (this.teamBadgeService && typeof this.teamBadgeService.preloadBadges === 'function') {
                 await this.teamBadgeService.preloadBadges(uniqueTeamNames, 'small');
             }
-            
+
         } catch (error) {
             console.warn('⚠️ ScoresManager: Error preloading team badges:', error);
         }
@@ -1466,12 +1461,12 @@ class ScoresManager {
                 `;
             }
         }
-        
+
         // Fallback to TeamBadgeService if available
         if (this.teamBadgeService && typeof this.teamBadgeService.createTeamWithBadgeHTML === 'function') {
             return this.teamBadgeService.createTeamWithBadgeHTML(teamName, size, additionalClasses);
         }
-        
+
         // Fallback to just team name if no service available
         return `<span class="team-name">${teamName}</span>`;
     }
@@ -1484,22 +1479,22 @@ class ScoresManager {
                 return `<img src="${badgeUrl}" alt="${teamName}" class="team-badge team-badge-${size} ${additionalClasses}" loading="lazy">`;
             }
         }
-        
+
         // Fallback to TeamBadgeService if available
         if (this.teamBadgeService && typeof this.teamBadgeService.createTeamBadgeHTML === 'function') {
             return this.teamBadgeService.createTeamBadgeHTML(teamName, size, additionalClasses);
         }
-        
+
         // Fallback to empty if no service available
         return '';
     }
-    
+
     async updateFixtureScore(fixtureIndex, homeScore, awayScore, status = 'completed') {
         try {
             const currentGameweek = window.editionService.getCurrentGameweek();
             const currentEdition = window.editionService.getCurrentEdition();
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
-            
+
             // Get fixtures from new club-based structure
             const fixturesSnapshot = await this.db.collection('clubs')
                 .doc(currentClub)
@@ -1508,7 +1503,7 @@ class ScoresManager {
                 .collection('fixtures')
                 .where('gameWeek', '==', currentGameweek)
                 .get();
-            
+
             if (!fixturesSnapshot.empty) {
                 const fixtures = [];
                 fixturesSnapshot.forEach(doc => {
@@ -1519,14 +1514,14 @@ class ScoresManager {
                         docRef: doc.ref
                     });
                 });
-                
+
                 if (fixtures[fixtureIndex]) {
                     const fixture = fixtures[fixtureIndex];
                     fixture.homeScore = homeScore;
                     fixture.awayScore = awayScore;
                     fixture.status = status;
                     fixture.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                    
+
                     // Update the individual fixture document
                     await fixture.docRef.update({
                         homeScore: homeScore,
@@ -1535,16 +1530,16 @@ class ScoresManager {
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updated_at: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    
+
                     // Process results if status is completed
                     if (status === 'completed') {
                         await this.processFixtureResult(fixture, currentGameweek);
                     }
-                    
+
                     return true;
                 }
             }
-            
+
             return false;
         } catch (error) {
             console.error('Error updating fixture score:', error);
@@ -1566,16 +1561,16 @@ class ScoresManager {
     async importScoresFromAPI(gameweek) {
         try {
             console.log(`🏆 ScoresManager: Importing scores for Gameweek ${gameweek} from Football Web Pages API`);
-            
+
             // Check if API requests are enabled globally
             if (!(await this.isAPIEnabled())) {
                 console.log('🔌 ScoresManager: API requests are disabled globally');
                 throw new Error('API requests are currently disabled by system administrator');
             }
-            
+
             // Try to get actual fixture dates from database first (most precise)
             let dateRange = await this.getActualFixtureDatesForGameweek(gameweek);
-            
+
             // If database lookup fails, fall back to hardcoded dates
             if (!dateRange) {
                 dateRange = this.getDateRangeForGameweek(gameweek);
@@ -1583,12 +1578,12 @@ class ScoresManager {
             } else {
                 console.log(`📅 ScoresManager: Using precise date range from database: ${dateRange.from} to ${dateRange.to}`);
             }
-            
+
             console.log(`📅 ScoresManager: Date range for gameweek ${gameweek}: ${dateRange.from} to ${dateRange.to}`);
-            
+
             let url;
             let headers;
-            
+
             // Check if we're in development (Netlify functions not available)
             if (this.isDevelopmentMode()) {
                 console.log('🔧 ScoresManager: Development mode detected, using direct API call (may have CORS issues)');
@@ -1605,32 +1600,32 @@ class ScoresManager {
                     'Content-Type': 'application/json'
                 };
             }
-            
+
             console.log(`🔍 ScoresManager: Fetching fixtures-results from: ${url}`);
             console.log(`💰 ScoresManager: This should fetch significantly fewer fixtures (targeted date range)`);
-            
+
             const response = await fetch(url, {
                 method: 'GET',
                 headers: headers
             });
-            
+
             console.log(`🔍 ScoresManager: Response status:`, response.status, response.statusText);
-            
+
             if (!response.ok) {
                 // If Netlify function fails, try direct API call as fallback
                 if (!this.isDevelopmentMode() && (response.status === 404 || response.status === 500 || response.status === 429)) {
                     console.log(`⚠️ ScoresManager: Netlify function failed (${response.status}), trying direct API call as fallback...`);
                     return await this.importScoresDirectAPI(dateRange);
                 }
-                
+
                 const errorText = await response.text();
                 console.error(`❌ ScoresManager: API response error:`, errorText);
                 throw new Error(`API request failed: ${response.status} ${response.statusText}: ${errorText}`);
             }
-            
+
             const data = await response.json();
             console.log(`✅ ScoresManager: Fixtures-results fetched successfully:`, data);
-            
+
             // Process the API data and update fixtures
             if (data.fixtures && data.fixtures.length > 0) {
                 await this.processFixturesResults(data.fixtures, gameweek);
@@ -1639,10 +1634,10 @@ class ScoresManager {
                 console.log('ℹ️ ScoresManager: No fixtures found in API response');
                 return false;
             }
-            
+
         } catch (error) {
             console.error('❌ ScoresManager: Error importing scores from API:', error);
-            
+
             // If Netlify function fails, try direct API call as fallback
             if (!this.isDevelopmentMode() && (error.message.includes('404') || error.message.includes('500') || error.message.includes('429'))) {
                 console.log('⚠️ ScoresManager: Netlify function failed, trying direct API call as fallback...');
@@ -1653,14 +1648,14 @@ class ScoresManager {
                     console.error('❌ ScoresManager: Direct API fallback also failed:', fallbackError);
                 }
             }
-            
+
             throw error;
         }
     }
 
     async importScoresDirectAPI(dateRange) {
         console.log('🔧 ScoresManager: Making direct API call to fixtures-results...');
-        
+
         // Get current season from edition service or use default
         let currentSeason = '2025-26';
         if (window.editionService && window.editionService.getCurrentEdition) {
@@ -1671,13 +1666,13 @@ class ScoresManager {
                 currentSeason = '2024-25';
             }
         }
-        
+
         const url = `https://football-web-pages1.p.rapidapi.com/fixtures-results.json?from=${dateRange.from}&to=${dateRange.to}&comp=5&season=${currentSeason}`;
         const headers = {
             'X-RapidAPI_Key': this.apiConfig.RAPIDAPI_KEY,
             'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
         };
-        
+
         const response = await fetch(url, {
             method: 'GET',
             headers: headers
@@ -1689,7 +1684,7 @@ class ScoresManager {
 
         const data = await response.json();
         console.log(`✅ ScoresManager: Direct API call successful:`, data);
-        
+
         if (data.fixtures && data.fixtures.length > 0) {
             await this.processFixturesResults(data.fixtures, 1); // Default to gameweek 1 for now
             return true;
@@ -1704,7 +1699,7 @@ class ScoresManager {
         // This will be much more targeted than the current ±7 day range
         const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
         const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
-        
+
         // For now, use a more targeted approach based on gameweek
         // Gameweek 1: Aug 9, Gameweek 2: Aug 23, etc.
         const gameweekDates = {
@@ -1719,17 +1714,17 @@ class ScoresManager {
             9: { from: '2025-11-29', to: '2025-11-29' },
             10: { from: '2025-12-13', to: '2025-12-13' }
         };
-        
+
         if (gameweekDates[gameweek]) {
             console.log(`📅 ScoresManager: Using targeted date range for GW${gameweek}: ${gameweekDates[gameweek].from} to ${gameweekDates[gameweek].to}`);
             return gameweekDates[gameweek];
         }
-        
+
         // Fallback to a very narrow range (±1 day) if gameweek not found
         const today = new Date();
         const from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
         const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString().split('T')[0];
-        
+
         console.log(`📅 ScoresManager: Using fallback date range: ${from} to ${to}`);
         return { from, to };
     }
@@ -1737,33 +1732,33 @@ class ScoresManager {
     async processFixturesResults(fixtures, gameweek) {
         try {
             console.log(`🔧 ScoresManager: Processing ${fixtures.length} fixtures from fixtures-results for gameweek ${gameweek}`);
-            
+
             // Ensure database reference is available
             if (!this.db) {
                 console.log('🔧 ScoresManager: Database reference not available, attempting to restore...');
                 this.db = window.firebaseDB;
-                
+
                 if (!this.db) {
                     console.log('🔧 ScoresManager: Trying to get database reference from other managers...');
-                    this.db = window.losApp?.managers?.superAdmin?.db || 
-                             window.losApp?.managers?.admin?.db ||
-                             window.firebase?.firestore?.() ||
-                             null;
+                    this.db = window.losApp?.managers?.superAdmin?.db ||
+                        window.losApp?.managers?.admin?.db ||
+                        window.firebase?.firestore?.() ||
+                        null;
                 }
-                
+
                 if (!this.db) {
                     throw new Error('Database reference not available - cannot update scores');
                 }
-                
+
                 console.log('✅ ScoresManager: Database reference restored successfully');
             }
-            
+
             // Get current club and edition
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
             const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
-            
+
             console.log(`🔧 ScoresManager: Updating scores for club: ${currentClub}, edition: ${currentEdition}, gameweek: ${gameweek}`);
-            
+
             // Get existing fixtures from database
             const fixturesSnapshot = await this.db.collection('clubs')
                 .doc(currentClub)
@@ -1772,12 +1767,12 @@ class ScoresManager {
                 .collection('fixtures')
                 .where('gameWeek', '==', gameweek)
                 .get();
-            
+
             if (fixturesSnapshot.empty) {
                 console.log('ℹ️ ScoresManager: No fixtures found in database for this gameweek');
                 return;
             }
-            
+
             const existingFixtures = [];
             const fixtureDocs = [];
             fixturesSnapshot.forEach(doc => {
@@ -1789,13 +1784,13 @@ class ScoresManager {
                 });
                 fixtureDocs.push(doc);
             });
-            
+
             console.log(`🔧 ScoresManager: Found ${existingFixtures.length} fixtures in database for gameweek ${gameweek}`);
-            
+
             // Create a batch for database updates
             const batch = this.db.batch();
             let updateCount = 0;
-            
+
             // Process each fixture from the API
             fixtures.forEach((apiFixture, index) => {
                 // Find matching fixture in database by team names
@@ -1804,11 +1799,11 @@ class ScoresManager {
                     const dbAwayTeam = dbFixture.awayTeam?.toLowerCase() || '';
                     const apiHomeTeam = apiFixture.homeTeam?.toLowerCase() || '';
                     const apiAwayTeam = apiFixture.awayTeam?.toLowerCase() || '';
-                    
+
                     return (dbHomeTeam.includes(apiHomeTeam) || apiHomeTeam.includes(dbHomeTeam)) &&
-                           (dbAwayTeam.includes(apiAwayTeam) || apiAwayTeam.includes(dbAwayTeam));
+                        (dbAwayTeam.includes(apiAwayTeam) || apiAwayTeam.includes(dbAwayTeam));
                 });
-                
+
                 if (matchingFixture) {
                     // Extract scores from the correct location in API response
                     const homeScore = apiFixture['home-team']?.score || apiFixture.homeScore;
@@ -1830,13 +1825,13 @@ class ScoresManager {
                     console.log(`🔧 ScoresManager: New score data:`, updateData);
 
                     batch.update(matchingFixture.docRef, updateData);
-                    
+
                     updateCount++;
                 } else {
                     console.log(`⚠️ ScoresManager: No matching fixture found for: ${apiFixture.homeTeam} vs ${apiFixture.awayTeam}`);
                 }
             });
-            
+
             // Commit the batch if there are updates
             if (updateCount > 0) {
                 console.log(`🔧 ScoresManager: Committing ${updateCount} score updates to database...`);
@@ -1845,9 +1840,9 @@ class ScoresManager {
             } else {
                 console.log('ℹ️ ScoresManager: No score updates needed - all fixtures are up to date');
             }
-            
+
             console.log('✅ ScoresManager: Fixtures-results processing completed successfully');
-            
+
         } catch (error) {
             console.error('❌ ScoresManager: Error processing fixtures-results:', error);
             throw error;
@@ -1858,7 +1853,7 @@ class ScoresManager {
         try {
             const currentEdition = window.editionService.getCurrentEdition();
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
-            
+
             // Get fixtures from new club-based structure
             const fixturesSnapshot = await this.db.collection('clubs')
                 .doc(currentClub)
@@ -1867,11 +1862,11 @@ class ScoresManager {
                 .collection('fixtures')
                 .where('gameWeek', '==', gameweek)
                 .get();
-            
+
             if (fixturesSnapshot.empty) {
                 throw new Error('No fixtures found for this gameweek');
             }
-            
+
             const fixtures = [];
             const fixtureDocs = [];
             fixturesSnapshot.forEach(doc => {
@@ -1883,7 +1878,7 @@ class ScoresManager {
                 });
                 fixtureDocs.push(doc);
             });
-            
+
             // Apply score updates
             scoreUpdates.forEach(update => {
                 if (fixtures[update.fixtureIndex]) {
@@ -1896,7 +1891,7 @@ class ScoresManager {
                     };
                 }
             });
-            
+
             // Update fixtures in database using batch
             const batch = this.db.batch();
             fixtures.forEach((fixture, index) => {
@@ -1909,15 +1904,15 @@ class ScoresManager {
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
             });
-            
+
             await batch.commit();
-            
+
             // Process all completed fixtures
             const completedFixtures = fixtures.filter(f => f.status === 'completed');
             for (const fixture of completedFixtures) {
                 await this.processFixtureResult(fixture, gameweek);
             }
-            
+
             return true;
         } catch (error) {
             console.error('Error bulk updating scores:', error);
@@ -1965,7 +1960,7 @@ class ScoresManager {
         if (homeScore === null || awayScore === null) {
             return 'pending';
         }
-        
+
         if (homeScore > awayScore) {
             return 'home-win';
         } else if (awayScore > homeScore) {
@@ -1991,31 +1986,31 @@ class ScoresManager {
     async saveScoresToDatabase() {
         try {
             console.log('💾 ScoresManager: Saving scores to database...');
-            
+
             if (!this.currentFixtures || this.currentFixtures.length === 0) {
                 console.log('ℹ️ No fixtures to save');
                 return false;
             }
-            
+
             // Get fixtures with scores
-            const fixturesWithScores = this.currentFixtures.filter(f => 
+            const fixturesWithScores = this.currentFixtures.filter(f =>
                 f.homeScore !== null || f.awayScore !== null
             );
-            
+
             if (fixturesWithScores.length === 0) {
                 console.log('ℹ️ No scores to save');
                 return false;
             }
-            
+
             console.log(`💾 Saving ${fixturesWithScores.length} fixtures with scores to database`);
-            
+
             // Get current club and edition
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
             const currentEdition = window.losApp?.managers?.club?.currentEdition || '2025-26-national-league-1';
-            
+
             // Create a batch update
             const batch = this.db.batch();
-            
+
             for (const fixture of fixturesWithScores) {
                 // Find the document reference for this fixture
                 const fixtureRef = this.db.collection('clubs')
@@ -2024,7 +2019,7 @@ class ScoresManager {
                     .doc(currentEdition)
                     .collection('fixtures')
                     .doc(fixture.id || fixture.fixtureId);
-                
+
                 // Update the fixture with scores and status
                 batch.update(fixtureRef, {
                     homeScore: fixture.homeScore,
@@ -2034,16 +2029,16 @@ class ScoresManager {
                     vidiprinterSync: new Date().toISOString(),
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                
+
                 console.log(`💾 Queued update for ${fixture.homeTeam} ${fixture.homeScore}-${fixture.awayScore} ${fixture.awayTeam}`);
             }
-            
+
             // Commit the batch
             await batch.commit();
-            
+
             console.log('✅ ScoresManager: All scores saved to database successfully!');
             return true;
-            
+
         } catch (error) {
             console.error('❌ ScoresManager: Error saving scores to database:', error);
             return false;
@@ -2054,7 +2049,7 @@ class ScoresManager {
     reloadAPIConfiguration() {
         console.log('🔄 ScoresManager: Manually reloading API configuration...');
         this.apiConfig = this.loadAPIConfiguration();
-        
+
         if (this.apiConfig && this.apiConfig.RAPIDAPI_KEY) {
             console.log('✅ ScoresManager: API configuration reloaded successfully');
             return true;
@@ -2073,11 +2068,11 @@ class ScoresManager {
         console.log('window.ENV_CONFIG:', window.ENV_CONFIG);
         console.log('window.RAPIDAPI_KEY:', window.RAPIDAPI_KEY);
         console.log('window.environmentLoader:', window.environmentLoader);
-        
+
         if (window.environmentLoader) {
             console.log('Environment loader loaded:', window.environmentLoader.isLoaded());
         }
-        
+
         return {
             apiConfig: this.apiConfig,
             footballWebPagesConfig: window.FOOTBALL_WEBPAGES_CONFIG,
@@ -2098,16 +2093,16 @@ class ScoresManager {
             // Get the actual fixture dates for this gameweek from the database
             const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
             const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
-            
+
             if (!this.db) {
                 this.db = window.firebaseDB;
             }
-            
+
             if (!this.db) {
                 console.log('⚠️ ScoresManager: Database not available for fixture date lookup');
                 return null;
             }
-            
+
             const fixturesSnapshot = await this.db.collection('clubs')
                 .doc(currentClub)
                 .collection('editions')
@@ -2115,12 +2110,12 @@ class ScoresManager {
                 .collection('fixtures')
                 .where('gameWeek', '==', gameweek)
                 .get();
-            
+
             if (fixturesSnapshot.empty) {
                 console.log(`ℹ️ ScoresManager: No fixtures found for gameweek ${gameweek}`);
                 return null;
             }
-            
+
             const dates = [];
             fixturesSnapshot.forEach(doc => {
                 const fixtureData = doc.data();
@@ -2128,20 +2123,20 @@ class ScoresManager {
                     dates.push(fixtureData.date);
                 }
             });
-            
+
             if (dates.length === 0) {
                 console.log(`⚠️ ScoresManager: No dates found in fixtures for gameweek ${gameweek}`);
                 return null;
             }
-            
+
             // Sort dates and get min/max
             dates.sort();
             const from = dates[0];
             const to = dates[dates.length - 1];
-            
+
             console.log(`📅 ScoresManager: Found ${dates.length} fixture dates for GW${gameweek}: ${from} to ${to}`);
             return { from, to, allDates: dates };
-            
+
         } catch (error) {
             console.error('❌ ScoresManager: Error getting fixture dates:', error);
             return null;
@@ -2153,7 +2148,7 @@ class ScoresManager {
         // This will be much more targeted than the current ±7 day range
         const currentClub = window.losApp?.managers?.club?.currentClub || 'altrincham-fc-juniors';
         const currentEdition = window.editionService?.getCurrentEdition() || '2025-26-national-league-1';
-        
+
         // For now, use a more targeted approach based on gameweek
         // Gameweek 1: Aug 9, Gameweek 2: Aug 23, etc.
         const gameweekDates = {
@@ -2168,17 +2163,17 @@ class ScoresManager {
             9: { from: '2025-11-29', to: '2025-11-29' },
             10: { from: '2025-12-13', to: '2025-12-13' }
         };
-        
+
         if (gameweekDates[gameweek]) {
             console.log(`📅 ScoresManager: Using targeted date range for GW${gameweek}: ${gameweekDates[gameweek].from} to ${gameweekDates[gameweek].to}`);
             return gameweekDates[gameweek];
         }
-        
+
         // Fallback to a very narrow range (±1 day) if gameweek not found
         const today = new Date();
         const from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString().split('T')[0];
         const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString().split('T')[0];
-        
+
         console.log(`📅 ScoresManager: Using fallback date range: ${from} to ${to}`);
         return { from, to };
     }
@@ -2186,7 +2181,7 @@ class ScoresManager {
 
 // ScoresManager will be initialized by the main app
 // Global helper functions for debugging
-    
+
 // Global helper functions for debugging
 window.testScoreImport = async (gameweek = 1) => {
     console.log('🧪 Testing score import for gameweek:', gameweek);

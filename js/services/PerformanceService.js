@@ -1,7 +1,7 @@
 /**
  * PerformanceService - Handles performance optimizations, lazy loading, and caching
  */
-class PerformanceService {
+export default class PerformanceService {
     constructor() {
         this.debounceTimers = new Map();
         this.intersectionObserver = null;
@@ -10,7 +10,7 @@ class PerformanceService {
             firstContentfulPaint: 0,
             domContentLoaded: 0
         };
-        
+
         this.setupPerformanceMonitoring();
         this.setupIntersectionObserver();
     }
@@ -70,7 +70,7 @@ class PerformanceService {
                         if (entry.isIntersecting) {
                             const element = entry.target;
                             const lazyAction = element.dataset.lazyAction;
-                            
+
                             if (lazyAction) {
                                 this.executeLazyAction(lazyAction, element);
                                 this.intersectionObserver.unobserve(element);
@@ -132,7 +132,7 @@ class PerformanceService {
     lazyLoadData(element) {
         const dataType = element.dataset.dataType;
         const callback = element.dataset.callback;
-        
+
         if (dataType && callback && window[callback]) {
             window[callback](dataType, element);
         }
@@ -158,12 +158,12 @@ class PerformanceService {
         if (this.debounceTimers.has(key)) {
             clearTimeout(this.debounceTimers.get(key));
         }
-        
+
         const timer = setTimeout(() => {
             func();
             this.debounceTimers.delete(key);
         }, delay);
-        
+
         this.debounceTimers.set(key, timer);
     }
 
@@ -204,7 +204,7 @@ class PerformanceService {
         images.forEach(img => {
             // Add loading="lazy" for native lazy loading
             img.loading = 'lazy';
-            
+
             // Add intersection observer for custom lazy loading
             this.addToLazyQueue(img, 'loadImage');
         });
@@ -264,7 +264,7 @@ class PerformanceService {
         // Clear all debounce timers
         this.debounceTimers.forEach(timer => clearTimeout(timer));
         this.debounceTimers.clear();
-        
+
         // Disconnect intersection observer
         if (this.intersectionObserver) {
             this.intersectionObserver.disconnect();
@@ -273,8 +273,5 @@ class PerformanceService {
 }
 
 // Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = PerformanceService;
-} else {
-    window.PerformanceService = PerformanceService;
-}
+// Export for use in other modules
+// Class is exported as default above

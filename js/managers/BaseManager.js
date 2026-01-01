@@ -2,7 +2,7 @@
  * BaseManager - Base class for all managers to reduce code duplication
  * Provides common functionality for initialization, error handling, and Firebase connection
  */
-class BaseManager {
+export default class BaseManager {
     constructor(managerName) {
         this.managerName = managerName;
         this.db = null;
@@ -21,7 +21,7 @@ class BaseManager {
         if (this.isInitialized) {
             return;
         }
-        
+
         console.log(`🔧 ${this.managerName}: Basic initialization...`);
         this.isInitialized = true;
     }
@@ -33,19 +33,19 @@ class BaseManager {
         if (this.isInitialized && this.dataLoaded) {
             return;
         }
-        
+
         try {
             console.log(`🔧 ${this.managerName}: Starting full initialization...`);
-            
+
             // Wait for Firebase to be ready
             await this.waitForFirebase();
-            
+
             // Set up real-time listeners
             this.setupRealtimeListeners();
-            
+
             this.dataLoaded = true;
             console.log(`✅ ${this.managerName}: Initialization complete`);
-            
+
         } catch (error) {
             console.error(`❌ ${this.managerName}: Initialization failed:`, error);
             this.handleError(error, 'initialization');
@@ -72,12 +72,12 @@ class BaseManager {
                     }
                 }
             };
-            
+
             // Set a timeout to prevent infinite waiting
             setTimeout(() => {
                 reject(new Error('Firebase initialization timeout'));
             }, 30000); // 30 second timeout
-            
+
             checkFirebase();
         });
     }
@@ -96,7 +96,7 @@ class BaseManager {
      */
     clearListeners() {
         console.log(`🧹 ${this.managerName}: Clearing listeners...`);
-        
+
         // Clear all registered listeners
         this.listeners.forEach((unsubscribe, listenerId) => {
             try {
@@ -107,9 +107,9 @@ class BaseManager {
                 console.warn(`⚠️ ${this.managerName}: Error clearing listener ${listenerId}:`, error);
             }
         });
-        
+
         this.listeners.clear();
-        
+
         // Unregister from main app's listener tracking
         if (window.losApp) {
             window.losApp.unregisterListener(this.managerName);
@@ -128,7 +128,7 @@ class BaseManager {
                 existingUnsubscribe();
             }
         }
-        
+
         this.listeners.set(listenerId, unsubscribeFunction);
         console.log(`📡 ${this.managerName}: Registered listener ${listenerId}`);
     }
@@ -162,10 +162,10 @@ class BaseManager {
      */
     handleError(error, operation = 'operation') {
         console.error(`❌ ${this.managerName}: Error during ${operation}:`, error);
-        
+
         // Show user-friendly error message
         this.showErrorToast(`${this.managerName}: ${this.getErrorMessage(error)}`);
-        
+
         // Implement retry logic for certain operations
         if (this.shouldRetry(error, operation)) {
             this.scheduleRetry(operation);
@@ -180,7 +180,7 @@ class BaseManager {
         if (this.retryCount >= this.maxRetries) {
             return false;
         }
-        
+
         // Retry on network errors or Firebase connection issues
         const retryableErrors = [
             'client is offline',
@@ -189,7 +189,7 @@ class BaseManager {
             'connection failed',
             'firebase/firestore/unavailable'
         ];
-        
+
         const errorMessage = error.message?.toLowerCase() || '';
         return retryableErrors.some(retryableError => errorMessage.includes(retryableError));
     }
@@ -200,9 +200,9 @@ class BaseManager {
     scheduleRetry(operation) {
         this.retryCount++;
         const delay = this.retryDelay * Math.pow(2, this.retryCount - 1); // Exponential backoff
-        
+
         console.log(`🔄 ${this.managerName}: Scheduling retry ${this.retryCount}/${this.maxRetries} for ${operation} in ${delay}ms`);
-        
+
         setTimeout(() => {
             this.retryOperation(operation);
         }, delay);
@@ -213,7 +213,7 @@ class BaseManager {
      */
     retryOperation(operation) {
         console.log(`🔄 ${this.managerName}: Retrying ${operation}...`);
-        
+
         switch (operation) {
             case 'initialization':
                 this.init();
@@ -228,7 +228,7 @@ class BaseManager {
      */
     getErrorMessage(error) {
         const errorMessage = error.message?.toLowerCase() || '';
-        
+
         if (errorMessage.includes('client is offline')) {
             return 'You are currently offline. Please check your internet connection.';
         } else if (errorMessage.includes('permission denied')) {
@@ -312,16 +312,10 @@ class BaseManager {
      */
     destroy() {
         console.log(`🧹 ${this.managerName}: Destroying manager...`);
-        
+
         this.clearListeners();
         this.isInitialized = false;
         this.dataLoaded = false;
         this.retryCount = 0;
     }
 }
-
-// Export for use in other modules
-window.BaseManager = BaseManager;
-
-
-

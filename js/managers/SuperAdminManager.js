@@ -1,4 +1,7 @@
-class SuperAdminManager {
+import EmailService from '../services/EmailService.js';
+
+export default class SuperAdminManager {
+
     constructor() {
         this.isInitialized = false;
         this.isSuperAdmin = false;
@@ -14,7 +17,7 @@ class SuperAdminManager {
 
     initBasic() {
         if (this.isInitialized) return;
-        
+
         // Basic initialization...
         this.setupBasicStructure();
         this.isInitialized = true;
@@ -23,46 +26,46 @@ class SuperAdminManager {
 
     setupBasicStructure() {
         // Setting up basic structure...
-        
+
         // Set up super admin dashboard toggle
         this.setupSuperAdminToggle();
-        
+
         // Basic structure setup complete
     }
 
     setupSuperAdminToggle() {
         // Setting up super admin toggle...
-        
+
         // Add super admin toggle to header if not already present
         const header = document.querySelector('.app-header');
         // Header element found
-        
+
         if (header && !document.getElementById('superAdminToggle')) {
             // Creating super admin toggle button...
-            
+
             const toggle = document.createElement('button');
             toggle.id = 'superAdminToggle';
             toggle.className = 'btn btn-secondary super-admin-toggle';
             toggle.innerHTML = '👑 Super Admin';
             toggle.style.display = 'none'; // Hidden by default
             toggle.addEventListener('click', () => this.toggleSuperAdminDashboard());
-            
+
             // Try to insert into the admin buttons container with retry mechanism
             this.insertSuperAdminToggle(toggle);
-            
+
             // Also set up a retry mechanism when app container becomes visible
             this.setupAppContainerVisibilityListener(toggle);
         } else {
             console.log('ℹ️ SuperAdminManager: Toggle button already exists or header not found');
         }
     }
-    
+
     setupAppContainerVisibilityListener(toggle) {
         // If app container is hidden, wait for it to become visible
         const appContainer = document.getElementById('appContainer');
         if (appContainer && appContainer.classList.contains('hidden')) {
             console.log('🔍 SuperAdminManager: App container is hidden, setting up visibility listener');
-            
+
             // Use MutationObserver to watch for class changes
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
@@ -76,9 +79,9 @@ class SuperAdminManager {
                     }
                 });
             });
-            
+
             observer.observe(appContainer, { attributes: true, attributeFilter: ['class'] });
-            
+
             // Also set a timeout as fallback
             setTimeout(() => {
                 observer.disconnect();
@@ -105,11 +108,11 @@ class SuperAdminManager {
 
         // Try to find adminButtonsContainer first
         let adminButtonsContainer = document.getElementById('adminButtonsContainer');
-        
+
         // If adminButtonsContainer doesn't exist, try to find an alternative container
         if (!adminButtonsContainer) {
             console.log('🔍 SuperAdminManager: adminButtonsContainer not found, looking for alternative container...');
-            
+
             // Try to find header-content as an alternative
             const headerContent = document.querySelector('.header-content');
             if (headerContent) {
@@ -124,9 +127,9 @@ class SuperAdminManager {
                 }
             }
         }
-        
+
         console.log('🔍 SuperAdminManager: Admin buttons container found:', !!adminButtonsContainer, 'Retry:', retryCount);
-        
+
         if (adminButtonsContainer) {
             // Insert the super admin toggle button
             adminButtonsContainer.appendChild(toggle);
@@ -134,7 +137,7 @@ class SuperAdminManager {
             console.log('🔍 SuperAdminManager: Toggle element:', toggle);
             console.log('🔍 SuperAdminManager: Toggle display style:', toggle.style.display);
             console.log('🔍 SuperAdminManager: Container children count:', adminButtonsContainer.children.length);
-            
+
             // If user is already confirmed as super admin, show the button immediately
             if (this.isSuperAdmin) {
                 console.log('👑 SuperAdminManager: User is super admin, showing toggle button immediately');
@@ -149,7 +152,7 @@ class SuperAdminManager {
                 console.log('🔍 SuperAdminManager: .app-header exists:', !!document.querySelector('.app-header'));
                 console.log('🔍 SuperAdminManager: .header-controls exists:', !!document.querySelector('.header-controls'));
                 console.log('🔍 SuperAdminManager: All elements with "admin" in ID:', Array.from(document.querySelectorAll('[id*="admin"]')).map(el => el.id));
-                
+
                 // Additional debugging
                 const headerControls = document.querySelector('.header-controls');
                 if (headerControls) {
@@ -161,13 +164,13 @@ class SuperAdminManager {
                     console.log('🔍 SuperAdminManager: .header-controls not found, checking all header elements...');
                     const allHeaders = document.querySelectorAll('[class*="header"]');
                     console.log('🔍 SuperAdminManager: All header elements:', Array.from(allHeaders).map(el => el.className));
-                    
+
                     // Check the app-header structure
                     const appHeader = document.querySelector('.app-header');
                     if (appHeader) {
                         console.log('🔍 SuperAdminManager: app-header found, checking its children...');
                         console.log('🔍 SuperAdminManager: app-header children:', Array.from(appHeader.children).map(el => el.className));
-                        
+
                         // Look for header-row elements
                         const headerRows = appHeader.querySelectorAll('.header-row');
                         console.log('🔍 SuperAdminManager: header-row elements found:', headerRows.length);
@@ -178,7 +181,7 @@ class SuperAdminManager {
                     }
                 }
             }
-            
+
             // Retry after a short delay if container not found
             console.log('⏳ SuperAdminManager: Admin buttons container not found, retrying in 100ms... (Attempt ' + (retryCount + 1) + '/50)');
             setTimeout(() => this.insertSuperAdminToggle(toggle, retryCount + 1), 100);
@@ -198,10 +201,10 @@ class SuperAdminManager {
 
         // Listen for audit logs
         this.setupAuditLogListener();
-        
+
         // Listen for clubs
         this.setupClubsListener();
-        
+
         // Listen for users across all clubs
         this.setupUsersListener();
     }
@@ -281,19 +284,19 @@ class SuperAdminManager {
             console.log('🔍 SuperAdminManager: checkSuperAdminStatus called for user:', userId);
             console.log('🔍 SuperAdminManager: this.db exists:', !!this.db);
             console.log('🔍 SuperAdminManager: this.db.collection exists:', !!(this.db && this.db.collection));
-            
+
             if (!this.db || typeof this.db.collection !== 'function') {
                 console.log('❌ SuperAdminManager: Database not ready, cannot check super admin status');
                 return;
             }
-            
+
             // For now, hardcode super admin - in production this would come from a roles collection
             const superAdminEmails = ['adfirth@gmail.com']; // Replace with your actual email
             console.log('🔍 SuperAdminManager: Checking against super admin emails:', superAdminEmails);
-            
+
             let userFound = false;
             let userData = null;
-            
+
             // First, try to find user in the old users collection (for backward compatibility)
             try {
                 console.log('🔍 SuperAdminManager: Checking old users collection...');
@@ -306,17 +309,17 @@ class SuperAdminManager {
             } catch (error) {
                 console.log('🔍 SuperAdminManager: Error checking old users collection:', error);
             }
-            
+
             // If not found in old collection, search in new nested structure
             if (!userFound) {
                 console.log('🔍 SuperAdminManager: Searching for user across all clubs...');
-                
+
                 // Get global settings to find active clubs
                 const globalSettings = await this.db.collection('global-settings').doc('system').get();
                 const activeClubs = globalSettings.exists ? globalSettings.data().activeClubs : [];
-                
+
                 console.log('🔍 SuperAdminManager: Active clubs found:', activeClubs);
-                
+
                 // If no active clubs, try to find any clubs
                 if (activeClubs.length === 0) {
                     console.log('🔍 SuperAdminManager: No active clubs found, searching all clubs...');
@@ -324,18 +327,18 @@ class SuperAdminManager {
                         const allClubsSnapshot = await this.db.collection('clubs').get();
                         for (const clubDoc of allClubsSnapshot.docs) {
                             if (userFound) break;
-                            
+
                             try {
                                 const editionsSnapshot = await this.db.collection('clubs').doc(clubDoc.id)
                                     .collection('editions').get();
-                                
+
                                 for (const editionDoc of editionsSnapshot.docs) {
                                     if (userFound) break;
-                                    
+
                                     const userDoc = await this.db.collection('clubs').doc(clubDoc.id)
                                         .collection('editions').doc(editionDoc.id)
                                         .collection('users').doc(userId).get();
-                                    
+
                                     if (userDoc.exists) {
                                         userData = userDoc.data();
                                         userFound = true;
@@ -351,42 +354,42 @@ class SuperAdminManager {
                         console.log('🔍 SuperAdminManager: Error searching all clubs:', error);
                     }
                 } else {
-                // Search through all active clubs and their editions
-                for (const clubId of activeClubs) {
-                    if (userFound) break;
-                    
-                    try {
-                        const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
-                            .collection('editions').get();
-                        
-                        for (const editionDoc of editionsSnapshot.docs) {
-                            if (userFound) break;
-                            
-                            const userDoc = await this.db.collection('clubs').doc(clubId)
-                                .collection('editions').doc(editionDoc.id)
-                                .collection('users').doc(userId).get();
-                            
-                            if (userDoc.exists) {
-                                userData = userDoc.data();
-                                userFound = true;
-                                console.log(`🔍 SuperAdminManager: User found in club: ${clubId}, edition: ${editionDoc.id}`);
-                                break;
+                    // Search through all active clubs and their editions
+                    for (const clubId of activeClubs) {
+                        if (userFound) break;
+
+                        try {
+                            const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
+                                .collection('editions').get();
+
+                            for (const editionDoc of editionsSnapshot.docs) {
+                                if (userFound) break;
+
+                                const userDoc = await this.db.collection('clubs').doc(clubId)
+                                    .collection('editions').doc(editionDoc.id)
+                                    .collection('users').doc(userId).get();
+
+                                if (userDoc.exists) {
+                                    userData = userDoc.data();
+                                    userFound = true;
+                                    console.log(`🔍 SuperAdminManager: User found in club: ${clubId}, edition: ${editionDoc.id}`);
+                                    break;
+                                }
                             }
-                        }
-                    } catch (error) {
-                        console.log(`🔍 SuperAdminManager: Error searching club ${clubId}:`, error);
+                        } catch (error) {
+                            console.log(`🔍 SuperAdminManager: Error searching club ${clubId}:`, error);
                         }
                     }
                 }
             }
-            
+
             console.log('🔍 SuperAdminManager: User document exists:', userFound);
-            
+
             if (userFound && userData) {
                 console.log('🔍 SuperAdminManager: User email:', userData.email);
                 this.isSuperAdmin = superAdminEmails.includes(userData.email);
                 console.log('🔍 SuperAdminManager: isSuperAdmin set to:', this.isSuperAdmin);
-                
+
                 if (this.isSuperAdmin) {
                     console.log('👑 User is Super Admin');
                     this.showSuperAdminToggle();
@@ -395,14 +398,14 @@ class SuperAdminManager {
                     console.log('👤 User is not Super Admin');
                     this.hideSuperAdminToggle();
                 }
-                
+
                 // Notify AdminManager to refresh admin status
                 if (window.losApp?.managers?.admin) {
                     window.losApp.managers.admin.refreshAdminStatus();
                 }
             } else {
                 console.log('❌ SuperAdminManager: User document not found in any location');
-                
+
                 // Fallback: Check if user is super admin by email (for development)
                 // This allows super admin access even if user document isn't migrated yet
                 try {
@@ -410,13 +413,13 @@ class SuperAdminManager {
                     if (auth && auth.currentUser) {
                         const userEmail = auth.currentUser.email;
                         console.log('🔍 SuperAdminManager: Checking email for super admin:', userEmail);
-                        
+
                         if (superAdminEmails.includes(userEmail)) {
                             console.log('👑 SuperAdminManager: User is super admin by email (fallback)');
                             this.isSuperAdmin = true;
                             this.showSuperAdminToggle();
                             this.loadSuperAdminData();
-                            
+
                             // Notify AdminManager to refresh admin status
                             if (window.losApp?.managers?.admin) {
                                 window.losApp.managers.admin.refreshAdminStatus();
@@ -545,7 +548,7 @@ class SuperAdminManager {
     updateDashboardStats() {
         const totalClubsEl = document.getElementById('totalClubs');
         const totalUsersEl = document.getElementById('totalUsers');
-        
+
         if (totalClubsEl) totalClubsEl.textContent = this.clubs.length;
         if (totalUsersEl) totalUsersEl.textContent = this.users.length;
     }
@@ -595,20 +598,20 @@ class SuperAdminManager {
             if (globalSettings.exists) {
                 const data = globalSettings.data();
                 const apiEnabled = data.apiRequestsEnabled !== false; // Default to true if not set
-                
+
                 // Update the toggle state
                 const apiToggle = document.getElementById('apiToggle');
                 if (apiToggle) {
                     apiToggle.checked = apiEnabled;
                 }
-                
+
                 // Update the status text
                 const apiStatus = document.getElementById('apiStatus');
                 if (apiStatus) {
                     apiStatus.textContent = apiEnabled ? '✅ API requests are enabled' : '❌ API requests are disabled';
                     apiStatus.style.color = apiEnabled ? '#059669' : '#dc3545';
                 }
-                
+
                 console.log('✅ SuperAdminManager: API status loaded:', apiEnabled);
             } else {
                 console.log('⚠️ SuperAdminManager: No global settings found, creating default...');
@@ -627,7 +630,7 @@ class SuperAdminManager {
             }
 
             console.log(`🔌 SuperAdminManager: Toggling API requests to: ${enabled}`);
-            
+
             // Update global settings
             await this.db.collection('global-settings').doc('system').update({
                 apiRequestsEnabled: enabled,
@@ -649,16 +652,16 @@ class SuperAdminManager {
 
             // Show confirmation toast
             this.showToast(enabled ? 'API requests enabled' : 'API requests disabled', 'success');
-            
+
             console.log(`✅ SuperAdminManager: API requests ${enabled ? 'enabled' : 'disabled'} successfully`);
-            
+
             // Notify other managers about the change
             this.notifyAPIToggleChange(enabled);
-            
+
         } catch (error) {
             console.error('❌ SuperAdminManager: Error toggling API requests:', error);
             this.showToast('Failed to update API settings', 'error');
-            
+
             // Revert the toggle state
             const apiToggle = document.getElementById('apiToggle');
             if (apiToggle) {
@@ -670,7 +673,7 @@ class SuperAdminManager {
     async createDefaultGlobalSettings() {
         try {
             console.log('🔧 SuperAdminManager: Creating default global settings...');
-            
+
             const defaultSettings = {
                 activeClubs: [],
                 systemVersion: '2.0',
@@ -678,13 +681,13 @@ class SuperAdminManager {
                 created_at: new Date(),
                 updated_at: new Date()
             };
-            
+
             await this.db.collection('global-settings').doc('system').set(defaultSettings);
             console.log('✅ SuperAdminManager: Default global settings created');
-            
+
             // Reload API status after creating settings
             await this.loadAPIStatus();
-            
+
         } catch (error) {
             console.error('❌ SuperAdminManager: Error creating default global settings:', error);
         }
@@ -694,21 +697,21 @@ class SuperAdminManager {
         // Notify other managers about the API toggle change
         if (window.losApp?.managers) {
             const managers = window.losApp.managers;
-            
+
             // Notify API managers
             if (managers.footballWebPagesAPI) {
                 console.log('🔌 SuperAdminManager: Notifying FootballWebPagesAPI of API toggle change');
                 // You can add a method to handle this notification if needed
             }
-            
+
             // Notify other relevant managers
             if (managers.fixtures) {
                 console.log('🔌 SuperAdminManager: Notifying FixturesManager of API toggle change');
             }
-            
+
             // Dispatch a custom event for other components to listen to
-            const event = new CustomEvent('apiToggleChanged', { 
-                detail: { enabled: enabled } 
+            const event = new CustomEvent('apiToggleChanged', {
+                detail: { enabled: enabled }
             });
             window.dispatchEvent(event);
         }
@@ -730,9 +733,9 @@ class SuperAdminManager {
             z-index: 2000;
             border-left: 4px solid ${type === 'success' ? '#059669' : type === 'error' ? '#dc3545' : '#667eea'};
         `;
-        
+
         document.body.appendChild(toast);
-        
+
         // Remove after 3 seconds
         setTimeout(() => {
             if (toast.parentNode) {
@@ -749,9 +752,9 @@ class SuperAdminManager {
 
         try {
             console.log('🏟️ SuperAdminManager: Creating new club:', clubData);
-            
+
             const clubId = clubData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            
+
             const clubDataForDB = {
                 clubId: clubId,
                 name: clubData.name,
@@ -770,7 +773,7 @@ class SuperAdminManager {
 
             // Create the club in the database
             await this.db.collection('clubs').doc(clubId).set(clubDataForDB);
-            
+
             // Create default edition
             const editionData = {
                 editionId: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}-default`,
@@ -792,16 +795,14 @@ class SuperAdminManager {
             // Send welcome email to the club administrator
             let emailResult = null;
             try {
-                if (window.EmailService) {
-                    const emailService = new window.EmailService();
-                    emailResult = await emailService.sendClubWelcomeEmail({
-                        name: clubData.name,
-                        clubId: clubId,
-                        contactEmail: clubData.contactEmail,
-                        adminName: clubData.adminName,
-                        website: clubData.website
-                    });
-                }
+                const emailService = new EmailService();
+                emailResult = await emailService.sendClubWelcomeEmail({
+                    name: clubData.name,
+                    clubId: clubId,
+                    contactEmail: clubData.contactEmail,
+                    adminName: clubData.adminName,
+                    website: clubData.website
+                });
             } catch (emailError) {
                 console.warn('⚠️ SuperAdminManager: Email sending failed:', emailError);
                 // Don't fail club creation if email fails
@@ -819,7 +820,7 @@ class SuperAdminManager {
 
             // Show success message with email status
             this.showClubCreationSuccess(clubData.name, clubData.contactEmail, emailResult);
-            
+
         } catch (error) {
             console.error('❌ SuperAdminManager: Error creating club:', error);
             this.showToast('Error creating club: ' + error.message, 'error');
@@ -902,10 +903,10 @@ class SuperAdminManager {
 
             // Handle form submission
             const formElement = modal.querySelector('#clubCreationForm');
-            
+
             formElement.addEventListener('submit', (e) => {
                 e.preventDefault();
-                
+
                 const clubData = {
                     name: document.getElementById('clubName').value.trim(),
                     description: document.getElementById('clubDescription').value.trim(),
@@ -914,7 +915,7 @@ class SuperAdminManager {
                     website: document.getElementById('clubWebsite').value.trim() || null,
                     primaryColor: document.getElementById('primaryColor').value
                 };
-                
+
                 modal.remove();
                 resolve(clubData);
             });
@@ -937,8 +938,8 @@ class SuperAdminManager {
             align-items: center;
         `;
 
-        const emailStatus = emailResult?.success ? 
-            `✅ Welcome email sent to ${adminEmail}` : 
+        const emailStatus = emailResult?.success ?
+            `✅ Welcome email sent to ${adminEmail}` :
             `⚠️ Welcome email could not be sent to ${adminEmail}`;
 
         modal.innerHTML = `
@@ -1023,7 +1024,7 @@ class SuperAdminManager {
 
         document.body.appendChild(modal);
         this.populateAuditLogs();
-        
+
         // Add search functionality
         const searchInput = document.getElementById('auditSearch');
         searchInput.addEventListener('input', (e) => this.filterAuditLogs(e.target.value));
@@ -1043,7 +1044,7 @@ class SuperAdminManager {
             const userType = log.userType || 'UNKNOWN';
             const action = log.action || 'Unknown action';
             const details = log.details ? JSON.stringify(log.details, null, 2) : '';
-            
+
             return `
                 <div style="border: 1px solid #e5e7eb; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
@@ -1078,7 +1079,7 @@ class SuperAdminManager {
             const userType = log.userType || 'UNKNOWN';
             const action = log.action || 'Unknown action';
             const details = log.details ? JSON.stringify(log.details, null, 2) : '';
-            
+
             return `
                 <div style="border: 1px solid #e5e7eb; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
@@ -1347,14 +1348,14 @@ class SuperAdminManager {
 
         document.body.appendChild(modal);
         this.populateFixtureModalData();
-        
+
         // Ensure selectors are populated immediately
         this.ensureSelectorsPopulated();
     }
 
     async ensureSelectorsPopulated() {
         console.log('🔧 SuperAdmin: Ensuring selectors are populated...');
-        
+
         // Use ClubService to populate club dropdowns
         if (window.losApp?.managers?.club) {
             await window.losApp.managers.club.ensureSuperAdminSelectorsPopulated();
@@ -1367,10 +1368,10 @@ class SuperAdminManager {
     async populateFixtureModalData() {
         try {
             console.log('🔧 Populating fixture modal data...');
-            
+
             // Wait for ClubService to be ready before populating dropdowns
             await this.waitForClubServiceReady();
-            
+
             // Use ClubService to populate club dropdowns
             if (window.losApp?.managers?.club) {
                 await window.losApp.managers.club.ensureSuperAdminSelectorsPopulated();
@@ -1378,16 +1379,16 @@ class SuperAdminManager {
                 // Fallback to original method if ClubService not available
                 await this.populateFixtureClubDropdowns();
             }
-            
+
             // Populate competition dropdowns
             await this.populateCompetitionDropdown();
-            
+
             // Populate current fixtures club and edition dropdowns
             await this.populateCurrentFixturesDropdowns();
-            
+
             // Set up listeners
             this.setupFixtureModalListeners();
-            
+
             console.log('✅ Fixture modal data populated successfully');
         } catch (error) {
             console.error('❌ Error populating fixture modal data:', error);
@@ -1398,18 +1399,18 @@ class SuperAdminManager {
         console.log('⏳ Waiting for ClubService to be ready...');
         let attempts = 0;
         const maxAttempts = 30; // Wait up to 60 seconds
-        
+
         while (attempts < maxAttempts) {
             if (window.losApp?.managers?.club?.isReady) {
                 console.log('✅ ClubService is ready');
                 return;
             }
-            
+
             console.log(`⏳ ClubService not ready yet, attempt ${attempts + 1}/${maxAttempts}...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
             attempts++;
         }
-        
+
         console.warn('⚠️ ClubService did not become ready within timeout');
     }
 
@@ -1420,10 +1421,10 @@ class SuperAdminManager {
                 console.warn('⚠️ Competition select element not found');
                 return;
             }
-            
+
             // Clear existing options
             competitionSelect.innerHTML = '<option value="">Select Competition</option>';
-            
+
             // Get competitions from config with fallback
             let competitions = {};
             if (window.APIConfig && window.APIConfig.competitions) {
@@ -1441,7 +1442,7 @@ class SuperAdminManager {
                     'league-two': { id: '4', name: 'EFL League Two', description: 'English League Two (4th tier)' }
                 };
             }
-            
+
             // Add competition options
             Object.entries(competitions).forEach(([key, comp]) => {
                 const option = document.createElement('option');
@@ -1449,7 +1450,7 @@ class SuperAdminManager {
                 option.textContent = `${comp.name} (${comp.description || ''})`;
                 competitionSelect.appendChild(option);
             });
-            
+
             console.log(`✅ Populated competition dropdown with ${Object.keys(competitions).length} competitions`);
         } catch (error) {
             console.error('❌ Error populating competition dropdown:', error);
@@ -1472,31 +1473,31 @@ class SuperAdminManager {
     async populateCurrentFixturesDropdowns() {
         try {
             console.log('🔧 Populating current fixtures dropdowns...');
-            
+
             const clubSelect = document.getElementById('currentFixturesClubSelect');
             const editionSelect = document.getElementById('currentFixturesEditionSelect');
-            
+
             if (!clubSelect || !editionSelect) {
                 console.warn('⚠️ Current fixtures dropdown elements not found');
                 return;
             }
-            
+
             // Clear existing options
             clubSelect.innerHTML = '<option value="">Choose a club...</option>';
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
-            
+
             // Get clubs from ClubService
             if (window.losApp?.managers?.club) {
                 const clubService = window.losApp.managers.club;
-                
+
                 // Get clubs from ClubService's clubData
                 const clubs = Object.keys(clubService.clubData).map(clubId => ({
                     id: clubId,
                     ...clubService.clubData[clubId]
                 }));
-                
+
                 console.log('🔧 Found clubs for current fixtures:', clubs.length);
-                
+
                 clubs.forEach(club => {
                     if (club.isActive !== false) { // Include clubs that are active or don't have isActive set
                         const option = document.createElement('option');
@@ -1505,7 +1506,7 @@ class SuperAdminManager {
                         clubSelect.appendChild(option);
                     }
                 });
-                
+
                 console.log('✅ Populated current fixtures club dropdown');
             } else {
                 console.warn('⚠️ ClubService not available for populating current fixtures dropdowns');
@@ -1519,25 +1520,25 @@ class SuperAdminManager {
     async populateFixtureClubDropdowns() {
         const fixtureClubSelect = document.getElementById('fixtureClubSelect');
         const scoreClubSelect = document.getElementById('scoreClubSelect');
-        
+
         if (fixtureClubSelect && scoreClubSelect) {
             // Clear existing options
             fixtureClubSelect.innerHTML = '<option value="">Choose a club...</option>';
             scoreClubSelect.innerHTML = '<option value="">Choose a club...</option>';
-            
+
             try {
                 // Use ClubService to get clubs instead of this.clubs
                 if (window.losApp?.managers?.club) {
                     const clubService = window.losApp.managers.club;
-                    
+
                     // Get clubs from ClubService
                     const clubs = Object.keys(clubService.clubData).map(clubId => ({
                         id: clubId,
                         ...clubService.clubData[clubId]
                     }));
-                    
+
                     console.log('🔧 SuperAdmin: Populating fixture club dropdowns with', clubs.length, 'clubs');
-                    
+
                     // Add club options
                     clubs.forEach(club => {
                         if (club.isActive !== false) { // Include clubs that are active or don't have isActive set
@@ -1545,7 +1546,7 @@ class SuperAdminManager {
                             fixtureOption.value = club.id;
                             fixtureOption.textContent = club.name;
                             fixtureClubSelect.appendChild(fixtureOption);
-                            
+
                             const scoreOption = document.createElement('option');
                             scoreOption.value = club.id;
                             scoreOption.textContent = club.name;
@@ -1569,11 +1570,11 @@ class SuperAdminManager {
         // Set up club change listeners to load editions
         const fixtureClubSelect = document.getElementById('fixtureClubSelect');
         const scoreClubSelect = document.getElementById('scoreClubSelect');
-        
+
         if (fixtureClubSelect) {
             fixtureClubSelect.addEventListener('change', () => this.loadEditionsForClub('fixture'));
         }
-        
+
         if (scoreClubSelect) {
             scoreClubSelect.addEventListener('change', () => this.loadEditionsForClub('score'));
         }
@@ -1582,18 +1583,18 @@ class SuperAdminManager {
     async loadEditionsForClub(type) {
         const clubId = document.getElementById(`${type}ClubSelect`).value;
         const editionSelect = document.getElementById(`${type}EditionSelect`);
-        
+
         if (!clubId) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
             return;
         }
-        
+
         try {
             const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
                 .collection('editions').get();
-            
+
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
-            
+
             editionsSnapshot.forEach(doc => {
                 const edition = doc.data();
                 const option = document.createElement('option');
@@ -1611,32 +1612,32 @@ class SuperAdminManager {
     onCurrentFixturesClubChange() {
         const clubId = document.getElementById('currentFixturesClubSelect').value;
         const editionSelect = document.getElementById('currentFixturesEditionSelect');
-        
+
         if (!clubId) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
             return;
         }
-        
+
         this.loadEditionsForCurrentFixtures(clubId);
     }
 
     async loadEditionsForCurrentFixtures(clubId) {
         try {
             const editionSelect = document.getElementById('currentFixturesEditionSelect');
-            
+
             // Clear editions dropdown
             editionSelect.innerHTML = '<option value="">Loading editions...</option>';
-            
+
             // Get editions for the selected club using ClubService
             if (window.losApp?.managers?.club) {
                 // Super Admin should see ALL editions (including inactive ones)
                 const editions = await window.losApp.managers.club.getAllEditions(clubId);
-                
+
                 editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
                 editions.forEach(edition => {
                     const option = document.createElement('option');
                     option.value = edition.id;
-                    
+
                     // Add status indicator to edition name
                     let statusText = '';
                     if (edition.isActive === false) {
@@ -1646,17 +1647,17 @@ class SuperAdminManager {
                     } else {
                         statusText = ' (Unknown Status)';
                     }
-                    
+
                     option.textContent = `${edition.name}${statusText}`;
-                    
+
                     // Keep inactive editions selectable for Super Admin
                     if (edition.isActive === false) {
                         option.style.color = '#6b7280'; // Gray out but keep selectable
                     }
-                    
+
                     editionSelect.appendChild(option);
                 });
-                
+
                 console.log(`✅ SuperAdmin: Loaded ${editions.length} editions for club ${clubId} (including inactive ones)`);
             } else {
                 editionSelect.innerHTML = '<option value="">Error: ClubService not available</option>';
@@ -1677,35 +1678,35 @@ class SuperAdminManager {
     async toggleEditionStatus(clubId, editionId) {
         try {
             console.log(`🔧 SuperAdmin: Toggling edition status for ${clubId}/${editionId}`);
-            
+
             // Get current edition data
             const editionRef = this.db.collection('clubs').doc(clubId)
                 .collection('editions').doc(editionId);
-            
+
             const editionDoc = await editionRef.get();
             if (!editionDoc.exists) {
                 throw new Error('Edition not found');
             }
-            
+
             const currentStatus = editionDoc.data().isActive;
             const newStatus = !currentStatus;
-            
+
             // Update the edition status
             await editionRef.update({
                 isActive: newStatus,
                 updated_at: new Date()
             });
-            
+
             console.log(`✅ SuperAdmin: Edition ${editionId} ${newStatus ? 'activated' : 'deactivated'}`);
-            
+
             // Refresh the editions dropdown to show updated status
             if (clubId === document.getElementById('currentFixturesClubSelect')?.value) {
                 this.loadEditionsForCurrentFixtures(clubId);
             }
-            
+
             // Show success message
             alert(`Edition ${editionId} has been ${newStatus ? 'activated' : 'deactivated'} successfully!`);
-            
+
         } catch (error) {
             console.error('❌ Error toggling edition status:', error);
             alert(`Error toggling edition status: ${error.message}`);
@@ -1716,15 +1717,15 @@ class SuperAdminManager {
         const clubId = document.getElementById('currentFixturesClubSelect').value;
         const editionId = document.getElementById('currentFixturesEditionSelect').value;
         const gameweekFilter = document.getElementById('currentFixturesGameweekSelect').value;
-        
+
         if (!clubId || !editionId) {
             alert('Please select both a club and edition');
             return;
         }
-        
+
         try {
             console.log('🔧 Loading current fixtures for club:', clubId, 'edition:', editionId, 'gameweek filter:', gameweekFilter);
-            
+
             // Show loading state
             const fixturesList = document.getElementById('currentFixturesList');
             fixturesList.innerHTML = `
@@ -1733,19 +1734,19 @@ class SuperAdminManager {
                     <p>Loading fixtures...</p>
                 </div>
             `;
-            
+
             // Get fixtures from Firebase
             let fixturesQuery = this.db.collection('clubs').doc(clubId)
                 .collection('editions').doc(editionId)
                 .collection('fixtures');
-            
+
             // Apply gameweek filter if selected
             if (gameweekFilter) {
                 fixturesQuery = fixturesQuery.where('gameWeek', '==', parseInt(gameweekFilter));
             }
-            
+
             const fixturesSnapshot = await fixturesQuery.orderBy('date', 'asc').get();
-            
+
             if (fixturesSnapshot.empty) {
                 const filterText = gameweekFilter ? ` for Game Week ${gameweekFilter}` : '';
                 fixturesList.innerHTML = `
@@ -1757,7 +1758,7 @@ class SuperAdminManager {
                 `;
                 return;
             }
-            
+
             const fixtures = [];
             fixturesSnapshot.forEach(doc => {
                 fixtures.push({
@@ -1765,10 +1766,10 @@ class SuperAdminManager {
                     ...doc.data()
                 });
             });
-            
+
             // Display fixtures
             this.displayCurrentFixturesList(fixtures);
-            
+
         } catch (error) {
             console.error('❌ Error loading current fixtures:', error);
             const fixturesList = document.getElementById('currentFixturesList');
@@ -1784,9 +1785,9 @@ class SuperAdminManager {
 
     displayCurrentFixturesList(fixtures) {
         const fixturesList = document.getElementById('currentFixturesList');
-        
+
         if (!fixturesList) return;
-        
+
         if (fixtures.length === 0) {
             fixturesList.innerHTML = `
                 <div style="text-align: center; padding: 20px; color: #6b7280;">
@@ -1797,50 +1798,50 @@ class SuperAdminManager {
             `;
             return;
         }
-        
+
         const fixturesHtml = `
             <div style="margin-bottom: 15px;">
                 <h5 style="margin: 0 0 10px 0; color: #374151;">Found ${fixtures.length} Fixtures</h5>
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
                 ${fixtures.map(fixture => {
-                    // Fix date display - handle both string and Date objects
-                    let dateDisplay;
-                    try {
-                        if (fixture.date) {
-                            const dateObj = new Date(fixture.date);
-                            if (!isNaN(dateObj.getTime())) {
-                                dateDisplay = dateObj.toLocaleDateString('en-GB'); // UK format
-                            } else {
-                                dateDisplay = fixture.date;
-                            }
-                        } else {
-                            dateDisplay = 'TBD';
-                        }
-                    } catch (error) {
-                        dateDisplay = fixture.date || 'TBD';
-                    }
-                    
-                    // Fix status display - handle both string and object status
-                    let statusDisplay;
-                    if (typeof fixture.status === 'object' && fixture.status !== null) {
-                        // If status is an object, try to extract a meaningful value
-                        statusDisplay = fixture.status.name || fixture.status.status || fixture.status.value || 'scheduled';
-                    } else if (typeof fixture.status === 'string') {
-                        statusDisplay = fixture.status;
+            // Fix date display - handle both string and Date objects
+            let dateDisplay;
+            try {
+                if (fixture.date) {
+                    const dateObj = new Date(fixture.date);
+                    if (!isNaN(dateObj.getTime())) {
+                        dateDisplay = dateObj.toLocaleDateString('en-GB'); // UK format
                     } else {
-                        statusDisplay = 'scheduled';
+                        dateDisplay = fixture.date;
                     }
-                    
-                    const score = fixture.homeScore !== null && fixture.awayScore !== null 
-                        ? `${fixture.homeScore} - ${fixture.awayScore}` 
-                        : 'TBD';
-                    const gameweek = fixture.gameWeek || 'Unknown';
-                    
-                    // Fix kick-off time display
-                    const kickOffTime = fixture.time || fixture.kickOffTime || '';
-                    
-                    return `
+                } else {
+                    dateDisplay = 'TBD';
+                }
+            } catch (error) {
+                dateDisplay = fixture.date || 'TBD';
+            }
+
+            // Fix status display - handle both string and object status
+            let statusDisplay;
+            if (typeof fixture.status === 'object' && fixture.status !== null) {
+                // If status is an object, try to extract a meaningful value
+                statusDisplay = fixture.status.name || fixture.status.status || fixture.status.value || 'scheduled';
+            } else if (typeof fixture.status === 'string') {
+                statusDisplay = fixture.status;
+            } else {
+                statusDisplay = 'scheduled';
+            }
+
+            const score = fixture.homeScore !== null && fixture.awayScore !== null
+                ? `${fixture.homeScore} - ${fixture.awayScore}`
+                : 'TBD';
+            const gameweek = fixture.gameWeek || 'Unknown';
+
+            // Fix kick-off time display
+            const kickOffTime = fixture.time || fixture.kickOffTime || '';
+
+            return `
                         <div style="background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">GW ${gameweek}</span>
@@ -1864,41 +1865,41 @@ class SuperAdminManager {
                             </div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
-        
+
         fixturesList.innerHTML = fixturesHtml;
     }
 
     async editCurrentFixture(fixtureId) {
         try {
             console.log('🔧 Edit current fixture:', fixtureId);
-            
+
             // Get the current club and edition from the selectors
             const clubId = document.getElementById('currentFixturesClubSelect').value;
             const editionId = document.getElementById('currentFixturesEditionSelect').value;
-            
+
             if (!clubId || !editionId) {
                 alert('Please select a club and edition first');
                 return;
             }
-            
+
             // Fetch the fixture data from Firebase
             const fixtureDoc = await this.db.collection('clubs').doc(clubId)
                 .collection('editions').doc(editionId)
                 .collection('fixtures').doc(fixtureId).get();
-            
+
             if (!fixtureDoc.exists) {
                 alert('Fixture not found');
                 return;
             }
-            
+
             const fixture = fixtureDoc.data();
-            
+
             // Create edit modal
             this.createFixtureEditModal(fixture, fixtureId, clubId, editionId);
-            
+
         } catch (error) {
             console.error('❌ Error editing fixture:', error);
             alert(`Error editing fixture: ${error.message}`);
@@ -2012,9 +2013,9 @@ class SuperAdminManager {
                         <div style="margin-top: 15px;">
                             <label style="display: block; margin-bottom: 5px; font-weight: bold;">Game Week:</label>
                             <select id="editGameWeek" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
-                                ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(week => 
-                                    `<option value="${week}" ${fixture.gameWeek === week ? 'selected' : ''}>Game Week ${week}</option>`
-                                ).join('')}
+                                ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(week =>
+            `<option value="${week}" ${fixture.gameWeek === week ? 'selected' : ''}>Game Week ${week}</option>`
+        ).join('')}
                             </select>
                         </div>
                         
@@ -2033,7 +2034,7 @@ class SuperAdminManager {
         `;
 
         document.body.appendChild(modal);
-        
+
         // Add form submit handler
         const form = document.getElementById('fixtureEditForm');
         form.addEventListener('submit', (e) => {
@@ -2056,24 +2057,24 @@ class SuperAdminManager {
                 venue: document.getElementById('editVenue').value,
                 lastUpdated: new Date().toISOString()
             };
-            
+
             // Update the fixture in Firebase
             await this.db.collection('clubs').doc(clubId)
                 .collection('editions').doc(editionId)
                 .collection('fixtures').doc(fixtureId)
                 .update(formData);
-            
+
             console.log('✅ Fixture updated successfully');
-            
+
             // Close modal
             document.getElementById('fixtureEditModal').remove();
-            
+
             // Refresh the fixtures list
             this.loadCurrentFixtures();
-            
+
             // Show success message
             alert('✅ Fixture updated successfully!');
-            
+
         } catch (error) {
             console.error('❌ Error saving fixture changes:', error);
             alert(`Error saving changes: ${error.message}`);
@@ -2085,32 +2086,32 @@ class SuperAdminManager {
             if (!confirm('Are you sure you want to delete this fixture?')) {
                 return;
             }
-            
+
             console.log('🔧 Delete current fixture:', fixtureId);
-            
+
             // Get the current club and edition from the selectors
             const clubId = document.getElementById('currentFixturesClubSelect').value;
             const editionId = document.getElementById('currentFixturesEditionSelect').value;
-            
+
             if (!clubId || !editionId) {
                 alert('Please select a club and edition first');
                 return;
             }
-            
+
             // Delete the fixture from Firebase
             await this.db.collection('clubs').doc(clubId)
                 .collection('editions').doc(editionId)
                 .collection('fixtures').doc(fixtureId)
                 .delete();
-            
+
             console.log('✅ Fixture deleted successfully');
-            
+
             // Refresh the fixtures list
             this.loadCurrentFixtures();
-            
+
             // Show success message
             alert('✅ Fixture deleted successfully!');
-            
+
         } catch (error) {
             console.error('❌ Error deleting fixture:', error);
             alert(`Error deleting fixture: ${error.message}`);
@@ -2121,23 +2122,23 @@ class SuperAdminManager {
         const clubId = document.getElementById('currentFixturesClubSelect').value;
         const editionId = document.getElementById('currentFixturesEditionSelect').value;
         const gameweekFilter = document.getElementById('currentFixturesGameweekSelect').value;
-        
+
         if (!clubId || !editionId) {
             alert('Please select both a club and edition first');
             return;
         }
-        
+
         // Show confirmation dialog with details
         const filterText = gameweekFilter ? ` for Game Week ${gameweekFilter}` : ' for all game weeks';
         const confirmMessage = `Are you absolutely sure you want to delete ALL fixtures for ${clubId} - ${editionId}${filterText}?\n\nThis action cannot be undone and will permanently remove all matching fixtures from the database.`;
-        
+
         if (!confirm(confirmMessage)) {
             return;
         }
-        
+
         try {
             console.log('🗑️ Deleting all fixtures for club:', clubId, 'edition:', editionId, 'gameweek filter:', gameweekFilter);
-            
+
             // Show loading state
             const fixturesList = document.getElementById('currentFixturesList');
             fixturesList.innerHTML = `
@@ -2146,20 +2147,20 @@ class SuperAdminManager {
                     <p>Deleting fixtures...</p>
                 </div>
             `;
-            
+
             // Build the query
             let fixturesQuery = this.db.collection('clubs').doc(clubId)
                 .collection('editions').doc(editionId)
                 .collection('fixtures');
-            
+
             // Apply gameweek filter if selected
             if (gameweekFilter) {
                 fixturesQuery = fixturesQuery.where('gameWeek', '==', parseInt(gameweekFilter));
             }
-            
+
             // Get all matching fixtures
             const fixturesSnapshot = await fixturesQuery.get();
-            
+
             if (fixturesSnapshot.empty) {
                 fixturesList.innerHTML = `
                     <div style="text-align: center; padding: 20px; color: #6b7280;">
@@ -2170,29 +2171,29 @@ class SuperAdminManager {
                 `;
                 return;
             }
-            
+
             const fixtureCount = fixturesSnapshot.size;
             console.log(`🗑️ Found ${fixtureCount} fixtures to delete`);
-            
+
             // Delete fixtures in batches (Firestore batch limit is 500)
             const batchSize = 500;
             let deletedCount = 0;
-            
+
             for (let i = 0; i < fixtureCount; i += batchSize) {
                 const batch = this.db.batch();
                 const batchSnapshot = fixturesSnapshot.docs.slice(i, i + batchSize);
-                
+
                 batchSnapshot.forEach(doc => {
                     batch.delete(doc.ref);
                 });
-                
+
                 await batch.commit();
                 deletedCount += batchSnapshot.length;
                 console.log(`🗑️ Deleted batch ${Math.floor(i / batchSize) + 1}, total deleted: ${deletedCount}`);
             }
-            
+
             console.log(`✅ Successfully deleted ${deletedCount} fixtures`);
-            
+
             // Show success message
             fixturesList.innerHTML = `
                 <div style="text-align: center; padding: 20px; color: #10b981;">
@@ -2204,7 +2205,7 @@ class SuperAdminManager {
                     </button>
                 </div>
             `;
-            
+
         } catch (error) {
             console.error('❌ Error deleting fixtures:', error);
             const fixturesList = document.getElementById('currentFixturesList');
@@ -2227,33 +2228,33 @@ class SuperAdminManager {
             const competitionSelect = document.getElementById('competition-select');
             const importClubSelect = document.getElementById('fixtureClubSelect'); // Changed from 'import-club-select'
             const importEditionSelect = document.getElementById('fixtureEditionSelect'); // Changed from 'import-edition-select'
-            
+
             if (!competitionSelect || !importClubSelect || !importEditionSelect) {
                 alert('❌ Required form elements not found');
                 return;
             }
-            
+
             const competitionId = competitionSelect.value;
             const clubId = importClubSelect.value;
             const editionId = importEditionSelect.value;
-            
+
             if (!competitionId || !clubId || !editionId) {
                 alert('❌ Please select a competition, club, and edition');
                 return;
             }
-            
+
             // Get competition name for display
             const competition = window.APIConfig.competitions[competitionId]; // Changed from window.getCompetition
             const competitionName = competition ? `${competition.name} (${competition.description})` : `Competition ${competitionId}`;
-            
+
             console.log(`🚀 Starting fixture import for ${competitionName} (ID: ${competitionId})`);
-            
+
             // Show loading state with progress
             const importButton = document.querySelector('.fixture-import-section button[onclick="window.losApp.managers.superAdmin.importFixturesFromAPI()"]'); // Changed selector
             const originalText = importButton.textContent;
             importButton.textContent = '⏳ Importing...';
             importButton.disabled = true;
-            
+
             // Add progress indicator
             const progressDiv = document.createElement('div');
             progressDiv.id = 'importProgress';
@@ -2271,25 +2272,25 @@ class SuperAdminManager {
                          id="importProgressBar">0%</div>
                 </div>
             `;
-            
+
             // Insert progress after the button
             importButton.parentNode.insertBefore(progressDiv, importButton.nextSibling);
-            
+
             // Update progress to 25%
             this.updateImportProgress(25, 'Connecting to API...');
-            
+
             try {
                 // Get fixtures from API first
                 const fixtureManager = window.losApp.managers.fixtureManagement;
                 const apiFixtures = await fixtureManager.getFixtures(competitionId, '2024-25');
-                
+
                 console.log('🔍 API Response structure:', apiFixtures);
                 console.log('🔍 API Response keys:', Object.keys(apiFixtures || {}));
-                
+
                 // Handle different possible API response structures
                 let fixturesArray = [];
                 console.log('🔍 Full API response:', apiFixtures);
-                
+
                 if (apiFixtures && apiFixtures.matches) {
                     fixturesArray = apiFixtures.matches;
                     console.log('✅ Using apiFixtures.matches');
@@ -2298,7 +2299,7 @@ class SuperAdminManager {
                     const fixturesResults = apiFixtures['fixtures-results'];
                     console.log('🔍 fixtures-results structure:', fixturesResults);
                     console.log('🔍 fixtures-results keys:', Object.keys(fixturesResults || {}));
-                    
+
                     // Check if fixtures-results has a matches property
                     if (fixturesResults && fixturesResults.matches) {
                         fixturesArray = fixturesResults.matches;
@@ -2331,7 +2332,7 @@ class SuperAdminManager {
                     alert('❌ Unexpected API response structure. Please check the console for details.');
                     return;
                 }
-                 
+
                 if (!fixturesArray || fixturesArray.length === 0) {
                     console.error('❌ No fixtures array found in API response');
                     console.error('❌ Available keys in apiFixtures:', Object.keys(apiFixtures || {}));
@@ -2341,19 +2342,19 @@ class SuperAdminManager {
                     alert('❌ No fixtures found for the selected competition. Please check the console for details.');
                     return;
                 }
-                
+
                 console.log(`📊 Found ${fixturesArray.length} fixtures from API`);
                 console.log('🔍 First fixture example:', fixturesArray[0]);
-                
+
                 // Update progress to 75%
                 this.updateImportProgress(75, 'Processing fixtures...');
-                
+
                 // Update progress to 100%
                 this.updateImportProgress(100, `Found ${fixturesArray.length} fixtures!`);
-                
+
                 // Show fixture selection modal instead of importing all
                 this.showFixtureSelectionModal(fixturesArray, competitionId, clubId, editionId, competitionName);
-                
+
                 // Remove progress indicator after a delay
                 setTimeout(() => {
                     const progressDiv = document.getElementById('importProgress');
@@ -2361,13 +2362,13 @@ class SuperAdminManager {
                         progressDiv.parentNode.removeChild(progressDiv);
                     }
                 }, 2000);
-                
+
             } catch (error) {
                 console.error('❌ Error importing fixtures:', error);
-                
+
                 // Update progress to show error
                 this.updateImportProgress(0, `Error: ${error.message}`);
-                
+
                 // Show error message
                 setTimeout(() => {
                     alert(`❌ Error importing fixtures: ${error.message}`);
@@ -2382,7 +2383,7 @@ class SuperAdminManager {
                 importButton.textContent = originalText;
                 importButton.disabled = false;
             }
-            
+
         } catch (error) {
             console.error('❌ Error in importFixturesFromAPI:', error);
             alert(`❌ Unexpected error: ${error.message}`);
@@ -2393,17 +2394,17 @@ class SuperAdminManager {
     updateImportProgress(percentage, message) {
         const progressBar = document.getElementById('importProgressBar');
         const progressDiv = document.getElementById('importProgress');
-        
+
         if (progressBar && progressDiv) {
             progressBar.style.width = `${percentage}%`;
             progressBar.textContent = `${percentage}%`;
-            
+
             // Update message
             const messageSpan = progressDiv.querySelector('span');
             if (messageSpan) {
                 messageSpan.textContent = message;
             }
-            
+
             // Change color based on percentage
             if (percentage === 100) {
                 progressBar.className = 'progress-bar progress-bar-striped bg-success';
@@ -2418,7 +2419,7 @@ class SuperAdminManager {
     // Show fixture selection modal
     showFixtureSelectionModal(fixturesArray, competitionId, clubId, editionId, competitionName) {
         console.log('🔍 Showing fixture selection modal...');
-        
+
         // Create modal HTML
         const modalHTML = `
             <div id="fixtureSelectionModal" class="modal-overlay">
@@ -2497,10 +2498,10 @@ class SuperAdminManager {
                 </div>
             </div>
         `;
-        
+
         // Add modal to page
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
+
         // Store fixtures data for the modal
         this.fixtureSelectionData = {
             fixtures: fixturesArray,
@@ -2510,13 +2511,13 @@ class SuperAdminManager {
             competitionName: competitionName,
             selectedFixtures: new Set()
         };
-        
+
         // Populate fixtures list
         this.populateFixturesList();
-        
+
         // Populate editions dropdown
         this.populateEditionsDropdown();
-        
+
         console.log('✅ Fixture selection modal created');
     }
 
@@ -2524,26 +2525,26 @@ class SuperAdminManager {
     populateFixturesList() {
         const fixturesList = document.getElementById('fixturesList');
         if (!fixturesList || !this.fixtureSelectionData) return;
-        
+
         const { fixtures } = this.fixtureSelectionData;
-        
+
         fixturesList.innerHTML = fixtures.map((fixture, index) => {
             // Extract team names
             let homeTeam = 'Unknown';
             let awayTeam = 'Unknown';
             let matchDate = 'TBD';
-            
+
             if (fixture['home-team'] && fixture['away-team']) {
-                homeTeam = typeof fixture['home-team'] === 'object' ? 
+                homeTeam = typeof fixture['home-team'] === 'object' ?
                     (fixture['home-team'].name || fixture['home-team'].title || JSON.stringify(fixture['home-team'])) :
                     fixture['home-team'];
-                awayTeam = typeof fixture['away-team'] === 'object' ? 
+                awayTeam = typeof fixture['away-team'] === 'object' ?
                     (fixture['away-team'].name || fixture['away-team'].title || JSON.stringify(fixture['away-team'])) :
                     fixture['away-team'];
             }
-            
+
             matchDate = fixture.date || fixture.matchDate || 'TBD';
-            
+
             return `
                 <div class="fixture-item" data-index="${index}">
                     <input type="checkbox" id="fixture_${index}" onchange="window.losApp.managers.superAdmin.toggleFixtureSelection(${index})">
@@ -2560,15 +2561,15 @@ class SuperAdminManager {
     async populateEditionsDropdown() {
         const editionSelect = document.getElementById('targetEditionSelect');
         if (!editionSelect) return;
-        
+
         try {
             const { clubId } = this.fixtureSelectionData;
-            
+
             // Use ClubService to get editions for the club
             if (window.losApp && window.losApp.managers && window.losApp.managers.club) {
                 // Super Admin should see ALL editions (including inactive ones)
                 const editions = await window.losApp.managers.club.getAllEditions(clubId);
-                
+
                 editionSelect.innerHTML = editions.map(edition => {
                     // Add status indicator to edition name
                     let statusText = '';
@@ -2579,10 +2580,10 @@ class SuperAdminManager {
                     } else {
                         statusText = ' (Unknown Status)';
                     }
-                    
+
                     return `<option value="${edition.id}">${edition.name}${statusText}</option>`;
                 }).join('');
-                
+
                 // Set default to current edition if available
                 if (this.fixtureSelectionData.editionId) {
                     editionSelect.value = this.fixtureSelectionData.editionId;
@@ -2600,17 +2601,17 @@ class SuperAdminManager {
     // Toggle fixture selection
     toggleFixtureSelection(index) {
         if (!this.fixtureSelectionData) return;
-        
+
         const { selectedFixtures } = this.fixtureSelectionData;
         const importBtn = document.getElementById('importSelectedBtn');
         const selectedCountSpan = document.getElementById('selectedCount');
-        
+
         if (selectedFixtures.has(index)) {
             selectedFixtures.delete(index);
         } else {
             selectedFixtures.add(index);
         }
-        
+
         // Update UI
         importBtn.disabled = selectedFixtures.size === 0;
         selectedCountSpan.textContent = `${selectedFixtures.size} selected`;
@@ -2619,42 +2620,42 @@ class SuperAdminManager {
     // Select all fixtures
     selectAllFixtures() {
         if (!this.fixtureSelectionData) return;
-        
+
         const { fixtures, selectedFixtures } = this.fixtureSelectionData;
         selectedFixtures.clear();
-        
+
         fixtures.forEach((_, index) => {
             selectedFixtures.add(index);
             const checkbox = document.getElementById(`fixture_${index}`);
             if (checkbox) checkbox.checked = true;
         });
-        
+
         this.updateSelectionUI();
     }
 
     // Deselect all fixtures
     deselectAllFixtures() {
         if (!this.fixtureSelectionData) return;
-        
+
         const { selectedFixtures } = this.fixtureSelectionData;
         selectedFixtures.clear();
-        
+
         // Uncheck all checkboxes
         document.querySelectorAll('#fixturesList input[type="checkbox"]').forEach(checkbox => {
             checkbox.checked = false;
         });
-        
+
         this.updateSelectionUI();
     }
 
     // Update selection UI
     updateSelectionUI() {
         if (!this.fixtureSelectionData) return;
-        
+
         const { selectedFixtures } = this.fixtureSelectionData;
         const importBtn = document.getElementById('importSelectedBtn');
         const selectedCountSpan = document.getElementById('selectedCount');
-        
+
         importBtn.disabled = selectedFixtures.size === 0;
         selectedCountSpan.textContent = `${selectedFixtures.size} selected`;
     }
@@ -2662,25 +2663,25 @@ class SuperAdminManager {
     // Filter fixtures by date
     filterFixturesByDate() {
         if (!this.fixtureSelectionData) return;
-        
+
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        
+
         if (!startDate || !endDate) {
             alert('Please select both start and end dates');
             return;
         }
-        
+
         const { fixtures, selectedFixtures } = this.fixtureSelectionData;
         selectedFixtures.clear();
-        
+
         fixtures.forEach((fixture, index) => {
             const fixtureDate = fixture.date || fixture.matchDate;
             if (fixtureDate) {
                 const date = new Date(fixtureDate);
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                
+
                 if (date >= start && date <= end) {
                     selectedFixtures.add(index);
                     const checkbox = document.getElementById(`fixture_${index}`);
@@ -2691,7 +2692,7 @@ class SuperAdminManager {
                 }
             }
         });
-        
+
         this.updateSelectionUI();
     }
 
@@ -2705,7 +2706,7 @@ class SuperAdminManager {
     // Select fixtures for specific game week
     selectFixturesForGameWeek(gameWeek) {
         if (!this.fixtureSelectionData) return;
-        
+
         // Define game week date ranges (you can customize these)
         const gameWeekDates = {
             1: { startDate: '2025-08-19', endDate: '2025-08-20' },
@@ -2714,17 +2715,17 @@ class SuperAdminManager {
             4: { startDate: '2025-09-09', endDate: '2025-09-10' },
             5: { startDate: '2025-09-16', endDate: '2025-09-17' }
         };
-        
+
         const dates = gameWeekDates[gameWeek];
         if (!dates) {
             alert(`No date range defined for Game Week ${gameWeek}`);
             return;
         }
-        
+
         // Set the date inputs
         document.getElementById('startDate').value = dates.startDate;
         document.getElementById('endDate').value = dates.endDate;
-        
+
         // Apply the filter
         this.filterFixturesByDate();
     }
@@ -2732,27 +2733,27 @@ class SuperAdminManager {
     // Import selected fixtures
     async importSelectedFixtures() {
         if (!this.fixtureSelectionData) return;
-        
+
         const { fixtures, selectedFixtures, competitionId, clubId, competitionName } = this.fixtureSelectionData;
         const targetEditionId = document.getElementById('targetEditionSelect').value;
         const targetGameWeek = document.getElementById('targetGameWeekSelect').value;
-        
+
         if (selectedFixtures.size === 0) {
             alert('Please select at least one fixture to import');
             return;
         }
-        
+
         if (!targetEditionId) {
             alert('Please select a target edition');
             return;
         }
-        
+
         try {
             // Get selected fixtures
             const selectedFixturesArray = Array.from(selectedFixtures).map(index => fixtures[index]);
-            
+
             console.log(`📥 Importing ${selectedFixturesArray.length} selected fixtures to edition ${targetEditionId}, game week ${targetGameWeek}`);
-            
+
             // Import to Firebase
             const fixtureManager = window.losApp.managers.fixtureManagement;
             const importedFixtures = await fixtureManager.importFixturesToFirebase(
@@ -2762,17 +2763,17 @@ class SuperAdminManager {
                 selectedFixturesArray,
                 parseInt(targetGameWeek)
             );
-            
+
             // Show success message
             alert(`✅ Successfully imported ${importedFixtures.length} fixtures to ${competitionName} (Game Week ${targetGameWeek})`);
             console.log(`✅ Fixture import completed: ${importedFixtures.length} fixtures imported`);
-            
+
             // Close modal
             document.getElementById('fixtureSelectionModal').remove();
-            
+
             // Refresh the fixtures list if viewing
             this.loadFixturesForClub(clubId, targetEditionId);
-            
+
         } catch (error) {
             console.error('❌ Error importing selected fixtures:', error);
             alert(`❌ Error importing fixtures: ${error.message}`);
@@ -2785,43 +2786,43 @@ class SuperAdminManager {
             const clubId = document.getElementById('scoreClubSelect').value;
             const editionId = document.getElementById('scoreEditionSelect').value;
             const gameweek = document.getElementById('score-gameweek-select').value;
-            
+
             if (!clubId || !editionId || !gameweek) {
                 alert('❌ Please select a club, edition, and game week');
                 return;
             }
-            
+
             console.log(`🔄 Starting bulk score update for Game Week ${gameweek}`);
-            
+
             // Show loading state
             const updateButton = document.querySelector('.score-updates-section button[onclick="window.losApp.managers.superAdmin.bulkUpdateScoresFromAPI()"]');
             const originalText = updateButton.textContent;
             updateButton.textContent = '⏳ Updating...';
             updateButton.disabled = true;
-            
+
             try {
                 // Check if FixtureManagementManager is available
                 if (!window.losApp || !window.losApp.managers.fixtureManagement) {
                     alert('❌ Fixture Management system not available. Please ensure FixtureManagementManager is loaded.');
                     return;
                 }
-                
+
                 const fixtureManager = window.losApp.managers.fixtureManagement;
-                
+
                 // Bulk update scores by gameweek
                 const result = await fixtureManager.bulkUpdateScoresByGameweek(parseInt(gameweek), clubId, editionId);
-                
+
                 if (result.updated > 0) {
                     alert(`✅ Successfully updated ${result.updated} out of ${result.total} fixture scores for Game Week ${gameweek}`);
                 } else {
                     alert(`ℹ️ No fixtures needed updating for Game Week ${gameweek}`);
                 }
-                
+
                 console.log(`✅ Bulk score update completed: ${result.updated}/${result.total} fixtures updated for Game Week ${gameweek}`);
-                
+
                 // Refresh the fixtures list if viewing
                 this.loadFixturesForClub(clubId, editionId);
-                
+
             } catch (error) {
                 console.error('❌ Error bulk updating scores:', error);
                 alert(`❌ Error updating scores: ${error.message}`);
@@ -2830,7 +2831,7 @@ class SuperAdminManager {
                 updateButton.textContent = originalText;
                 updateButton.disabled = false;
             }
-            
+
         } catch (error) {
             console.error('❌ Error in bulkUpdateScoresFromAPI:', error);
             alert(`❌ Unexpected error: ${error.message}`);
@@ -2840,21 +2841,21 @@ class SuperAdminManager {
     // Load fixtures for a specific club and edition
     async loadFixturesForClub(clubId, editionId) {
         const fixturesList = document.getElementById('fixturesList');
-        
+
         if (!fixturesList) return;
-        
+
         try {
             const fixturesSnapshot = await this.db.collection('clubs').doc(clubId)
                 .collection('editions').doc(editionId)
                 .collection('fixtures')
                 .orderBy('date', 'asc')
                 .get();
-            
+
             if (fixturesSnapshot.empty) {
                 fixturesList.innerHTML = '<em>No fixtures found for this club and edition</em>';
                 return;
             }
-            
+
             const fixtures = [];
             fixturesSnapshot.forEach(doc => {
                 fixtures.push({
@@ -2862,10 +2863,10 @@ class SuperAdminManager {
                     ...doc.data()
                 });
             });
-            
+
             // Display fixtures
             this.displayFixturesList(fixtures);
-            
+
         } catch (error) {
             console.error('Error loading fixtures:', error);
             fixturesList.innerHTML = '<em>Error loading fixtures</em>';
@@ -2875,16 +2876,16 @@ class SuperAdminManager {
     // Display fixtures in the list
     displayFixturesList(fixtures) {
         const fixturesList = document.getElementById('fixturesList');
-        
+
         if (!fixturesList) return;
-        
+
         const fixturesHtml = fixtures.map(fixture => {
             const date = new Date(fixture.date).toLocaleDateString();
             const status = fixture.status || 'scheduled';
-            const score = fixture.homeScore !== null && fixture.awayScore !== null 
-                ? `${fixture.homeScore} - ${fixture.awayScore}` 
+            const score = fixture.homeScore !== null && fixture.awayScore !== null
+                ? `${fixture.homeScore} - ${fixture.awayScore}`
                 : 'TBD';
-            
+
             return `
                 <div style="border: 1px solid #e5e7eb; padding: 10px; margin-bottom: 10px; border-radius: 4px; background: white;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
@@ -2899,7 +2900,7 @@ class SuperAdminManager {
                 </div>
             `;
         }).join('');
-        
+
         fixturesList.innerHTML = fixturesHtml;
     }
 
@@ -2909,29 +2910,29 @@ class SuperAdminManager {
         const homeScore = parseInt(document.getElementById('homeScore').value);
         const awayScore = parseInt(document.getElementById('awayScore').value);
         const status = document.getElementById('fixtureStatus').value;
-        
+
         if (!fixtureId || isNaN(homeScore) || isNaN(awayScore)) {
             alert('Please enter valid fixture ID and scores');
             return;
         }
-        
+
         try {
             // Find the fixture to get club and edition info
             const fixture = await this.findFixtureById(fixtureId);
-            
+
             if (!fixture) {
                 alert('Fixture not found. Please check the fixture ID.');
                 return;
             }
-            
+
             // Check if FixtureManagementManager is available
             if (!window.losApp || !window.losApp.managers.fixtureManagement) {
                 alert('Fixture Management system not available. Please ensure FixtureManagementManager is loaded.');
                 return;
             }
-            
+
             const fixtureManager = window.losApp.managers.fixtureManagement;
-            
+
             // Update the score
             await fixtureManager.updateFixtureScore(
                 fixtureId,
@@ -2941,15 +2942,15 @@ class SuperAdminManager {
                 awayScore,
                 status
             );
-            
+
             alert('✅ Fixture score updated successfully!');
-            
+
             // Clear form
             document.getElementById('manualFixtureId').value = '';
             document.getElementById('homeScore').value = '';
             document.getElementById('awayScore').value = '';
             document.getElementById('fixtureStatus').value = 'finished';
-            
+
         } catch (error) {
             console.error('Error updating fixture score:', error);
             alert(`❌ Error updating fixture score: ${error.message}`);
@@ -2961,15 +2962,15 @@ class SuperAdminManager {
         try {
             for (const club of this.clubs) {
                 if (!club.isActive) continue;
-                
+
                 const editionsSnapshot = await this.db.collection('clubs').doc(club.id)
                     .collection('editions').get();
-                
+
                 for (const editionDoc of editionsSnapshot.docs) {
                     const fixtureDoc = await this.db.collection('clubs').doc(club.id)
                         .collection('editions').doc(editionDoc.id)
                         .collection('fixtures').doc(fixtureId).get();
-                    
+
                     if (fixtureDoc.exists) {
                         return {
                             ...fixtureDoc.data(),
@@ -2979,7 +2980,7 @@ class SuperAdminManager {
                     }
                 }
             }
-            
+
             return null;
         } catch (error) {
             console.error('Error finding fixture:', error);
@@ -2999,7 +3000,7 @@ class SuperAdminManager {
         const clubsHtml = this.clubs.map(club => {
             const status = club.isActive ? '🟢 Active' : '🔴 Inactive';
             const editions = club.editions || [];
-            
+
             return `
                 <div style="border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 15px; border-radius: 4px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -3048,7 +3049,7 @@ class SuperAdminManager {
             });
 
             alert(`✅ Club "${club.name}" updated to "${newName}"!`);
-            
+
         } catch (error) {
             console.error('SuperAdminManager: Error updating club:', error);
             alert('❌ Error updating club: ' + error.message);
@@ -3079,7 +3080,7 @@ class SuperAdminManager {
             });
 
             alert(`✅ Club "${club.name}" ${statusText}!`);
-            
+
         } catch (error) {
             console.error('SuperAdminManager: Error updating club status:', error);
             alert('❌ Error updating club status: ' + error.message);
@@ -3111,7 +3112,7 @@ class SuperAdminManager {
             });
 
             alert(`✅ Club "${club.name}" deleted successfully!`);
-            
+
         } catch (error) {
             console.error('SuperAdminManager: Error deleting club:', error);
             alert('❌ Error deleting club: ' + error.message);
@@ -3132,7 +3133,7 @@ class SuperAdminManager {
 
             await this.db.collection('audit-logs').add(auditLog);
             console.log(`SuperAdminManager: Audit log created - ${action}`);
-            
+
         } catch (error) {
             console.error('SuperAdminManager: Error creating audit log:', error);
         }
@@ -3141,12 +3142,12 @@ class SuperAdminManager {
     // Load super admin data
     async loadSuperAdminData() {
         if (!this.isSuperAdmin) return;
-        
+
         console.log('SuperAdminManager: Loading super admin data...');
-        
+
         // Set up real-time listeners
         this.setupRealtimeListeners();
-        
+
         // Load API status
         await this.loadAPIStatus();
     }
@@ -3162,7 +3163,7 @@ class SuperAdminManager {
             console.log('👑 SuperAdminManager: No user, hiding super admin toggle');
             this.isSuperAdmin = false;
             this.hideSuperAdminToggle();
-            
+
             // Notify AdminManager to refresh admin status
             if (window.losApp?.managers?.admin) {
                 window.losApp.managers.admin.refreshAdminStatus();
@@ -3173,16 +3174,16 @@ class SuperAdminManager {
     // Restore Firebase connection (called by app.js)
     restoreFirebaseConnection() {
         console.log('🔧 SuperAdminManager: restoreFirebaseConnection called');
-        
+
         if (this.db && typeof this.db.collection === 'function') {
             console.log('✅ SuperAdminManager: Firebase connection already available');
             return;
         }
-        
+
         if (window.firebaseDB && typeof window.firebaseDB.collection === 'function') {
             console.log('✅ SuperAdminManager: Restoring Firebase connection from global');
             this.db = window.firebaseDB;
-            
+
             // Load super admin data if user is super admin
             if (this.isSuperAdmin) {
                 console.log('👑 SuperAdminManager: User is super admin, loading data...');

@@ -1,42 +1,42 @@
-class AdminManager {
+export default class AdminManager {
     constructor() {
         this.isInitialized = false;
         this.dataLoaded = false; // Track if data has been loaded
         this.isAdmin = false;
         this.adminPanel = null;
         this.db = null;
-        
+
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
     }
 
     initBasic() {
         if (this.isInitialized) return;
-        
+
         // Only set up basic structure, don't load data yet
         this.isInitialized = true;
     }
 
     init() {
         if (this.isInitialized && this.dataLoaded) return;
-        
+
         // Set up Firebase database reference
         this.db = window.firebaseDB;
-        
+
         // Ensure database reference is available
         if (!this.db) {
             setTimeout(() => this.init(), 1000);
             return;
         }
-        
+
         // Quick check for super admin email to show admin button immediately
         this.quickSuperAdminCheck();
-        
+
         // Check admin status and set up admin panel
         this.checkAdminStatus();
         this.setupAdminPanel();
         this.dataLoaded = true;
-        
+
         // Additional checks with longer delays to catch late super admin initialization
         setTimeout(async () => {
             await this.checkAdminStatus();
@@ -73,11 +73,11 @@ class AdminManager {
     restoreFirebaseConnection() {
         // This method will be called by the main app after initialization
         // to restore Firebase functionality
-        
+
         // Refresh database reference
         this.db = window.firebaseDB;
     }
-    
+
     refreshDatabaseReference() {
         // Manual method to refresh database reference
         this.db = window.firebaseDB;
@@ -86,13 +86,13 @@ class AdminManager {
 
     clearListeners() {
         // Clear any existing Firebase listeners
-        
+
         // Clear admin status interval
         if (this.adminStatusInterval) {
             clearInterval(this.adminStatusInterval);
             this.adminStatusInterval = null;
         }
-        
+
         // Unregister from the main app's listener tracking if needed
         if (window.losApp) {
             window.losApp.unregisterListener('admin-panel');
@@ -123,7 +123,7 @@ class AdminManager {
 
             // Check if user is a super admin - multiple fallback strategies
             let isSuperAdmin = false;
-            
+
             // Strategy 1: Check SuperAdminManager if available
             if (window.losApp?.managers?.superAdmin) {
                 isSuperAdmin = window.losApp.managers.superAdmin.isSuperAdmin;
@@ -164,7 +164,7 @@ class AdminManager {
             // Show admin button if user is either admin or super admin
             if (this.isAdmin || isSuperAdmin) {
                 this.showAdminButton();
-                
+
                 // Store the admin status for future reference
                 this.currentUserIsAdmin = this.isAdmin;
                 this.currentUserIsSuperAdmin = isSuperAdmin;
@@ -181,18 +181,18 @@ class AdminManager {
         // Add admin button to header if not already present
         if (!document.getElementById('adminBtn')) {
             this.insertAdminButton();
-            
+
             // Also set up a retry mechanism when app container becomes visible
             this.setupAppContainerVisibilityListener();
         }
     }
-    
+
     setupAppContainerVisibilityListener() {
         // If app container is hidden, wait for it to become visible
         const appContainer = document.getElementById('appContainer');
         if (appContainer && appContainer.classList.contains('hidden')) {
             console.log('🔍 AdminManager: App container is hidden, setting up visibility listener');
-            
+
             // Use MutationObserver to watch for class changes
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
@@ -206,9 +206,9 @@ class AdminManager {
                     }
                 });
             });
-            
+
             observer.observe(appContainer, { attributes: true, attributeFilter: ['class'] });
-            
+
             // Also set a timeout as fallback
             setTimeout(() => {
                 observer.disconnect();
@@ -235,11 +235,11 @@ class AdminManager {
 
         // Try to find adminButtonsContainer first
         let adminButtonsContainer = document.getElementById('adminButtonsContainer');
-        
+
         // If adminButtonsContainer doesn't exist, try to find an alternative container
         if (!adminButtonsContainer) {
             console.log('🔍 AdminManager: adminButtonsContainer not found, looking for alternative container...');
-            
+
             // Try to find header-content as an alternative
             const headerContent = document.querySelector('.header-content');
             if (headerContent) {
@@ -254,9 +254,9 @@ class AdminManager {
                 }
             }
         }
-        
+
         console.log('🔍 AdminManager: Admin buttons container found:', !!adminButtonsContainer, 'Retry:', retryCount);
-        
+
         // Additional debugging for first few attempts
         if (retryCount < 3) {
             console.log('🔍 AdminManager: Debugging DOM state...');
@@ -265,7 +265,7 @@ class AdminManager {
             console.log('🔍 AdminManager: .app-header exists:', !!document.querySelector('.app-header'));
             console.log('🔍 AdminManager: .header-controls exists:', !!document.querySelector('.header-controls'));
             console.log('🔍 AdminManager: All elements with "admin" in ID:', Array.from(document.querySelectorAll('[id*="admin"]')).map(el => el.id));
-            
+
             // Additional debugging
             const headerControls = document.querySelector('.header-controls');
             if (headerControls) {
@@ -277,13 +277,13 @@ class AdminManager {
                 console.log('🔍 AdminManager: .header-controls not found, checking all header elements...');
                 const allHeaders = document.querySelectorAll('[class*="header"]');
                 console.log('🔍 AdminManager: All header elements:', Array.from(allHeaders).map(el => el.className));
-                
+
                 // Check the app-header structure
                 const appHeader = document.querySelector('.app-header');
                 if (appHeader) {
                     console.log('🔍 AdminManager: app-header found, checking its children...');
                     console.log('🔍 AdminManager: app-header children:', Array.from(appHeader.children).map(el => el.className));
-                    
+
                     // Look for header-row elements
                     const headerRows = appHeader.querySelectorAll('.header-row');
                     console.log('🔍 AdminManager: header-row elements found:', headerRows.length);
@@ -294,7 +294,7 @@ class AdminManager {
                 }
             }
         }
-        
+
         if (adminButtonsContainer) {
             const adminBtn = document.createElement('button');
             adminBtn.id = 'adminBtn';
@@ -305,28 +305,28 @@ class AdminManager {
             adminBtn.style.cursor = 'pointer'; // Ensure cursor shows it's clickable
             adminBtn.style.pointerEvents = 'auto'; // Ensure clicks are captured
             adminBtn.style.display = 'inline-block'; // Ensure button is visible
-            
+
             // Add click event listener with better error handling
             adminBtn.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                
+
                 try {
                     this.toggleAdminPanel();
                 } catch (error) {
                     console.error('❌ AdminManager: Error in toggleAdminPanel:', error);
                 }
             });
-            
+
             // Also add mousedown and touchstart for better interaction
             adminBtn.addEventListener('mousedown', (event) => {
                 // Mousedown event for better interaction
             });
-            
+
             adminBtn.addEventListener('touchstart', (event) => {
                 // Touchstart event for better interaction
             });
-            
+
             adminButtonsContainer.appendChild(adminBtn);
             console.log('✅ AdminManager: Admin button inserted successfully');
             console.log('🔍 AdminManager: Button element:', adminBtn);
@@ -353,7 +353,7 @@ class AdminManager {
         if (existingBtn) {
             existingBtn.remove();
         }
-        
+
         // Force a fresh admin status check
         await this.checkAdminStatus();
     }
@@ -366,7 +366,7 @@ class AdminManager {
     // Test admin button functionality
     testAdminButton() {
         console.log('🔧 AdminManager: testAdminButton called');
-        
+
         const adminBtn = document.getElementById('adminBtn');
         if (adminBtn) {
             console.log('🔧 AdminManager: Admin button found, testing functionality...');
@@ -377,7 +377,7 @@ class AdminManager {
                 innerHTML: adminBtn.innerHTML,
                 style: adminBtn.style.cssText
             });
-            
+
             // Test if the button is clickable
             const rect = adminBtn.getBoundingClientRect();
             console.log('🔧 AdminManager: Button position:', {
@@ -387,18 +387,18 @@ class AdminManager {
                 height: rect.height,
                 visible: rect.width > 0 && rect.height > 0
             });
-            
+
             // Test if event listeners are attached
             const clickListeners = adminBtn.onclick;
             console.log('🔧 AdminManager: Click listeners:', clickListeners);
-            
+
             // Manually trigger a click to test
             console.log('🔧 AdminManager: Manually triggering click...');
             adminBtn.click();
         } else {
             console.log('❌ AdminManager: Admin button not found');
         }
-        
+
         // Also test admin panel
         const adminPanel = document.getElementById('adminPanel');
         console.log('🔧 AdminManager: Admin panel found:', !!adminPanel);
@@ -413,7 +413,7 @@ class AdminManager {
     forceInitAdminPanel() {
         console.log('🔧 AdminManager: forceInitAdminPanel called');
         this.setupAdminPanel();
-        
+
         // Also ensure admin button is visible
         setTimeout(() => {
             this.showAdminButton();
@@ -423,7 +423,7 @@ class AdminManager {
 
     setupAdminPanel() {
         // setupAdminPanel called
-        
+
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -436,10 +436,10 @@ class AdminManager {
 
     setupAdminPanelInternal() {
         // setupAdminPanelInternal called
-        
+
         this.adminPanel = document.getElementById('adminPanel');
         // adminPanel element found
-        
+
         if (this.adminPanel) {
             // Setup admin panel listeners
             this.setupAdminListeners();
@@ -455,7 +455,7 @@ class AdminManager {
 
     setupAdminListeners() {
         // setupAdminListeners called
-        
+
         // Close admin panel button
         const closeAdminBtn = document.getElementById('closeAdmin');
         if (closeAdminBtn) {
@@ -484,22 +484,22 @@ class AdminManager {
     toggleAdminPanel() {
         console.log('🔧 AdminManager: toggleAdminPanel called');
         console.log('🔧 AdminManager: adminPanel element:', this.adminPanel);
-        
+
         if (this.adminPanel) {
             const wasHidden = this.adminPanel.classList.contains('hidden');
             const wasActive = this.adminPanel.classList.contains('active');
-            
+
             // Toggle the hidden class to control visibility
             this.adminPanel.classList.toggle('hidden');
             const isNowHidden = this.adminPanel.classList.contains('hidden');
-            
+
             // Toggle the active class for styling and animation
             this.adminPanel.classList.toggle('active');
             const isNowActive = this.adminPanel.classList.contains('active');
-            
+
             console.log('🔧 AdminManager: Admin panel was hidden:', wasHidden, 'now hidden:', isNowHidden);
             console.log('🔧 AdminManager: Admin panel was active:', wasActive, 'now active:', isNowActive);
-            
+
             if (!isNowHidden && isNowActive) {
                 console.log('🔧 AdminManager: Loading admin content for users tab...');
                 this.loadAdminContent('users'); // Default to users tab
@@ -542,10 +542,10 @@ class AdminManager {
 
     async loadAdminContent(tabName) {
         console.log('🔧 AdminManager: loadAdminContent called for tab:', tabName);
-        
+
         const adminContent = document.getElementById('adminContent');
         console.log('🔧 AdminManager: adminContent element:', adminContent);
-        
+
         if (!adminContent) {
             console.log('❌ AdminManager: adminContent element not found');
             return;
@@ -562,7 +562,7 @@ class AdminManager {
                 <h3>Loading admin content...</h3>
             </div>
         `;
-        
+
         console.log('🔧 AdminManager: Loading state set, proceeding to load content...');
 
         try {
@@ -590,7 +590,7 @@ class AdminManager {
 
     async loadUsersContent() {
         console.log('🔧 AdminManager: loadUsersContent called');
-        
+
         const adminContent = document.getElementById('adminContent');
         if (!adminContent) {
             console.log('❌ AdminManager: adminContent not found in loadUsersContent');
@@ -601,25 +601,25 @@ class AdminManager {
             // Get current club and edition from ClubService
             const currentClub = window.clubService?.getCurrentClub();
             const currentEdition = window.clubService?.getCurrentEdition();
-            
+
             console.log('🔧 AdminManager: Loading users for club:', currentClub, 'edition:', currentEdition);
-            
+
             let users = [];
-            
+
             if (currentClub && currentEdition) {
                 // Use new multi-club structure
                 console.log('🔧 AdminManager: Using new multi-club structure for users');
-                
+
                 // Check database reference and try to restore if needed
                 if (!this.db) {
                     console.log('🔧 AdminManager: Database reference not available in loadUsersContent, attempting to restore...');
                     this.restoreFirebaseConnection();
-                    
+
                     // If still not available, try manual refresh
                     if (!this.db) {
                         this.refreshDatabaseReference();
                     }
-                    
+
                     // Final check
                     if (!this.db) {
                         console.error('❌ AdminManager: Database reference still not available after restore attempts in loadUsersContent');
@@ -627,7 +627,7 @@ class AdminManager {
                         return;
                     }
                 }
-                
+
                 try {
                     const usersSnapshot = await this.db.collection('clubs')
                         .doc(currentClub)
@@ -635,9 +635,9 @@ class AdminManager {
                         .doc(currentEdition)
                         .collection('users')
                         .get();
-                    
+
                     console.log('🔧 AdminManager: Found users in new structure:', usersSnapshot.size);
-                    
+
                     usersSnapshot.forEach(doc => {
                         users.push({
                             id: doc.id,
@@ -648,12 +648,12 @@ class AdminManager {
                     console.error('🔧 AdminManager: Error loading users from new structure:', error);
                 }
             }
-            
+
             // Only use new multi-club structure
             if (users.length === 0) {
                 console.log('🔧 AdminManager: No users found in new structure');
             }
-            
+
             console.log('🔧 AdminManager: Total users loaded:', users.length);
 
             adminContent.innerHTML = `
@@ -730,14 +730,14 @@ class AdminManager {
 
         try {
             console.log('🔧 AdminManager: Loading fixtures content...');
-            
+
             // Get current club and edition from ClubService
             const currentClub = window.losApp?.managers?.club?.currentClub;
             const currentEdition = window.losApp?.managers?.club?.currentEdition;
-            
+
             console.log('🔧 AdminManager: Current club:', currentClub);
             console.log('🔧 AdminManager: Current edition:', currentEdition);
-            
+
             adminContent.innerHTML = `
                 <div class="admin-section">
                     <div class="admin-section-header">
@@ -802,14 +802,14 @@ class AdminManager {
 
             console.log('🔧 AdminManager: Fixtures content HTML set, populating club dropdown...');
             console.log('🔧 AdminManager: fixtureClubSelect element exists after setting HTML:', !!document.getElementById('fixtureClubSelect'));
-            
+
             // Use requestAnimationFrame to ensure DOM is fully rendered
             requestAnimationFrame(async () => {
                 console.log('🔧 AdminManager: requestAnimationFrame callback executing, checking element again...');
                 console.log('🔧 AdminManager: fixtureClubSelect element exists in requestAnimationFrame:', !!document.getElementById('fixtureClubSelect'));
                 await this.populateFixtureClubDropdown();
             });
-            
+
             // Set current selections if available
             if (currentClub && currentEdition) {
                 console.log('🔧 AdminManager: Setting current club and edition selections...');
@@ -840,7 +840,7 @@ class AdminManager {
             const currentClub = window.losApp?.managers?.club?.currentClub;
             const currentEdition = window.losApp?.managers?.club?.currentEdition;
             const currentGameweek = window.editionService.getCurrentGameweek();
-            
+
             // Check if there are already loaded scores to preserve
             const existingScoresList = document.getElementById('scoresList');
             let existingScoresContent = '';
@@ -848,7 +848,7 @@ class AdminManager {
                 existingScoresContent = existingScoresList.innerHTML;
                 console.log('🔧 AdminManager: Preserving existing scores content');
             }
-            
+
             adminContent.innerHTML = `
                 <div class="admin-section">
                     <div class="admin-section-header">
@@ -923,13 +923,13 @@ class AdminManager {
             `;
 
             console.log('🔧 AdminManager: Scores content HTML set, populating club dropdown...');
-            
+
             // Use requestAnimationFrame to ensure DOM is fully rendered
             requestAnimationFrame(async () => {
                 console.log('🔧 AdminManager: requestAnimationFrame callback executing for scores...');
                 await this.populateScoreClubDropdown();
             });
-            
+
             // Set current selections if available
             if (currentClub && currentEdition) {
                 console.log('🔧 AdminManager: Setting current club and edition selections for scores...');
@@ -1043,7 +1043,7 @@ class AdminManager {
         try {
             const homeScore = parseInt(document.getElementById(`homeScore_${fixtureIndex}`).value);
             const awayScore = parseInt(document.getElementById(`awayScore_${fixtureIndex}`).value);
-            
+
             if (isNaN(homeScore) || isNaN(awayScore)) {
                 window.authManager.showError('Please enter valid scores');
                 return;
@@ -1074,7 +1074,7 @@ class AdminManager {
 
             // Test API connection first
             const connectionTest = await window.footballWebPagesAPI.testConnection();
-            
+
             if (!connectionTest.success) {
                 window.authManager.showError(`API Connection Failed: ${connectionTest.message}`);
                 return;
@@ -1082,10 +1082,10 @@ class AdminManager {
 
             // Get available competitions
             const competitions = await window.footballWebPagesAPI.getCompetitions();
-            
+
             // Show fixture import modal
             this.showFixtureImportModal(competitions);
-            
+
         } catch (error) {
             console.error('Error showing fixture import:', error);
             window.authManager.showError('Failed to initialize fixture import');
@@ -1096,11 +1096,11 @@ class AdminManager {
         const modal = document.createElement('div');
         modal.className = 'modal active';
         modal.id = 'fixtureImportModal';
-        
+
         const currentDate = new Date().toISOString().split('T')[0];
         const currentGameweek = window.editionService.getCurrentGameweek();
         const currentEdition = window.editionService.getCurrentEdition();
-        
+
         modal.innerHTML = `
             <div class="modal-content large">
                 <div class="modal-header">
@@ -1182,7 +1182,7 @@ class AdminManager {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
     }
 
@@ -1199,7 +1199,7 @@ class AdminManager {
             const season = document.getElementById('importSeason').value;
             const startDate = document.getElementById('importStartDate').value;
             const endDate = document.getElementById('importEndDate').value;
-            
+
             if (!competition || !season || !startDate || !endDate) {
                 window.authManager.showError('Please fill in all required fields');
                 return;
@@ -1217,14 +1217,14 @@ class AdminManager {
                     <p>Fetching fixtures from API...</p>
                 </div>
             `;
-            
+
             document.getElementById('fixturePreview').classList.remove('hidden');
 
             // Fetch fixtures from API
             const result = await window.footballWebPagesAPI.fetchDateRangeFixtures(
-                startDate, 
-                endDate, 
-                competition, 
+                startDate,
+                endDate,
+                competition,
                 season
             );
 
@@ -1269,16 +1269,16 @@ class AdminManager {
 
             // Show import actions
             document.getElementById('importActions').classList.remove('hidden');
-            
+
             // Store fixtures for import
             window.adminManager.fetchedFixtures = result.fixtures;
-            
+
             window.authManager.showSuccess(`Found ${result.fixtures.length} fixtures`);
 
         } catch (error) {
             console.error('Error fetching fixtures:', error);
             window.authManager.showError(`Failed to fetch fixtures: ${error.message}`);
-            
+
             const fixtureList = document.getElementById('fixtureList');
             fixtureList.innerHTML = `
                 <div class="error-state">
@@ -1307,7 +1307,7 @@ class AdminManager {
             }
 
             const selectedCheckboxes = document.querySelectorAll('#fixtureList input[type="checkbox"]:checked');
-            const selectedFixtures = Array.from(selectedCheckboxes).map(checkbox => 
+            const selectedFixtures = Array.from(selectedCheckboxes).map(checkbox =>
                 window.adminManager.fetchedFixtures[parseInt(checkbox.value)]
             );
 
@@ -1331,14 +1331,14 @@ class AdminManager {
             // Success
             window.authManager.showSuccess(`Successfully imported ${selectedFixtures.length} fixtures`);
             this.closeFixtureImportModal();
-            
+
             // Refresh fixtures content
             this.loadFixturesContent();
 
         } catch (error) {
             console.error('Error importing fixtures:', error);
             window.authManager.showError(`Failed to import fixtures: ${error.message}`);
-            
+
             // Reset button
             const importBtn = document.querySelector('#importActions .btn-success');
             importBtn.innerHTML = '<i class="fas fa-download"></i> Import Selected Fixtures';
@@ -1382,7 +1382,7 @@ class AdminManager {
             const tiebreakEnabled = document.getElementById('tiebreakEnabled').value === 'true';
 
             await window.editionService.setActiveGameweek(currentGameweek.toString());
-            
+
             // Update other settings
             await this.db.collection('settings').doc('currentCompetition').update({
                 registration_open: registrationOpen,
@@ -1400,7 +1400,7 @@ class AdminManager {
     async exportUsers() {
         try {
             const currentEdition = window.editionService.getCurrentEdition();
-            
+
             const usersSnapshot = await this.db.collection('users')
                 .where('edition', '==', currentEdition)
                 .get();
@@ -1415,7 +1415,7 @@ class AdminManager {
 
             // Create CSV content
             const csvContent = this.convertToCSV(users);
-            
+
             // Download CSV file
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
@@ -1449,7 +1449,7 @@ class AdminManager {
     async populateFixtureClubDropdown() {
         try {
             console.log('🔧 AdminManager: populateFixtureClubDropdown called');
-            
+
             const clubSelect = document.getElementById('fixtureClubSelect');
             if (!clubSelect) {
                 console.log('❌ AdminManager: fixtureClubSelect element not found in populateFixtureClubDropdown');
@@ -1482,7 +1482,7 @@ class AdminManager {
         try {
             const clubSelect = document.getElementById('fixtureClubSelect');
             const editionSelect = document.getElementById('fixtureEditionSelect');
-            
+
             if (!clubSelect || !editionSelect) {
                 console.log('❌ AdminManager: Required elements not found in onFixtureClubChange');
                 return;
@@ -1533,9 +1533,9 @@ class AdminManager {
             const clubSelect = document.getElementById('fixtureClubSelect');
             const editionSelect = document.getElementById('fixtureEditionSelect');
             const gameweekSelect = document.getElementById('fixtureGameweekSelect');
-                    const fixturesList = document.getElementById('adminFixturesList');
-        
-        if (!clubSelect || !editionSelect || !gameweekSelect || !fixturesList) {
+            const fixturesList = document.getElementById('adminFixturesList');
+
+            if (!clubSelect || !editionSelect || !gameweekSelect || !fixturesList) {
                 console.log('❌ AdminManager: Required elements not found in loadFixturesForDisplay');
                 return;
             }
@@ -1555,12 +1555,12 @@ class AdminManager {
             if (!this.db) {
                 console.log('🔧 AdminManager: Database reference not available, attempting to restore...');
                 this.restoreFirebaseConnection();
-                
+
                 // If still not available, try manual refresh
                 if (!this.db) {
                     this.refreshDatabaseReference();
                 }
-                
+
                 // Final check
                 if (!this.db) {
                     console.error('❌ AdminManager: Database reference still not available after restore attempts');
@@ -1571,7 +1571,7 @@ class AdminManager {
                     return;
                 }
             }
-            
+
             console.log('🔧 AdminManager: Database reference available:', !!this.db);
 
             // Show loading state
@@ -1591,7 +1591,7 @@ class AdminManager {
 
             // Load fixtures for the selected parameters
             let fixtures = [];
-            
+
             if (selectedGameweek) {
                 // Load specific gameweek - query individual fixtures where gameWeek matches
                 const fixturesSnapshot = await this.db.collection('clubs')
@@ -1601,7 +1601,7 @@ class AdminManager {
                     .collection('fixtures')
                     .where('gameWeek', '==', parseInt(selectedGameweek))
                     .get();
-                
+
                 fixturesSnapshot.forEach(doc => {
                     const fixtureData = doc.data();
                     fixtures.push({
@@ -1618,7 +1618,7 @@ class AdminManager {
                     .doc(selectedEdition)
                     .collection('fixtures')
                     .get();
-                
+
                 fixturesSnapshot.forEach(doc => {
                     const fixtureData = doc.data();
                     fixtures.push({
@@ -1662,14 +1662,14 @@ class AdminManager {
 
     async displayFixturesList(fixtures) {
         const fixturesList = document.getElementById('adminFixturesList');
-        
+
         console.log('🔧 AdminManager: displayFixturesList called with', fixtures.length, 'fixtures');
-        
+
         if (!fixturesList) {
             console.error('❌ AdminManager: adminFixturesList element not found!');
             return;
         }
-        
+
         if (fixtures.length === 0) {
             fixturesList.innerHTML = `
                 <div class="empty-state">
@@ -1687,10 +1687,10 @@ class AdminManager {
 
     async renderAdminFixturesOptimized(container, fixtures) {
         const startTime = performance.now();
-        
+
         // Clear container
         container.innerHTML = '';
-        
+
         // Create header first
         const headerHTML = `
             <div class="fixtures-header">
@@ -1705,31 +1705,31 @@ class AdminManager {
                 </div>
             </div>
         `;
-        
+
         container.innerHTML = headerHTML;
-        
+
         // Create fixtures grid container
         const fixturesGrid = document.createElement('div');
         fixturesGrid.className = 'fixtures-grid';
         container.appendChild(fixturesGrid);
-        
+
         // Process fixtures in batches to avoid long tasks
         const batchSize = 3; // Smaller batches for admin fixtures (they're more complex)
         const totalFixtures = fixtures.length;
-        
+
         for (let i = 0; i < totalFixtures; i += batchSize) {
             const batch = fixtures.slice(i, i + batchSize);
-            
+
             // Process batch
             const batchHTML = batch.map(fixture => this.createAdminFixtureHTML(fixture)).join('');
             fixturesGrid.insertAdjacentHTML('beforeend', batchHTML);
-            
+
             // Yield control to browser between batches
             if (i + batchSize < totalFixtures) {
                 await new Promise(resolve => requestAnimationFrame(resolve));
             }
         }
-        
+
         const endTime = performance.now();
         console.log(`🚀 AdminManager: Rendered ${totalFixtures} admin fixtures in ${Math.round(endTime - startTime)}ms`);
     }
@@ -1759,13 +1759,13 @@ class AdminManager {
                 dateStr = fixture.scheduledDate.toString();
             }
         }
-        
+
         const status = fixture.status || 'scheduled';
-        const score = fixture.homeScore !== null && fixture.awayScore !== null 
-            ? `${fixture.homeScore} - ${fixture.awayScore}` 
+        const score = fixture.homeScore !== null && fixture.awayScore !== null
+            ? `${fixture.homeScore} - ${fixture.awayScore}`
             : 'TBD';
         const gameweek = fixture.gameweek || 'Unknown';
-        
+
         return `
             <div class="fixture-card">
                 <div class="fixture-header">
@@ -1794,7 +1794,7 @@ class AdminManager {
     async populateScoreClubDropdown() {
         try {
             console.log('🔧 AdminManager: populateScoreClubDropdown called');
-            
+
             const clubSelect = document.getElementById('scoreClubSelect');
             if (!clubSelect) {
                 console.log('❌ AdminManager: scoreClubSelect element not found in populateScoreClubDropdown');
@@ -1827,7 +1827,7 @@ class AdminManager {
         try {
             const clubSelect = document.getElementById('scoreClubSelect');
             const editionSelect = document.getElementById('scoreEditionSelect');
-            
+
             if (!clubSelect || !editionSelect) {
                 console.log('❌ AdminManager: Required elements not found in onScoreClubChange');
                 return;
@@ -1867,7 +1867,7 @@ class AdminManager {
         try {
             const editionSelect = document.getElementById('scoreEditionSelect');
             const gameweekSelect = document.getElementById('scoreGameweekSelect');
-            
+
             if (!editionSelect || !gameweekSelect) {
                 console.log('❌ AdminManager: Required elements not found in onScoreEditionChange');
                 return;
@@ -1945,12 +1945,12 @@ class AdminManager {
             if (!this.db) {
                 console.log('🔧 AdminManager: Database reference not available in loadScoresForDisplay, attempting to restore...');
                 this.restoreFirebaseConnection();
-                
+
                 // If still not available, try manual refresh
                 if (!this.db) {
                     this.refreshDatabaseReference();
                 }
-                
+
                 // Final check
                 if (!this.db) {
                     console.error('❌ AdminManager: Database reference still not available after restore attempts');
@@ -1958,7 +1958,7 @@ class AdminManager {
                     return;
                 }
             }
-            
+
             // Test database connection with a simple query
             try {
                 console.log('🔍 AdminManager: Testing database connection...');
@@ -1984,13 +1984,13 @@ class AdminManager {
 
             // Load fixtures for the selected parameters
             let fixtures = [];
-            
+
             console.log('🔍 AdminManager: Querying database path:', `clubs/${selectedClub}/editions/${selectedEdition}/fixtures`);
-            
+
             if (selectedGameweek) {
                 // Load specific gameweek - query individual fixtures where gameWeek matches
                 console.log('🔍 AdminManager: Querying for specific gameweek:', selectedGameweek);
-                
+
                 // First try the new structure: query by gameWeek field
                 let fixturesSnapshot = await this.db.collection('clubs')
                     .doc(selectedClub)
@@ -1999,9 +1999,9 @@ class AdminManager {
                     .collection('fixtures')
                     .where('gameWeek', '==', parseInt(selectedGameweek))
                     .get();
-                
+
                 console.log('🔍 AdminManager: Query by gameWeek field returned:', fixturesSnapshot.size, 'documents');
-                
+
                 // If no results, try the old structure: query by document ID containing gameweek
                 if (fixturesSnapshot.empty) {
                     console.log('🔍 AdminManager: No results by gameWeek field, trying document ID pattern...');
@@ -2013,14 +2013,14 @@ class AdminManager {
                         .where('__name__', '>=', `gw${selectedGameweek}`)
                         .where('__name__', '<=', `gw${selectedGameweek}\uf8ff`)
                         .get();
-                    
+
                     console.log('🔍 AdminManager: Query by document ID pattern returned:', fixturesSnapshot.size, 'documents');
                 }
-                
+
                 fixturesSnapshot.forEach(doc => {
                     const fixtureData = doc.data();
                     console.log('🔍 AdminManager: Processing fixture document:', doc.id, fixtureData);
-                    
+
                     if (fixtureData.fixtures && Array.isArray(fixtureData.fixtures)) {
                         // New structure: fixtures array within document
                         fixtureData.fixtures.forEach(fixture => {
@@ -2048,13 +2048,13 @@ class AdminManager {
                     .doc(selectedEdition)
                     .collection('fixtures')
                     .get();
-                
+
                 console.log('🔍 AdminManager: All fixtures query returned:', fixturesSnapshot.size, 'documents');
-                
+
                 fixturesSnapshot.forEach(doc => {
                     const fixtureData = doc.data();
                     console.log('🔍 AdminManager: Processing fixture document:', doc.id, fixtureData);
-                    
+
                     if (fixtureData.fixtures && Array.isArray(fixtureData.fixtures)) {
                         // New structure: fixtures array within document
                         fixtureData.fixtures.forEach(fixture => {
@@ -2077,7 +2077,7 @@ class AdminManager {
 
             console.log('🔍 AdminManager: Final fixtures array:', fixtures);
             console.log('🔍 AdminManager: Fixtures count:', fixtures.length);
-            
+
             if (fixtures.length === 0) {
                 console.log('🔍 AdminManager: No fixtures found, showing empty state');
                 scoresList.innerHTML = `
@@ -2173,19 +2173,19 @@ class AdminManager {
             console.log('🔧 AdminManager: Scores displayed successfully');
             console.log('🔧 AdminManager: scoresList innerHTML length:', scoresList.innerHTML.length);
             console.log('🔧 AdminManager: scoresList children count:', scoresList.children.length);
-            
+
             // Force a re-render by triggering a DOM update
             scoresList.style.display = 'none';
             scoresList.offsetHeight; // Force reflow
             scoresList.style.display = 'block';
-            
+
             // Add a marker to verify the content was updated
             const marker = document.createElement('div');
             marker.id = 'scoresUpdatedMarker';
             marker.style.cssText = 'background: #4CAF50; color: white; padding: 5px; margin: 5px 0; border-radius: 3px; font-size: 12px;';
             marker.textContent = `✅ Scores updated at ${new Date().toLocaleTimeString()} - ${fixtures.length} fixtures loaded`;
             scoresList.appendChild(marker);
-            
+
             console.log('🔧 AdminManager: Added update marker to scoresList');
 
         } catch (error) {
@@ -2208,7 +2208,7 @@ class AdminManager {
                 `;
             }
         }
-        
+
         // Fallback to just team name if no service available
         return `<span class="team-name">${teamName}</span>`;
     }
@@ -2221,7 +2221,7 @@ class AdminManager {
                 return `<img src="${badgeUrl}" alt="${teamName}" class="team-badge team-badge-${size} ${additionalClasses}" loading="lazy">`;
             }
         }
-        
+
         // Fallback to empty if no service available
         return '';
     }
@@ -2273,31 +2273,31 @@ class AdminManager {
                 .doc(this.currentEditingEdition)
                 .collection('fixtures')
                 .doc(`gw${gameweek}`);
-            
+
             // Get current fixtures document
             const fixturesDoc = await fixturesRef.get();
             if (fixturesDoc.exists) {
                 const fixturesData = fixturesDoc.data();
                 const fixtures = fixturesData.fixtures || [];
-                
+
                 // Find and update the specific fixture
-                const fixtureToUpdate = fixtures.find(f => 
-                    f.homeTeam === fixture.homeTeam && 
+                const fixtureToUpdate = fixtures.find(f =>
+                    f.homeTeam === fixture.homeTeam &&
                     f.awayTeam === fixture.awayTeam &&
                     f.date === fixture.date
                 );
-                
+
                 if (fixtureToUpdate) {
                     fixtureToUpdate.homeScore = fixture.homeScore;
                     fixtureToUpdate.awayScore = fixture.awayScore;
                     fixtureToUpdate.status = fixture.status;
                     fixtureToUpdate.lastUpdated = fixture.lastUpdated;
-                    
+
                     await fixturesRef.update({
                         fixtures: fixtures,
                         updated_at: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    
+
                     window.authManager.showSuccess('Score updated successfully');
                     console.log('✅ AdminManager: Single score updated successfully');
                 } else {
@@ -2334,9 +2334,9 @@ class AdminManager {
                 if (homeScore !== (fixture.homeScore !== null ? fixture.homeScore.toString() : '') ||
                     awayScore !== (fixture.awayScore !== null ? fixture.awayScore.toString() : '') ||
                     status !== fixture.status) {
-                    
+
                     hasChanges = true;
-                    
+
                     // Validate scores
                     if (homeScore === '' || awayScore === '') {
                         window.authManager.showError(`Please enter both scores for ${fixture.homeTeam} vs ${fixture.awayTeam}`);
@@ -2390,31 +2390,31 @@ class AdminManager {
                     .doc(this.currentEditingEdition)
                     .collection('fixtures')
                     .get();
-                
+
                 const batch = this.db.batch();
                 fixturesSnapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.fixtures) {
                         // Find fixtures that match the updated ones
-                        const updatedFixturesForGameweek = updatedFixtures.filter(fixture => 
-                            data.fixtures.some(f => 
-                                f.homeTeam === fixture.homeTeam && 
+                        const updatedFixturesForGameweek = updatedFixtures.filter(fixture =>
+                            data.fixtures.some(f =>
+                                f.homeTeam === fixture.homeTeam &&
                                 f.awayTeam === fixture.awayTeam &&
                                 f.date === fixture.date
                             )
                         );
-                        
+
                         if (updatedFixturesForGameweek.length > 0) {
                             // Update the matching fixtures
                             const newFixtures = data.fixtures.map(fixture => {
-                                const updatedFixture = updatedFixturesForGameweek.find(uf => 
-                                    uf.homeTeam === fixture.homeTeam && 
+                                const updatedFixture = updatedFixturesForGameweek.find(uf =>
+                                    uf.homeTeam === fixture.homeTeam &&
                                     uf.awayTeam === fixture.awayTeam &&
                                     uf.date === fixture.date
                                 );
                                 return updatedFixture || fixture;
                             });
-                            
+
                             batch.update(doc.ref, {
                                 fixtures: newFixtures,
                                 updated_at: firebase.firestore.FieldValue.serverTimestamp()
@@ -2422,13 +2422,13 @@ class AdminManager {
                         }
                     }
                 });
-                
+
                 await batch.commit();
             }
 
             // Update local data
             this.currentEditingFixtures = updatedFixtures;
-            
+
             window.authManager.showSuccess(`${updatedFixtures.length} fixtures updated successfully`);
             console.log('✅ AdminManager: Bulk scores updated successfully');
 
@@ -2486,16 +2486,16 @@ class AdminManager {
             if (window.scoresManager) {
                 try {
                     console.log('🔧 AdminManager: Starting score import process...');
-                    
+
                     // Use the new fixtures-results API method
                     console.log('🔧 AdminManager: Importing scores from fixtures-results API...');
                     const success = await window.scoresManager.importScoresFromAPI(parseInt(selectedGameweek));
-                    
+
                     if (success) {
                         // Reload the scores display
                         console.log('🔧 AdminManager: Reloading scores display...');
                         await this.loadScoresForDisplay();
-                        
+
                         window.authManager.showSuccess('Scores imported successfully from Football Web Pages API');
                         console.log('✅ AdminManager: Scores imported successfully');
                     } else {
@@ -2582,31 +2582,31 @@ class AdminManager {
 
     debugElements() {
         console.log('🔧 AdminManager: Debug elements called');
-        
+
         const clubSelect = document.getElementById('fixtureClubSelect');
         const editionSelect = document.getElementById('fixtureEditionSelect');
         const gameweekSelect = document.getElementById('fixtureGameweekSelect');
-        
+
         console.log('🔧 AdminManager: fixtureClubSelect:', clubSelect);
         console.log('🔧 AdminManager: fixtureEditionSelect:', editionSelect);
         console.log('🔧 AdminManager: fixtureGameweekSelect:', gameweekSelect);
-        
+
         // Update debug display
         const debugClubSelect = document.getElementById('debugClubSelect');
         const debugEditionSelect = document.getElementById('debugEditionSelect');
         const debugGameweekSelect = document.getElementById('debugGameweekSelect');
-        
+
         if (debugClubSelect) debugClubSelect.textContent = clubSelect ? 'YES' : 'NO';
         if (debugEditionSelect) debugEditionSelect.textContent = editionSelect ? 'YES' : 'NO';
         if (debugGameweekSelect) debugGameweekSelect.textContent = gameweekSelect ? 'YES' : 'NO';
-        
+
         // Check if elements are visible
         if (clubSelect) {
             console.log('🔧 AdminManager: clubSelect computed styles:', window.getComputedStyle(clubSelect));
             console.log('🔧 AdminManager: clubSelect offsetParent:', clubSelect.offsetParent);
             console.log('🔧 AdminManager: clubSelect getBoundingClientRect:', clubSelect.getBoundingClientRect());
         }
-        
+
         // Try to manually populate dropdowns
         console.log('🔧 AdminManager: Attempting to manually populate dropdowns...');
         this.populateFixtureClubDropdown();
@@ -2624,17 +2624,17 @@ class AdminManager {
     // Global debug function for admin access issues
     static debugAdminAccess() {
         console.log('🔧 AdminManager: Debug admin access called');
-        
+
         if (window.adminManager) {
             console.log('🔧 AdminManager: AdminManager instance found');
             console.log('🔧 AdminManager: Current user admin status:', {
                 isAdmin: window.adminManager.currentUserIsAdmin,
                 isSuperAdmin: window.adminManager.currentUserIsSuperAdmin
             });
-            
+
             // Force refresh admin status
             window.adminManager.forceRefreshAdminStatus();
-            
+
             // Test admin button functionality
             setTimeout(() => {
                 window.adminManager.testAdminButton();
@@ -2642,7 +2642,7 @@ class AdminManager {
         } else {
             console.log('❌ AdminManager: AdminManager instance not found');
         }
-        
+
         // Check various admin status indicators
         console.log('🔧 AdminManager: Debug info:');
         console.log('- window.losApp exists:', !!window.losApp);
@@ -2650,26 +2650,26 @@ class AdminManager {
         console.log('- window.losApp.managers.superAdmin exists:', !!(window.losApp?.managers?.superAdmin));
         console.log('- window.losApp.managers.superAdmin.isSuperAdmin:', window.losApp?.managers?.superAdmin?.isSuperAdmin);
         console.log('- localStorage isSuperAdmin:', localStorage.getItem('isSuperAdmin'));
-        
+
         // Check current user
         if (window.authManager?.getCurrentUser) {
             const user = window.authManager.getCurrentUser();
             console.log('- Current user email:', user.email);
             console.log('- Current user ID:', user.uid);
         }
-        
+
         // Check admin button and panel
         const adminBtn = document.getElementById('adminBtn');
         const adminPanel = document.getElementById('adminPanel');
         console.log('- Admin button exists:', !!adminBtn);
         console.log('- Admin panel exists:', !!adminPanel);
-        
+
         if (adminBtn) {
             console.log('- Admin button classes:', adminBtn.className);
             console.log('- Admin button disabled:', adminBtn.disabled);
             console.log('- Admin button pointer-events:', getComputedStyle(adminBtn).pointerEvents);
         }
-        
+
         if (adminPanel) {
             console.log('- Admin panel classes:', adminPanel.className);
             console.log('- Admin panel display:', getComputedStyle(adminPanel).display);
@@ -2683,7 +2683,7 @@ class AdminManager {
 
         // Try to get team badge from various sources
         let badgeUrl = null;
-        
+
         // Check if we have a local badge service
         if (window.getLocalTeamBadge && typeof window.getLocalTeamBadge === 'function') {
             try {
@@ -2692,7 +2692,7 @@ class AdminManager {
                 console.log('🔧 AdminManager: Local badge service error:', e);
             }
         }
-        
+
         // Check if we have a global badge service
         if (!badgeUrl && window.teamBadgeService && typeof window.teamBadgeService.getTeamBadge === 'function') {
             try {
@@ -2701,12 +2701,12 @@ class AdminManager {
                 console.log('🔧 AdminManager: Global badge service error:', e);
             }
         }
-        
+
         // If no badge found, just return team name
         if (!badgeUrl) {
             return `<span class="team-name">${teamName}</span>`;
         }
-        
+
         // Return team with badge
         return `
             <div class="team-with-badge ${additionalClasses}">
@@ -2809,66 +2809,66 @@ class AdminManager {
 
 // AdminManager will be initialized by the main app
 // Global debug functions for admin access issues
-    
-    // Add global debug function for admin access issues
-    window.debugAdminAccess = () => {
-        AdminManager.debugAdminAccess();
-    };
-    
-    // Add global function to force initialize admin panel
-    window.forceInitAdmin = () => {
-        if (window.adminManager) {
-            window.adminManager.forceInitAdminPanel();
-        } else {
-            console.log('❌ AdminManager: AdminManager instance not found');
-        }
-    };
-    
-    // Add global function to test admin button
-    window.testAdminButton = () => {
-        if (window.adminManager) {
-            window.adminManager.testAdminButton();
-        } else {
-            console.log('❌ AdminManager: AdminManager instance not found');
-        }
-    };
 
-    // Add global function to test score import
-    window.testScoreImport = () => {
-        if (window.adminManager) {
-            window.adminManager.testScoreImport();
-        } else {
-            console.log('❌ AdminManager: AdminManager instance not found');
-        }
-    };
-    
-            // Global debug functions available: debugAdminAccess(), forceInitAdmin(), testAdminButton(), testScoreImport(), refreshAdminDB(), fixAdminDB()
-        
-        // Add global helper function to refresh admin database
-        window.refreshAdminDB = () => {
-            console.log('🔧 Refreshing AdminManager database reference...');
-            if (window.adminManager) {
-                const success = window.adminManager.refreshDatabaseReference();
-                console.log('🔧 AdminManager database refresh result:', success);
-                return success;
-            } else {
-                console.error('❌ AdminManager not available');
-                return false;
-            }
-        };
+// Add global debug function for admin access issues
+window.debugAdminAccess = () => {
+    AdminManager.debugAdminAccess();
+};
 
-        // Add global helper function to fix admin database issues
-        window.fixAdminDB = () => {
-            console.log('🔧 Fixing AdminManager database reference...');
-            if (window.adminManager) {
-                window.adminManager.restoreFirebaseConnection();
-                if (!window.adminManager.db) {
-                    window.adminManager.refreshDatabaseReference();
-                }
-                console.log('🔧 AdminManager database reference fixed:', !!window.adminManager.db);
-                return !!window.adminManager.db;
-            } else {
-                console.error('❌ AdminManager not available');
-                return false;
-            }
-        };
+// Add global function to force initialize admin panel
+window.forceInitAdmin = () => {
+    if (window.adminManager) {
+        window.adminManager.forceInitAdminPanel();
+    } else {
+        console.log('❌ AdminManager: AdminManager instance not found');
+    }
+};
+
+// Add global function to test admin button
+window.testAdminButton = () => {
+    if (window.adminManager) {
+        window.adminManager.testAdminButton();
+    } else {
+        console.log('❌ AdminManager: AdminManager instance not found');
+    }
+};
+
+// Add global function to test score import
+window.testScoreImport = () => {
+    if (window.adminManager) {
+        window.adminManager.testScoreImport();
+    } else {
+        console.log('❌ AdminManager: AdminManager instance not found');
+    }
+};
+
+// Global debug functions available: debugAdminAccess(), forceInitAdmin(), testAdminButton(), testScoreImport(), refreshAdminDB(), fixAdminDB()
+
+// Add global helper function to refresh admin database
+window.refreshAdminDB = () => {
+    console.log('🔧 Refreshing AdminManager database reference...');
+    if (window.adminManager) {
+        const success = window.adminManager.refreshDatabaseReference();
+        console.log('🔧 AdminManager database refresh result:', success);
+        return success;
+    } else {
+        console.error('❌ AdminManager not available');
+        return false;
+    }
+};
+
+// Add global helper function to fix admin database issues
+window.fixAdminDB = () => {
+    console.log('🔧 Fixing AdminManager database reference...');
+    if (window.adminManager) {
+        window.adminManager.restoreFirebaseConnection();
+        if (!window.adminManager.db) {
+            window.adminManager.refreshDatabaseReference();
+        }
+        console.log('🔧 AdminManager database reference fixed:', !!window.adminManager.db);
+        return !!window.adminManager.db;
+    } else {
+        console.error('❌ AdminManager not available');
+        return false;
+    }
+};

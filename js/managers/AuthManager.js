@@ -1,4 +1,4 @@
-class AuthManager {
+export default class AuthManager {
     constructor() {
         this.auth = window.firebaseAuth;
         this.db = window.firebaseDB;
@@ -7,14 +7,14 @@ class AuthManager {
         this.isInitialized = false;
         this.dataLoaded = false; // Track if data has been loaded
         this.isLoadingUserData = false; // Prevent multiple simultaneous retry attempts
-        
+
         // Don't auto-initialize - wait for main app to control initialization
         // this.init();
     }
 
     initBasic() {
         if (this.isInitialized) return;
-        
+
         // Only set up basic structure, don't load data yet
         this.setupAuthListeners();
         this.isInitialized = true;
@@ -23,13 +23,13 @@ class AuthManager {
 
     init() {
         if (this.isInitialized && this.dataLoaded) return;
-        
+
         // init() called
-        
+
         // Set up Firebase database reference
         this.db = window.firebaseDB;
         // Database reference set
-        
+
         // Listen for auth state changes
         // Setting up auth state listener...
         this.auth.onAuthStateChanged((user) => {
@@ -59,7 +59,7 @@ class AuthManager {
     clearListeners() {
         // Clear any existing Firebase listeners
 
-        
+
         // Unregister from the main app's listener tracking if needed
         if (window.losApp) {
             window.losApp.unregisterListener('auth-user');
@@ -88,13 +88,13 @@ class AuthManager {
         // Auth switch buttons
         const switchToRegister = document.getElementById('switchToRegister');
         const switchToLogin = document.getElementById('switchToLogin');
-        
+
         if (switchToRegister) {
             switchToRegister.addEventListener('click', () => {
                 this.showRegisterForm();
             });
         }
-        
+
         if (switchToLogin) {
             switchToLogin.addEventListener('click', () => {
                 this.showLoginForm();
@@ -138,7 +138,7 @@ class AuthManager {
 
         try {
             this.showLoading();
-            
+
             // Create user account
             const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
@@ -181,7 +181,7 @@ class AuthManager {
                 });
 
             // Set current club and edition
-            if (window.losApp && window.losApp.managers.club && 
+            if (window.losApp && window.losApp.managers.club &&
                 typeof window.losApp.managers.club.setCurrentClubAndEdition === 'function') {
                 window.losApp.managers.club.setCurrentClubAndEdition(club, edition);
             }
@@ -200,9 +200,9 @@ class AuthManager {
             console.log('AuthManager: Already loading user data, skipping duplicate call');
             return;
         }
-        
+
         this.isLoadingUserData = true;
-        
+
         try {
             // Prevent infinite retry loops
             if (retryCount > 3) {
@@ -210,23 +210,23 @@ class AuthManager {
                 this.showAuthScreen();
                 return;
             }
-            
+
             // Ensure Firebase is ready
             if (!window.firebaseReady || !this.db || typeof this.db.collection !== 'function') {
                 console.log(`AuthManager: Firebase not ready, retry ${retryCount + 1}/3, retrying in 2 seconds...`);
-                
+
                 // Try to update our database reference if Firebase is ready but we don't have it
                 if (window.firebaseReady && window.firebaseDB && !this.db) {
                     console.log('AuthManager: Updating database reference from global Firebase...');
                     this.db = window.firebaseDB;
                 }
-                
+
                 setTimeout(() => this.loadUserData(retryCount + 1), 2000);
                 return;
             }
 
             // Check if ClubService is ready
-            if (!window.losApp || !window.losApp.managers || !window.losApp.managers.club || 
+            if (!window.losApp || !window.losApp.managers || !window.losApp.managers.club ||
                 typeof window.losApp.managers.club.setCurrentClubAndEdition !== 'function') {
                 console.log(`AuthManager: ClubService not ready, retry ${retryCount + 1}/3, retrying in 2 seconds...`);
                 console.log(`🔍 AuthManager: ClubService status - exists: ${!!window.losApp?.managers?.club}, has method: ${!!window.losApp?.managers?.club?.setCurrentClubAndEdition}, isReady: ${window.losApp?.managers?.club?.isReady}`);
@@ -252,72 +252,72 @@ class AuthManager {
             // Try to load user data from stored club/edition first
             let userData = null;
             let userFound = false;
-            
+
             // Check if ClubService is ready and has stored club/edition
-            if (window.losApp && window.losApp.managers.club && 
+            if (window.losApp && window.losApp.managers.club &&
                 typeof window.losApp.managers.club.loadStoredClubAndEdition === 'function') {
-                
+
                 const hasStoredData = window.losApp.managers.club.loadStoredClubAndEdition();
                 if (hasStoredData) {
                     const storedClub = window.losApp.managers.club.getCurrentClub();
                     const storedEdition = window.losApp.managers.club.getCurrentEdition();
                     console.log(`🔍 AuthManager: Loaded stored club/edition: ${storedClub}, ${storedEdition}`);
-                    
+
                     if (storedClub && storedEdition) {
                         try {
                             const userDoc = await this.db.collection('clubs').doc(storedClub)
                                 .collection('editions').doc(storedEdition)
                                 .collection('users').doc(this.currentUser.uid).get();
-                            
-                                                            if (userDoc.exists) {
-                                    userData = userDoc.data();
-                                    userFound = true;
-                                    
-                                    // Set current club and edition
-                                    if (window.losApp && window.losApp.managers.club && 
-                                        typeof window.losApp.managers.club.setCurrentClubAndEdition === 'function') {
-                                        console.log(`🔧 AuthManager: Setting club/edition to: ${storedClub}, ${storedEdition}`);
-                                        window.losApp.managers.club.setCurrentClubAndEdition(storedClub, storedEdition);
-                                        console.log(`✅ User found in stored club/edition: ${storedClub}, ${storedEdition}`);
-                                    } else {
-                                        console.error('❌ ClubService not available for setting club/edition');
-                                    }
+
+                            if (userDoc.exists) {
+                                userData = userDoc.data();
+                                userFound = true;
+
+                                // Set current club and edition
+                                if (window.losApp && window.losApp.managers.club &&
+                                    typeof window.losApp.managers.club.setCurrentClubAndEdition === 'function') {
+                                    console.log(`🔧 AuthManager: Setting club/edition to: ${storedClub}, ${storedEdition}`);
+                                    window.losApp.managers.club.setCurrentClubAndEdition(storedClub, storedEdition);
+                                    console.log(`✅ User found in stored club/edition: ${storedClub}, ${storedEdition}`);
+                                } else {
+                                    console.error('❌ ClubService not available for setting club/edition');
                                 }
+                            }
                         } catch (error) {
                             console.log('AuthManager: Error loading from stored club/edition:', error);
                         }
                     }
                 }
             }
-            
+
             // If not found in stored club/edition, search all clubs
             if (!userFound) {
                 console.log('🔍 Searching for user across all clubs...');
                 try {
                     const globalSettings = await this.db.collection('global-settings').doc('system').get();
                     const activeClubs = globalSettings.exists ? globalSettings.data().activeClubs : [];
-                    
+
                     if (!activeClubs || activeClubs.length === 0) {
                         console.log('⚠️ No active clubs found in global settings, trying ClubService fallback...');
-                        
+
                         // Try to get clubs from ClubService as fallback
                         if (window.losApp?.managers?.club?.clubData) {
                             const clubService = window.losApp.managers.club;
                             const clubIds = Object.keys(clubService.clubData);
                             console.log('🔧 AuthManager: Using ClubService fallback with', clubIds.length, 'clubs');
-                            
+
                             if (clubIds.length > 0) {
                                 // Use ClubService clubs instead of global settings
                                 for (const clubId of clubIds) {
                                     try {
                                         const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
                                             .collection('editions').get();
-                                        
+
                                         for (const editionDoc of editionsSnapshot.docs) {
                                             const userDoc = await this.db.collection('clubs').doc(clubId)
                                                 .collection('editions').doc(editionDoc.id)
                                                 .collection('users').doc(this.currentUser.uid).get();
-                                            
+
                                             if (userDoc.exists) {
                                                 userData = userDoc.data();
                                                 userFound = true;
@@ -331,7 +331,7 @@ class AuthManager {
                                 }
                             }
                         }
-                        
+
                         if (!userFound) {
                             console.log('⚠️ User not found in any club, showing auth screen');
                             this.showAuthScreen();
@@ -340,36 +340,36 @@ class AuthManager {
                     } else {
                         // Use global settings active clubs
                         for (const clubId of activeClubs) {
-                        try {
-                            const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
-                                .collection('editions').get();
-                            
-                            for (const editionDoc of editionsSnapshot.docs) {
-                                const userDoc = await this.db.collection('clubs').doc(clubId)
-                                    .collection('editions').doc(editionDoc.id)
-                                    .collection('users').doc(this.currentUser.uid).get();
-                                
-                                if (userDoc.exists) {
-                                    userData = userDoc.data();
-                                    userFound = true;
-                                    
-                                    // Set current club and edition
-                                    if (window.losApp && window.losApp.managers.club && 
-                                        typeof window.losApp.managers.club.setCurrentClubAndEdition === 'function') {
-                                        console.log(`🔧 AuthManager: Setting club/edition to: ${clubId}, ${editionDoc.id}`);
-                                        window.losApp.managers.club.setCurrentClubAndEdition(clubId, editionDoc.id);
-                                        console.log(`✅ User found in club: ${clubId}, edition: ${editionDoc.id}`);
-                                    } else {
-                                        console.error('❌ ClubService not available for setting club/edition');
+                            try {
+                                const editionsSnapshot = await this.db.collection('clubs').doc(clubId)
+                                    .collection('editions').get();
+
+                                for (const editionDoc of editionsSnapshot.docs) {
+                                    const userDoc = await this.db.collection('clubs').doc(clubId)
+                                        .collection('editions').doc(editionDoc.id)
+                                        .collection('users').doc(this.currentUser.uid).get();
+
+                                    if (userDoc.exists) {
+                                        userData = userDoc.data();
+                                        userFound = true;
+
+                                        // Set current club and edition
+                                        if (window.losApp && window.losApp.managers.club &&
+                                            typeof window.losApp.managers.club.setCurrentClubAndEdition === 'function') {
+                                            console.log(`🔧 AuthManager: Setting club/edition to: ${clubId}, ${editionDoc.id}`);
+                                            window.losApp.managers.club.setCurrentClubAndEdition(clubId, editionDoc.id);
+                                            console.log(`✅ User found in club: ${clubId}, edition: ${editionDoc.id}`);
+                                        } else {
+                                            console.error('❌ ClubService not available for setting club/edition');
+                                        }
+                                        break;
                                     }
-                                    break;
                                 }
+
+                                if (userFound) break;
+                            } catch (error) {
+                                console.log(`AuthManager: Error searching club ${clubId}:`, error);
                             }
-                            
-                            if (userFound) break;
-                        } catch (error) {
-                            console.log(`AuthManager: Error searching club ${clubId}:`, error);
-                        }
                         }
                     }
                 } catch (error) {
@@ -379,30 +379,30 @@ class AuthManager {
                     return;
                 }
             }
-            
+
             if (userFound && userData) {
                 this.currentUser = {
                     ...this.currentUser,
                     ...userData
                 };
-                
+
                 // Update UI
                 this.updateUserDisplay();
-                
+
                 // Show main app (hide loading screen)
                 this.showMainApp();
-                
+
                 // Check if user is admin - don't show panel automatically, let AdminManager handle it
                 if (userData.isAdmin) {
                     console.log('🔍 AuthManager: User is admin, but not auto-showing admin panel');
                     // The AdminManager will handle showing the admin panel when the admin button is clicked
                 }
-                
+
                 // Notify SuperAdminManager about the current user
                 console.log('🔍 AuthManager: Attempting to notify SuperAdminManager...');
                 console.log('🔍 AuthManager: window.losApp exists:', !!window.losApp);
                 console.log('🔍 AuthManager: superAdmin manager exists:', !!(window.losApp && window.losApp.managers.superAdmin));
-                
+
                 if (window.losApp && window.losApp.managers.superAdmin) {
                     console.log('🔍 AuthManager: Calling SuperAdminManager.setCurrentUser()...');
                     window.losApp.managers.superAdmin.setCurrentUser(this.currentUser);
@@ -413,13 +413,13 @@ class AuthManager {
                 // If user document doesn't exist, show auth screen to register
                 this.showAuthScreen();
             }
-            
+
         } catch (error) {
             // Handle specific Firebase errors
             if (window.handleFirebaseError) {
                 window.handleFirebaseError(error, 'AuthManager-loadUserData');
             }
-            
+
             if (error.message && error.message.includes('Target ID already exists')) {
                 console.log('User data loading conflict detected, retrying in 2 seconds...');
                 setTimeout(() => this.loadUserData(), 2000);
@@ -432,23 +432,23 @@ class AuthManager {
         }
     }
 
-updateUserDisplay() {
-    const userNameElement = document.getElementById('userName');
-    const livesCountElement = document.getElementById('livesCount');
-    
-    if (userNameElement && this.currentUser) {
-        userNameElement.textContent = this.currentUser.displayName || 'Player';
+    updateUserDisplay() {
+        const userNameElement = document.getElementById('userName');
+        const livesCountElement = document.getElementById('livesCount');
+
+        if (userNameElement && this.currentUser) {
+            userNameElement.textContent = this.currentUser.displayName || 'Player';
+        }
+
+        // Lives are now displayed using the new system in updateUserUI
     }
-    
-    // Lives are now displayed using the new system in updateUserUI
-}
 
 
-    
+
     async loadUserDataFallback() {
         try {
             console.log('Attempting fallback user data loading...');
-            
+
             // Try to get user data with a one-time listener instead of get()
             return new Promise((resolve) => {
                 const unsubscribe = this.db.collection('users').doc(this.currentUser.uid)
@@ -456,16 +456,16 @@ updateUserDisplay() {
                         if (doc.exists) {
                             const userData = doc.data();
                             this.isAdmin = userData.isAdmin || false;
-                            
+
                             // Update UI with user data
                             this.updateUserUI(userData);
-                            
+
                             // Show main app
                             this.showMainApp();
-                            
+
                             // Initialize other managers
                             this.initializeApp();
-                            
+
                             unsubscribe(); // Clean up immediately
                             resolve();
                         } else {
@@ -492,7 +492,7 @@ updateUserDisplay() {
         const userLives = document.getElementById('userLives');
 
         if (userName) userName.textContent = userData.displayName || 'Player';
-        
+
         // Update lives indicator with new display system
         if (userLives) {
             const lives = userData.lives || 0;
@@ -502,7 +502,7 @@ updateUserDisplay() {
                 // Fallback to simple text if ClubService not available
                 userLives.textContent = lives;
             }
-            
+
             if (lives <= 0) {
                 userLives.classList.add('eliminated');
             } else {
@@ -524,7 +524,7 @@ updateUserDisplay() {
         document.getElementById('loadingScreen').classList.add('hidden');
         document.getElementById('authContainer').classList.remove('hidden');
         document.getElementById('appContainer').classList.add('hidden');
-        
+
         // Load available editions for registration
         this.loadAvailableEditions();
     }
@@ -533,7 +533,7 @@ updateUserDisplay() {
         document.getElementById('loadingScreen').classList.add('hidden');
         document.getElementById('authContainer').classList.add('hidden');
         document.getElementById('appContainer').classList.remove('hidden');
-        
+
         // Notify SuperAdminManager about the current user
         if (window.losApp && window.losApp.managers.superAdmin) {
             window.losApp.managers.superAdmin.setCurrentUser(this.currentUser);
@@ -552,7 +552,7 @@ updateUserDisplay() {
         document.getElementById('registerForm').classList.remove('hidden');
         document.getElementById('switchToRegister').classList.add('hidden');
         document.getElementById('switchToLogin').classList.remove('hidden');
-        
+
         // Ensure editions are loaded when showing registration form
         this.loadAvailableEditions();
     }
@@ -560,19 +560,19 @@ updateUserDisplay() {
     async loadAvailableEditions() {
         try {
             console.log('Loading available editions...');
-            
+
             // Check if we have access to ClubService to get editions from the new structure
             if (window.losApp && window.losApp.managers.club) {
                 console.log('Using ClubService to load editions...');
                 // The ClubService will handle loading editions when a club is selected
                 return;
             }
-            
+
             // Fallback: Try to get editions from the old settings structure
             try {
                 const editionsSnapshot = await this.db.collection('settings').doc('currentCompetition').get();
                 console.log('Got settings snapshot:', editionsSnapshot);
-                
+
                 if (editionsSnapshot && editionsSnapshot.exists) {
                     const data = editionsSnapshot.data();
                     this.populateEditionsDropdown(data);
@@ -584,29 +584,29 @@ updateUserDisplay() {
                 console.log('Database error, trying alternative approach...');
                 this.loadEditionsFallback();
             }
-            
+
         } catch (error) {
             console.error('Full error in loadAvailableEditions:', error);
             this.loadEditionsFallback();
         }
     }
-    
+
     populateEditionsDropdown(data) {
         const editionSelect = document.getElementById('editionSelect');
         console.log('Edition select element:', editionSelect);
-        
+
         if (!editionSelect) {
             console.error('Edition select element not found');
             return;
         }
-        
+
         if (data.available_editions && Array.isArray(data.available_editions)) {
             console.log('Available editions found:', data.available_editions);
             console.log('Number of editions:', data.available_editions.length);
-            
+
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
             console.log('Cleared and added default option');
-            
+
             data.available_editions.forEach((edition, index) => {
                 console.log(`Processing edition ${index}:`, edition);
                 const option = document.createElement('option');
@@ -615,7 +615,7 @@ updateUserDisplay() {
                 editionSelect.appendChild(option);
                 console.log('Added option:', edition.name);
             });
-            
+
             console.log('Final options count:', editionSelect.options.length);
         } else {
             console.log('No available_editions found in settings');
@@ -623,20 +623,20 @@ updateUserDisplay() {
             this.loadEditionsFallback();
         }
     }
-    
+
     loadEditionsFallback() {
         console.log('Loading editions from fallback...');
         // Try to manually populate with the editions we know exist
         const editionSelect = document.getElementById('editionSelect');
         if (editionSelect) {
             editionSelect.innerHTML = '<option value="">Choose an edition...</option>';
-            
+
             // Add the editions we know exist from our database initialization
             const fallbackEditions = [
                 { id: "1", name: "Championship 2024/25" },
                 { id: "2", name: "Premier League 2024/25" }
             ];
-            
+
             fallbackEditions.forEach(edition => {
                 const option = document.createElement('option');
                 option.value = edition.id;
@@ -691,7 +691,7 @@ updateUserDisplay() {
 
     showToast(message, type = 'info') {
         console.log(`🔔 Toast notification: ${type} - ${message}`);
-        
+
         // Create toast container if it doesn't exist
         let toastContainer = document.querySelector('.toast-container');
         if (!toastContainer) {
@@ -747,5 +747,3 @@ updateUserDisplay() {
         return this.isAdmin;
     }
 }
-
-// AuthManager will be initialized by the main app

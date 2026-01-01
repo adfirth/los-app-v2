@@ -10,15 +10,15 @@ class PerformanceOptimizer {
 
     initialize() {
         if (this.isInitialized) return;
-        
+
         console.log('🚀 PerformanceOptimizer: Initializing...');
-        
+
         // Set up performance monitoring
         this.setupPerformanceMonitoring();
-        
+
         // Set up RAF-based batching
         this.setupRAFQueue();
-        
+
         this.isInitialized = true;
         console.log('✅ PerformanceOptimizer: Initialized successfully');
     }
@@ -35,7 +35,7 @@ class PerformanceOptimizer {
                         }
                     }
                 });
-                
+
                 this.performanceObserver.observe({ entryTypes: ['longtask'] });
             } catch (error) {
                 console.warn('PerformanceObserver not supported:', error);
@@ -56,7 +56,7 @@ class PerformanceOptimizer {
                     }
                 });
             }
-            
+
             if (this.rafQueue.length > 0) {
                 requestAnimationFrame(processQueue);
             } else {
@@ -78,7 +78,7 @@ class PerformanceOptimizer {
     optimizeLongTask(entry) {
         // Log performance issues for debugging
         console.warn(`Long task optimization needed: ${entry.name} took ${Math.round(entry.duration)}ms`);
-        
+
         // Could implement specific optimizations here
         // For now, just log for monitoring
     }
@@ -89,11 +89,11 @@ class PerformanceOptimizer {
             // Use DocumentFragment for efficient DOM manipulation
             const fragment = document.createDocumentFragment();
             const tempContainer = document.createElement('div');
-            
+
             // Process operations in batches
             const processBatch = (startIndex) => {
                 const endIndex = Math.min(startIndex + this.batchSize, operations.length);
-                
+
                 for (let i = startIndex; i < endIndex; i++) {
                     const operation = operations[i];
                     if (operation.type === 'createElement') {
@@ -107,7 +107,7 @@ class PerformanceOptimizer {
                         operation.element.innerHTML = operation.content;
                     }
                 }
-                
+
                 if (endIndex < operations.length) {
                     // Process next batch
                     requestAnimationFrame(() => processBatch(endIndex));
@@ -116,14 +116,14 @@ class PerformanceOptimizer {
                     resolve();
                 }
             };
-            
+
             processBatch(0);
         });
     }
 
     createElement(tag, attributes = {}, content = '') {
         const element = document.createElement(tag);
-        
+
         // Set attributes efficiently
         Object.entries(attributes).forEach(([key, value]) => {
             if (key === 'className') {
@@ -134,13 +134,13 @@ class PerformanceOptimizer {
                 element.setAttribute(key, value);
             }
         });
-        
+
         if (content && typeof content === 'string') {
             element.textContent = content;
         } else if (content && typeof content === 'object') {
             element.appendChild(content);
         }
-        
+
         return element;
     }
 
@@ -154,39 +154,39 @@ class PerformanceOptimizer {
             visibleStart: 0,
             visibleEnd: 0,
             buffer: 5, // Extra items to render outside viewport
-            
+
             init() {
                 this.updateVisibleRange();
                 this.render();
                 this.setupScrollListener();
             },
-            
+
             updateVisibleRange() {
                 const containerHeight = this.container.clientHeight;
                 const visibleCount = Math.ceil(containerHeight / this.itemHeight);
-                
+
                 this.visibleStart = Math.max(0, Math.floor(this.container.scrollTop / this.itemHeight) - this.buffer);
                 this.visibleEnd = Math.min(this.items.length, this.visibleStart + visibleCount + this.buffer * 2);
             },
-            
+
             render() {
                 // Clear container
                 this.container.innerHTML = '';
-                
+
                 // Create spacer for items before visible range
                 if (this.visibleStart > 0) {
                     const spacer = document.createElement('div');
                     spacer.style.height = `${this.visibleStart * this.itemHeight}px`;
                     this.container.appendChild(spacer);
                 }
-                
+
                 // Render visible items
                 for (let i = this.visibleStart; i < this.visibleEnd; i++) {
                     const item = this.items[i];
                     const element = this.renderItem(item, i);
                     this.container.appendChild(element);
                 }
-                
+
                 // Create spacer for items after visible range
                 const remainingItems = this.items.length - this.visibleEnd;
                 if (remainingItems > 0) {
@@ -195,10 +195,10 @@ class PerformanceOptimizer {
                     this.container.appendChild(spacer);
                 }
             },
-            
+
             setupScrollListener() {
                 let ticking = false;
-                
+
                 const handleScroll = () => {
                     if (!ticking) {
                         requestAnimationFrame(() => {
@@ -209,11 +209,11 @@ class PerformanceOptimizer {
                         ticking = true;
                     }
                 };
-                
+
                 this.container.addEventListener('scroll', handleScroll, { passive: true });
             }
         };
-        
+
         return scroller;
     }
 
@@ -248,12 +248,12 @@ class PerformanceOptimizer {
         if (typeof template === 'function') {
             return template(data);
         }
-        
+
         // For large datasets, use array join instead of string concatenation
         if (Array.isArray(data)) {
             return data.map(item => template(item)).join('');
         }
-        
+
         return template;
     }
 
@@ -263,30 +263,26 @@ class PerformanceOptimizer {
             this.performanceObserver.disconnect();
             this.performanceObserver = null;
         }
-        
+
         this.rafQueue = [];
         this.isProcessing = false;
     }
 
     // Performance metrics
+    // ... (methods)
     getPerformanceMetrics() {
         const metrics = {
             longTasks: 0,
             averageTaskDuration: 0,
             memoryUsage: 0
         };
-        
+
         if ('performance' in window && 'memory' in performance) {
             metrics.memoryUsage = performance.memory.usedJSHeapSize;
         }
-        
+
         return metrics;
     }
 }
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = PerformanceOptimizer;
-} else {
-    window.PerformanceOptimizer = PerformanceOptimizer;
-}
+export default PerformanceOptimizer;

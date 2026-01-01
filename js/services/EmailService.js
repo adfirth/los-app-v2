@@ -7,9 +7,9 @@ class EmailService {
     constructor() {
         this.isInitialized = false;
         this.netlifyFunctionUrl = '/.netlify/functions/send-club-welcome-email';
-        this.isLocalDevelopment = window.location.hostname === '127.0.0.1' || 
-                                 window.location.hostname === 'localhost' || 
-                                 window.location.hostname === '192.168.1.1';
+        this.isLocalDevelopment = window.location.hostname === '127.0.0.1' ||
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '192.168.1.1';
     }
 
     /**
@@ -22,15 +22,15 @@ class EmailService {
 
         try {
             console.log('📧 EmailService: Initializing...');
-            
+
             // Test connection to email function
             if (!this.isLocalDevelopment) {
                 await this.testConnection();
             }
-            
+
             this.isInitialized = true;
             console.log('✅ EmailService: Initialized successfully');
-            
+
             return this;
         } catch (error) {
             console.error('❌ EmailService: Initialization failed:', error);
@@ -44,7 +44,7 @@ class EmailService {
     async testConnection() {
         try {
             console.log('📧 EmailService: Testing email function connection...');
-            
+
             const response = await fetch(this.netlifyFunctionUrl, {
                 method: 'POST',
                 headers: {
@@ -56,7 +56,7 @@ class EmailService {
                     adminEmail: 'test@example.com'
                 })
             });
-            
+
             if (response.ok) {
                 console.log('✅ EmailService: Email function connection test successful');
                 return true;
@@ -84,7 +84,7 @@ class EmailService {
     async sendClubWelcomeEmail(clubData) {
         try {
             console.log(`📧 EmailService: Sending welcome email for club: ${clubData.name}`);
-            
+
             if (!this.isInitialized) {
                 await this.initialize();
             }
@@ -119,7 +119,7 @@ class EmailService {
 
             const result = await response.json();
             console.log(`✅ EmailService: Welcome email sent successfully to ${clubData.contactEmail}`);
-            
+
             return {
                 success: true,
                 message: 'Welcome email sent successfully',
@@ -129,7 +129,7 @@ class EmailService {
 
         } catch (error) {
             console.error('❌ EmailService: Error sending welcome email:', error);
-            
+
             return {
                 success: false,
                 error: error.message,
@@ -147,7 +147,7 @@ class EmailService {
     async sendTestEmail(testEmail) {
         try {
             console.log(`📧 EmailService: Sending test email to: ${testEmail}`);
-            
+
             const testClubData = {
                 name: 'Test Football Club',
                 clubId: 'test-club',
@@ -155,9 +155,9 @@ class EmailService {
                 adminName: 'Test Administrator',
                 website: 'https://testclub.com'
             };
-            
+
             return await this.sendClubWelcomeEmail(testClubData);
-            
+
         } catch (error) {
             console.error('❌ EmailService: Error sending test email:', error);
             throw error;
@@ -176,6 +176,7 @@ class EmailService {
      * Get email service status
      * @returns {Object} - Service status information
      */
+    // ... (methods)
     getStatus() {
         return {
             isInitialized: this.isInitialized,
@@ -186,17 +187,4 @@ class EmailService {
     }
 }
 
-// Make it globally available
-window.EmailService = EmailService;
-
-// Auto-initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
-    if (window.emailService) {
-        await window.emailService.initialize();
-    }
-});
-
-// For module systems (if needed)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = EmailService;
-}
+export default EmailService;
