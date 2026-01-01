@@ -158,8 +158,10 @@ export default class DeadlineService {
                             }
                         }
 
-                        const fixtureTime = new Date(`${dateStr}T${fixture.kickOffTime}`);
-                        const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime}`);
+                        const kickOffTime = fixture.kickOffTime || '15:00';
+                        const fixtureTime = new Date(`${dateStr}T${kickOffTime}`);
+                        const earliestKickoff = earliest.kickOffTime || '15:00';
+                        const earliestTime = new Date(`${earliest.date}T${earliestKickoff}`);
 
                         // Validate dates
                         if (isNaN(fixtureTime.getTime())) {
@@ -188,7 +190,8 @@ export default class DeadlineService {
                 });
 
                 // Validate the earliest fixture date/time
-                const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime}`);
+                const earliestKickoff = earliestFixture.kickOffTime || '15:00';
+                const deadlineTime = new Date(`${earliestFixture.date}T${earliestKickoff}`);
                 if (isNaN(deadlineTime.getTime())) {
                     console.warn(`⚠️ DeadlineService: Skipping Gameweek ${gameweek} - invalid date/time for earliest fixture:`, {
                         fixture: `${earliestFixture.homeTeam} vs ${earliestFixture.awayTeam}`,
