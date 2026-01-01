@@ -96,12 +96,20 @@ export default class SuperAdminManager {
     insertSuperAdminToggle(toggle, retryCount = 0) {
         // Wait for DOM to be ready and app container to be visible
         const appContainer = document.getElementById('appContainer');
+        const authContainer = document.getElementById('authContainer');
+
+        // If auth container is visible, we don't need to inject the toggle yet
+        if (authContainer && !authContainer.classList.contains('hidden')) {
+            console.log('ℹ️ SuperAdminManager: Auth container visible, pausing toggle insertion');
+            return;
+        }
+
         if (document.readyState !== 'complete' || !appContainer || appContainer.classList.contains('hidden')) {
-            if (retryCount < 100) { // Max 100 retries (10 seconds)
-                setTimeout(() => this.insertSuperAdminToggle(toggle, retryCount + 1), 100);
+            if (retryCount < 20) { // Reduced max retries
+                setTimeout(() => this.insertSuperAdminToggle(toggle, retryCount + 1), 500); // Increased delay
                 return;
             } else {
-                console.error('❌ SuperAdminManager: App container not ready after 10 seconds');
+                console.log('ℹ️ SuperAdminManager: App container not ready, stopping retries until visibility change');
                 return;
             }
         }
