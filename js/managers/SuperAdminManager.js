@@ -796,7 +796,7 @@ export default class SuperAdminManager {
 
             // Update global settings
             await this.db.collection('global-settings').doc('system').update({
-                activeClubs: this.db.FieldValue.arrayUnion(clubId),
+                activeClubs: window.firebase.firestore.FieldValue.arrayUnion(clubId),
                 updated_at: new Date()
             });
 
@@ -3108,7 +3108,7 @@ export default class SuperAdminManager {
 
             // Update global settings
             await this.db.collection('global-settings').doc('system').update({
-                activeClubs: this.db.FieldValue.arrayRemove(clubId),
+                activeClubs: window.firebase.firestore.FieldValue.arrayRemove(clubId),
                 updated_at: new Date()
             });
 
