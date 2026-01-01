@@ -133,35 +133,37 @@ export default class ScoresManager {
 
         // Try multiple sources for API configuration
         const configSources = [
+            () => window.APIConfig?.footballWebPages,
             () => window.FOOTBALL_WEBPAGES_CONFIG,
-            () => window.APIConfig?.footballWebPages ? {
-                key: window.APIConfig.footballWebPages.key,
-                baseUrl: window.APIConfig.footballWebPages.baseUrl
+            () => window.ENV_CONFIG ? {
+                key: window.ENV_CONFIG.FWP_API_KEY || window.ENV_CONFIG.RAPID_API_KEY,
+                baseUrl: 'https://api.footballwebpages.co.uk/v2'
             } : null,
-            () => window.ENV_CONFIG,
+            () => window.APIConfig, // Check root APIConfig for direct keys
             () => ({ key: window.FWP_API_KEY || window.RAPIDAPI_KEY }),
-            () => window.footballWebPagesAPI?.config,
-            () => window.apiManager?.footballWebPagesAPI?.config
+            () => window.footballWebPagesAPI?.config
         ];
 
         for (const source of configSources) {
             try {
                 const config = source();
+                if (!config) continue;
+
                 // Check for key in various possible properties/locations
-                const possibleKey = config?.key || config?.API_KEY || config?.FWP_API_KEY || config?.RAPIDAPI_KEY;
+                const possibleKey = config.key || config.API_KEY || config.FWP_API_KEY || config.RAPID_API_KEY || (config.rapidAPI && config.rapidAPI.key);
 
                 if (possibleKey && possibleKey !== 'YOUR_RAPIDAPI_KEY_HERE' && possibleKey !== 'YOUR_API_KEY_HERE') {
-                    console.log('✅ ScoresManager: API configuration loaded from source');
+                    console.log('✅ ScoresManager: API configuration loaded');
                     // Normalize to 'key' property if not present
                     if (!config.key) config.key = possibleKey;
                     return config;
                 }
             } catch (error) {
-                console.warn('⚠️ ScoresManager: Failed to load config from source:', error);
+                console.warn('⚠️ ScoresManager: Failed to load config from a source:', error);
             }
         }
 
-        console.warn('⚠️ ScoresManager: No valid API configuration found from any source');
+        console.warn('⚠️ ScoresManager: No valid API configuration found. Ensure VITE_RAPID_API_KEY is set.');
         return null;
     }
 
