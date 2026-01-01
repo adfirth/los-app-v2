@@ -22,6 +22,16 @@ export default class FixturesManager {
         this.setupPickModal();
 
         this.isInitialized = true;
+
+        // Listen for deadline events to update UI state immediately
+        window.addEventListener('deadlineExpired', (event) => {
+            console.log(`FixturesManager: Received deadlineExpired event for gameweek ${event.detail.gameweek}`);
+            if (window.editionService && window.editionService.getCurrentGameweek() == event.detail.gameweek) {
+                this.checkDeadline();
+                this.displayFixtures();
+            }
+        });
+
         // Basic initialization complete
     }
 

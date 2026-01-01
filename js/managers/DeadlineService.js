@@ -317,6 +317,9 @@ export default class DeadlineService {
             // Update UI to show deadline has passed
             this.updateDeadlineDisplay();
 
+            // Dispatch event for other managers (like FixturesManager) to sync immediately
+            window.dispatchEvent(new CustomEvent('deadlineExpired', { detail: { gameweek } }));
+
             // Only show notification if user is logged in
             if (window.authManager && window.authManager.currentUser) {
                 window.authManager.showInfo(`Deadline passed for Gameweek ${gameweek}. Auto-picks have been assigned.`);
