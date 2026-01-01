@@ -51,6 +51,7 @@ class EnvironmentLoader {
             measurementId: this.envVars.FIREBASE_MEASUREMENT_ID
         };
 
+
         // Initialize Firebase
         try {
             if (window.firebase && !window.firebase.apps.length) {
