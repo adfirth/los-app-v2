@@ -69,31 +69,44 @@ export default class FixturesManager {
                 return;
             }
 
+            // Get data from EditionService and ClubService
             const currentGameweek = window.editionService.getCurrentGameweek();
             const currentEdition = window.editionService.getCurrentEdition();
+            const currentClub = window.losApp?.managers?.club?.getCurrentClub();
+
+            if (!currentClub || !currentEdition) {
+                console.warn('FixturesManager: Club or Edition not available, skipping load');
+                this.showEmptyState();
+                return;
+            }
 
             // Log which edition/gameweek we're loading
-            console.log(`FixturesManager: Loading fixtures for Edition: ${currentEdition}, GW: ${currentGameweek}`);
+            console.log(`FixturesManager: Loading fixtures for Club: ${currentClub}, Edition: ${currentEdition}, GW: ${currentGameweek}`);
 
-            // First check if fixtures exist for this specific edition and gameweek
-            // New structure: stored in separate 'fixtures' collection
-            // ID format: {editionId}_gw{gameweek}
-            const fixtureDocId = `${currentEdition}_gw${currentGameweek}`;
-            console.log(`FixturesManager: Fetching fixtures doc: ${fixtureDocId}`);
+            // Fetch fixtures from the new nested collection structure
+            // Path: clubs/{clubId}/editions/{editionId}/fixtures
+            const fixturesSnapshot = await this.db.collection('clubs').doc(currentClub)
+                .collection('editions').doc(currentEdition)
+                .collection('fixtures')
+                .where('gameWeek', '==', parseInt(currentGameweek)) // Ensure gameweek is a number or matches DB format
+                .get();
 
-            const fixturesDoc = await this.db.collection('fixtures').doc(fixtureDocId).get();
-
-            if (fixturesDoc.exists) {
-                const data = fixturesDoc.data();
-                // Ensure fixtures is always an array
-                this.currentFixtures = data.fixtures || [];
-                console.log(`FixturesManager: Loaded ${this.currentFixtures.length} fixtures from ${fixtureDocId}`);
+            this.currentFixtures = [];
+            if (!fixturesSnapshot.empty) {
+                fixturesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    this.currentFixtures.push({
+                        id: doc.id,
+                        ...data
+                    });
+                });
+                console.log(`FixturesManager: Loaded ${this.currentFixtures.length} fixtures`);
 
                 // If we found fixtures, verify deadline from settings
                 await this.checkDeadline();
                 this.displayFixtures();
             } else {
-                console.log(`FixturesManager: No fixtures found for ${fixtureDocId}`);
+                console.log(`FixturesManager: No fixtures found for GW${currentGameweek}`);
 
                 // Fallback: Check if we are in "admin mode" or if we should show sample data
                 // For now, just show empty state

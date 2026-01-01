@@ -3,14 +3,46 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper function to check if user is admin
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.email == 'adfirth@gmail.com');
     }
     
     // Helper function to check if user is club admin
     function isClubAdmin(clubId) {
       return request.auth != null && 
         (request.auth.token.admin == true || 
+         request.auth.token.email == 'adfirth@gmail.com' ||
          request.auth.token.clubAdmin == clubId);
+    }
+    
+    // Audit Logs - accessible to admins only
+    match /audit-logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Global Settings - accessible to all
+    match /global-settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Clubs - accessible to authenticated users
+    match /clubs/{clubId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Editions - accessible to authenticated users
+    match /clubs/{clubId}/editions/{editionId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin() || isClubAdmin(clubId);
+    }
+
+    // Edition Settings - public read, admin write
+    match /clubs/{clubId}/editions/{editionId}/settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() || isClubAdmin(clubId);
     }
 
     // Users can read/write their own data within their club/edition

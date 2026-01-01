@@ -112,19 +112,8 @@ export default class AdminManager {
             const userId = window.authManager.getCurrentUserId();
             if (!userId) return;
 
-
-
-            // Check if user is a regular admin
-            const userDoc = await this.db.collection('users').doc(userId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                this.isAdmin = userData.isAdmin || false;
-            }
-
-            // Check if user is a super admin - multiple fallback strategies
+            // Strategy 1: Check SuperAdminManager if available (Prioritize this)
             let isSuperAdmin = false;
-
-            // Strategy 1: Check SuperAdminManager if available
             if (window.losApp?.managers?.superAdmin) {
                 isSuperAdmin = window.losApp.managers.superAdmin.isSuperAdmin;
             }
@@ -147,7 +136,7 @@ export default class AdminManager {
                 }
             }
 
-            // Strategy 4: Check localStorage for super admin status (if set by SuperAdminManager)
+            // Strategy 4: Check localStorage for super admin status
             if (!isSuperAdmin && typeof localStorage !== 'undefined') {
                 const storedSuperAdmin = localStorage.getItem('isSuperAdmin');
                 if (storedSuperAdmin === 'true') {
@@ -155,11 +144,38 @@ export default class AdminManager {
                 }
             }
 
-            // Strategy 5: Check if user has super admin role in user document
-            if (!isSuperAdmin && userDoc.exists) {
-                const userData = userDoc.data();
-                isSuperAdmin = userData.isSuperAdmin || userData.role === 'super_admin' || false;
+            // Check if user is a regular admin using the NEW multi-club structure
+            // We need to look up the user in the current club/edition context
+            let isAdmin = false;
+            const currentClub = window.losApp?.managers?.club?.getCurrentClub();
+            const currentEdition = window.losApp?.managers?.club?.getCurrentEdition();
+
+            if (currentClub && currentEdition) {
+                try {
+                    const userDoc = await this.db.collection('clubs')
+                        .doc(currentClub)
+                        .collection('editions')
+                        .doc(currentEdition)
+                        .collection('users')
+                        .doc(userId)
+                        .get();
+
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        isAdmin = userData.isAdmin || false;
+
+                        // Strategy 5: Check if user has super admin role in THEIR user document
+                        if (!isSuperAdmin) {
+                            isSuperAdmin = userData.isSuperAdmin || userData.role === 'super_admin' || false;
+                        }
+                    }
+                } catch (nestedError) {
+                    // Silently fail if we can't check the nested structure yet (e.g. not loaded)
+                    // console.log('AdminManager: Could not check nested user permissions yet');
+                }
             }
+
+            this.isAdmin = isAdmin;
 
             // Show admin button if user is either admin or super admin
             if (this.isAdmin || isSuperAdmin) {
