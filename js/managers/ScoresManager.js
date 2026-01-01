@@ -106,7 +106,7 @@ export default class ScoresManager {
             // Load API configuration with multiple fallback sources
             this.apiConfig = this.loadAPIConfiguration();
 
-            if (this.apiConfig && this.apiConfig.RAPIDAPI_KEY) {
+            if (this.apiConfig && (this.apiConfig.key || this.apiConfig.FWP_API_KEY || this.apiConfig.RAPIDAPI_KEY)) {
                 // API configuration loaded
             } else {
                 console.warn('⚠️ ScoresManager: No API configuration found');
@@ -134,13 +134,12 @@ export default class ScoresManager {
         // Try multiple sources for API configuration
         const configSources = [
             () => window.FOOTBALL_WEBPAGES_CONFIG,
-            () => window.APIConfig?.rapidAPI ? {
-                RAPIDAPI_KEY: window.APIConfig.rapidAPI.key,
-                RAPIDAPI_HOST: window.APIConfig.rapidAPI.host,
-                BASE_URL: window.APIConfig.rapidAPI.baseUrl
+            () => window.APIConfig?.footballWebPages ? {
+                key: window.APIConfig.footballWebPages.key,
+                baseUrl: window.APIConfig.footballWebPages.baseUrl
             } : null,
             () => window.ENV_CONFIG,
-            () => ({ RAPIDAPI_KEY: window.RAPIDAPI_KEY }),
+            () => ({ key: window.FWP_API_KEY || window.RAPIDAPI_KEY }),
             () => window.footballWebPagesAPI?.config,
             () => window.apiManager?.footballWebPagesAPI?.config
         ];
@@ -148,8 +147,13 @@ export default class ScoresManager {
         for (const source of configSources) {
             try {
                 const config = source();
-                if (config && config.RAPIDAPI_KEY && config.RAPIDAPI_KEY !== 'YOUR_RAPIDAPI_KEY_HERE') {
+                // Check for key in various possible properties/locations
+                const possibleKey = config?.key || config?.API_KEY || config?.FWP_API_KEY || config?.RAPIDAPI_KEY;
+
+                if (possibleKey && possibleKey !== 'YOUR_RAPIDAPI_KEY_HERE' && possibleKey !== 'YOUR_API_KEY_HERE') {
                     console.log('✅ ScoresManager: API configuration loaded from source');
+                    // Normalize to 'key' property if not present
+                    if (!config.key) config.key = possibleKey;
                     return config;
                 }
             } catch (error) {
@@ -701,10 +705,9 @@ export default class ScoresManager {
             // Check if we're in development (Netlify functions not available)
             if (this.isDevelopmentMode()) {
                 console.log('🔧 ScoresManager: Development mode detected, using direct API call (may have CORS issues)');
-                url = `https://football-web-pages1.p.rapidapi.com/vidiprinter.json?comp=5&team=0&date=${date}`;
+                url = `https://api.footballwebpages.co.uk/v2/vidiprinter.json?comp=5&team=0&date=${date}`;
                 headers = {
-                    'X-RapidAPI-Key': this.apiConfig.RAPIDAPI_KEY,
-                    'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
+                    'FWP-API-Key': this.apiConfig.key
                 };
             } else {
                 // Use Netlify function to avoid CORS issues in production
@@ -757,10 +760,9 @@ export default class ScoresManager {
     async makeDirectAPICall(date) {
         console.log('🔧 ScoresManager: Making direct API call...');
 
-        const url = `https://football-web-pages1.p.rapidapi.com/vidiprinter.json?comp=5&team=0&date=${date}`;
+        const url = `https://api.footballwebpages.co.uk/v2/vidiprinter.json?comp=5&team=0&date=${date}`;
         const headers = {
-            'X-RapidAPI-Key': this.apiConfig.RAPIDAPI_KEY,
-            'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
+            'FWP-API-Key': this.apiConfig.key
         };
 
         const response = await fetch(url, {

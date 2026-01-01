@@ -20,7 +20,7 @@ exports.handler = async (event, context) => {
     try {
         // Get query parameters
         const { comp, team, date } = event.queryStringParameters || {};
-        
+
         if (!comp || !date) {
             return {
                 statusCode: 400,
@@ -30,35 +30,34 @@ exports.handler = async (event, context) => {
         }
 
         // Get API key from environment variables
-        const apiKey = process.env.RAPIDAPI_KEY;
+        const apiKey = process.env.FWP_API_KEY;
         console.log('🔑 Netlify function: API key available:', !!apiKey);
         console.log('🔑 Netlify function: API key length:', apiKey ? apiKey.length : 0);
-        
+
         if (!apiKey) {
-            console.error('❌ Netlify function: RapidAPI key not configured in environment variables');
+            console.error('❌ Netlify function: FWP API key not configured in environment variables');
             console.log('🔍 Available environment variables:', Object.keys(process.env).filter(key => key.includes('API')));
-            
+
             return {
                 statusCode: 500,
                 headers,
-                body: JSON.stringify({ 
-                    error: 'RapidAPI key not configured',
-                    details: 'Please set RAPIDAPI_KEY environment variable in Netlify dashboard'
+                body: JSON.stringify({
+                    error: 'FWP API key not configured',
+                    details: 'Please set FWP_API_KEY environment variable in Netlify dashboard'
                 })
             };
         }
 
-        // Build the API URL
-        const url = `https://football-web-pages1.p.rapidapi.com/vidiprinter.json?comp=${comp}&team=${team || 0}&date=${date}`;
-        
+        // Build the API URL - New Direct API Endpoint
+        const url = `https://api.footballwebpages.co.uk/v2/vidiprinter.json?comp=${comp}&team=${team || 0}&date=${date}`;
+
         console.log(`🔍 Netlify function: Fetching vidiprinter data from: ${url}`);
 
         // Make the API request
         const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'X-RapidAPI-Key': apiKey,
-                'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
+                'FWP-API-Key': apiKey
             }
         });
 
@@ -68,7 +67,7 @@ exports.handler = async (event, context) => {
         }
 
         const data = await response.json();
-        
+
         console.log(`✅ Netlify function: Vidiprinter data fetched successfully: ${data.events?.length || 0} events`);
 
         return {
@@ -79,13 +78,13 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error('❌ Netlify function: Error fetching vidiprinter data:', error);
-        
+
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Failed to fetch vidiprinter data',
-                details: error.message 
+                details: error.message
             })
         };
     }

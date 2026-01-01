@@ -20,7 +20,7 @@ exports.handler = async (event, context) => {
     try {
         // Get query parameters
         const { endpoint, comp, season } = event.queryStringParameters || {};
-        
+
         if (!endpoint || !comp) {
             return {
                 statusCode: 400,
@@ -30,35 +30,34 @@ exports.handler = async (event, context) => {
         }
 
         // Get API key from environment variables
-        const apiKey = process.env.RAPIDAPI_KEY;
+        const apiKey = process.env.FWP_API_KEY;
         console.log('🔑 Netlify function: API key available:', !!apiKey);
-        
+
         if (!apiKey) {
-            console.error('❌ Netlify function: RapidAPI key not configured in environment variables');
+            console.error('❌ Netlify function: FWP API key not configured in environment variables');
             return {
                 statusCode: 500,
                 headers,
-                body: JSON.stringify({ 
-                    error: 'RapidAPI key not configured',
-                    details: 'Please set RAPIDAPI_KEY environment variable in Netlify dashboard'
+                body: JSON.stringify({
+                    error: 'FWP API key not configured',
+                    details: 'Please set FWP_API_KEY environment variable in Netlify dashboard'
                 })
             };
         }
 
-        // Build the API URL
-        let url = `https://football-web-pages1.p.rapidapi.com/${endpoint}?comp=${comp}`;
+        // Build the API URL - New Direct API Endpoint
+        let url = `https://api.footballwebpages.co.uk/v2/${endpoint}.json?comp=${comp}`;
         if (season) {
             url += `&season=${season}`;
         }
-        
+
         console.log(`🔍 Netlify function: Fetching fixtures data from: ${url}`);
 
         // Make the API request
         const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'X-RapidAPI-Key': apiKey,
-                'X-RapidAPI-Host': 'football-web-pages1.p.rapidapi.com'
+                'FWP-API-Key': apiKey
             }
         });
 
@@ -68,7 +67,7 @@ exports.handler = async (event, context) => {
         }
 
         const data = await response.json();
-        
+
         console.log(`✅ Netlify function: Fixtures data fetched successfully from ${endpoint}`);
 
         return {
@@ -79,13 +78,13 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error('❌ Netlify function: Error fetching fixtures data:', error);
-        
+
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Failed to fetch fixtures data',
-                details: error.message 
+                details: error.message
             })
         };
     }

@@ -16,7 +16,7 @@ class EnvironmentLoader {
             // We need to map them to our internal structure
 
             this.envVars = {
-                RAPIDAPI_KEY: import.meta.env.VITE_RAPIDAPI_KEY,
+                FWP_API_KEY: import.meta.env.VITE_FWP_API_KEY,
                 FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
                 FIREBASE_AUTH_DOMAIN: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
                 FIREBASE_PROJECT_ID: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -79,8 +79,8 @@ class EnvironmentLoader {
         window.getEnvVar = (key) => this.envVars[key];
         window.getAPIKey = (service) => {
             switch (service) {
-                case 'rapidapi':
-                    return this.envVars.RAPIDAPI_KEY;
+                case 'football-web-pages':
+                    return this.envVars.FWP_API_KEY;
                 case 'firebase':
                     return this.envVars.FIREBASE_API_KEY;
                 case 'football-data':
@@ -98,10 +98,10 @@ class EnvironmentLoader {
     setupAPIConfig() {
         // Create APIConfig object that the app expects
         window.APIConfig = {
-            rapidAPI: {
-                key: this.envVars.RAPIDAPI_KEY,
-                host: 'football-web-pages1.p.rapidapi.com',
-                baseUrl: 'https://football-web-pages1.p.rapidapi.com'
+            rapidAPI: null,
+            footballWebPages: {
+                key: this.envVars.FWP_API_KEY,
+                baseUrl: 'https://api.footballwebpages.co.uk/v2'
             },
             competitions: {
                 'national-league': {
@@ -134,9 +134,8 @@ class EnvironmentLoader {
 
         // Create FOOTBALL_WEBPAGES_CONFIG object
         window.FOOTBALL_WEBPAGES_CONFIG = {
-            BASE_URL: 'https://football-web-pages1.p.rapidapi.com',
-            RAPIDAPI_HOST: 'football-web-pages1.p.rapidapi.com',
-            RAPIDAPI_KEY: this.envVars.RAPIDAPI_KEY,
+            BASE_URL: 'https://api.footballwebpages.co.uk/v2',
+            API_KEY: this.envVars.FWP_API_KEY,
             LEAGUES: window.APIConfig.competitions
         };
     }

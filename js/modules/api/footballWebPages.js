@@ -9,25 +9,25 @@ class FootballWebPagesAPI {
         this.isInitialized = false;
         this.retryCount = 0;
         this.maxRetries = 3;
-        
+
         // Listen for API toggle changes
         this.setupAPIToggleListener();
     }
 
     async initializeConfiguration() {
         try {
-    
-            
+
+
             // Load configuration with multiple fallback strategies
             this.config = this.loadConfiguration();
-            
-            if (!this.config.RAPIDAPI_KEY) {
-                throw new Error('API key not configured. Please set your RapidAPI key.');
+
+            if (!this.config.API_KEY) {
+                throw new Error('API key not configured. Please set your Football Web Pages API key.');
             }
-            
+
             this.isInitialized = true;
             // Configuration initialized successfully
-            
+
             return true;
         } catch (error) {
             console.error('❌ FootballWebPagesAPI: Configuration initialization failed:', error);
@@ -40,21 +40,23 @@ class FootballWebPagesAPI {
         const configSources = [
             () => window.FOOTBALL_WEBPAGES_CONFIG,
             () => window.ENV_CONFIG,
-            () => ({ RAPIDAPI_KEY: window.RAPIDAPI_KEY }),
+            () => ({ FWP_API_KEY: window.FWP_API_KEY || window.RAPIDAPI_KEY }),
             () => window.footballWebPagesAPI?.config,
             () => window.apiManager?.footballWebPagesAPI?.config,
-            () => window.APIConfig?.rapidAPI
+            () => window.APIConfig?.footballWebPages
         ];
 
         for (const source of configSources) {
             try {
                 const config = source();
-                if (config && config.RAPIDAPI_KEY && config.RAPIDAPI_KEY !== 'YOUR_RAPIDAPI_KEY_HERE') {
+                // Check for key in various properties
+                const possibleKey = config?.key || config?.API_KEY || config?.FWP_API_KEY || config?.RAPIDAPI_KEY;
+
+                if (possibleKey && possibleKey !== 'YOUR_RAPIDAPI_KEY_HERE' && possibleKey !== 'YOUR_API_KEY_HERE') {
                     // Configuration loaded from source
                     return {
-                        BASE_URL: config.BASE_URL || 'https://football-web-pages1.p.rapidapi.com',
-                        RAPIDAPI_KEY: config.RAPIDAPI_KEY,
-                        RAPIDAPI_HOST: config.RAPIDAPI_HOST || 'football-web-pages1.p.rapidapi.com',
+                        BASE_URL: config.BASE_URL || 'https://api.footballwebpages.co.uk/v2',
+                        API_KEY: possibleKey,
                         LEAGUES: config.LEAGUES || {},
                         ENDPOINTS: config.ENDPOINTS || {
                             FIXTURES_RESULTS: 'fixtures-results.json',
@@ -81,7 +83,7 @@ class FootballWebPagesAPI {
                     return data.apiRequestsEnabled !== false; // Default to true if not set
                 }
             }
-            
+
             // Fallback: check if we can access the global settings through window
             if (window.losApp?.managers?.superAdmin?.db) {
                 const globalSettings = await window.losApp.managers.superAdmin.db
@@ -91,11 +93,11 @@ class FootballWebPagesAPI {
                     return data.apiRequestsEnabled !== false;
                 }
             }
-            
+
             // Default to enabled if we can't check
             console.log('⚠️ FootballWebPagesAPI: Could not check global API settings, defaulting to enabled');
             return true;
-            
+
         } catch (error) {
             console.error('❌ FootballWebPagesAPI: Error checking API enablement:', error);
             // Default to enabled on error
@@ -108,7 +110,7 @@ class FootballWebPagesAPI {
         window.addEventListener('apiToggleChanged', (event) => {
             const { enabled } = event.detail;
             console.log(`🔌 FootballWebPagesAPI: API toggle changed to: ${enabled}`);
-            
+
             if (!enabled) {
                 // Clear any pending requests or show a message
                 console.log('🔌 FootballWebPagesAPI: API requests are now disabled');
@@ -139,24 +141,23 @@ class FootballWebPagesAPI {
         const requestOptions = {
             method: 'GET',
             headers: {
-                'X-RapidAPI-Key': this.config.RAPIDAPI_KEY,
-                'X-RapidAPI-Host': this.config.RAPIDAPI_HOST
+                'FWP-API-Key': this.config.API_KEY
             }
         };
 
         return this.executeWithRetry(async () => {
             console.log(`🔍 FootballWebPagesAPI: Making request to ${url.toString()}`);
-            
+
             try {
                 const response = await fetch(url, requestOptions);
-                
+
                 if (!response.ok) {
                     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
                 }
 
                 const jsonResponse = await response.json();
                 console.log(`✅ FootballWebPagesAPI: Request successful`);
-                
+
                 return jsonResponse;
             } catch (error) {
                 // If CORS error, try using a CORS proxy for development
@@ -173,38 +174,37 @@ class FootballWebPagesAPI {
         // Use a CORS proxy for development
         const corsProxy = 'https://cors-anywhere.herokuapp.com/';
         const proxyUrl = corsProxy + url.toString();
-        
+
         console.log(`🔍 FootballWebPagesAPI: Trying CORS proxy: ${proxyUrl}`);
-        
+
         const response = await fetch(proxyUrl, {
             method: 'GET',
             headers: {
-                'X-RapidAPI-Key': requestOptions.headers['X-RapidAPI-Key'],
-                'X-RapidAPI-Host': requestOptions.headers['X-RapidAPI-Host'],
+                'FWP-API-Key': requestOptions.headers['FWP-API-Key'],
                 'Origin': window.location.origin
             }
         });
-        
+
         if (!response.ok) {
             throw new Error(`CORS proxy request failed: ${response.status} ${response.statusText}`);
         }
 
         const jsonResponse = await response.json();
         console.log(`✅ FootballWebPagesAPI: CORS proxy request successful`);
-        
+
         return jsonResponse;
     }
 
     async executeWithRetry(operation) {
         let lastError;
-        
+
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
             try {
                 return await operation();
             } catch (error) {
                 lastError = error;
                 console.warn(`⚠️ FootballWebPagesAPI: Attempt ${attempt} failed:`, error.message);
-                
+
                 if (attempt < this.maxRetries) {
                     const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
                     console.log(`⏳ FootballWebPagesAPI: Retrying in ${delay}ms...`);
@@ -212,7 +212,7 @@ class FootballWebPagesAPI {
                 }
             }
         }
-        
+
         throw lastError;
     }
 
@@ -220,7 +220,7 @@ class FootballWebPagesAPI {
     async fetchDateRangeFixtures(startDate, endDate, league, season) {
         try {
             console.log(`🔍 FootballWebPagesAPI: Fetching fixtures from ${startDate} to ${endDate} for ${league} ${season}`);
-            
+
             // Validate inputs
             if (!startDate || !endDate || !league || !season) {
                 throw new Error('Missing required parameters: startDate, endDate, league, season');
@@ -252,7 +252,7 @@ class FootballWebPagesAPI {
                     };
 
                     response = await this.makeAPIRequest('fixtures-results.json', params);
-                    
+
                     if (response && response['fixtures-results'] && response['fixtures-results'].matches) {
                         workingFormat = dateFormat;
                         break;
@@ -267,10 +267,10 @@ class FootballWebPagesAPI {
             }
 
             console.log(`✅ FootballWebPagesAPI: Successfully fetched fixtures using format ${workingFormat}`);
-            
+
             // Parse and filter response data
             const fixtures = this.parseFixturesResponse(response);
-            
+
             return {
                 fixtures: fixtures,
                 total: fixtures.length,
@@ -345,18 +345,18 @@ class FootballWebPagesAPI {
         } else if (typeof teamData === 'object') {
             // Try multiple possible team name properties
             const nameProperties = ['name', 'title', 'displayName', 'teamName', 'fullName', 'shortName'];
-            
+
             for (const prop of nameProperties) {
                 if (teamData[prop]) {
                     return teamData[prop];
                 }
             }
-            
+
             // If no standard property found, try to extract from object
             console.warn('⚠️ FootballWebPagesAPI: Unknown team data format:', teamData);
             return JSON.stringify(teamData);
         }
-        
+
         return 'Unknown Team';
     }
 
@@ -365,25 +365,25 @@ class FootballWebPagesAPI {
         if (match.status) {
             return match.status;
         }
-        
+
         // Check if match has scores
         const hasHomeScore = match['home-score'] || match.homeScore;
         const hasAwayScore = match['away-score'] || match.awayScore;
-        
+
         if (hasHomeScore !== null && hasAwayScore !== null) {
             return 'FT'; // Full Time
         }
-        
+
         // Check if match date is in the past
         if (match.date) {
             const matchDate = new Date(match.date);
             const now = new Date();
-            
+
             if (matchDate < now) {
                 return 'FT'; // Assume finished if past date
             }
         }
-        
+
         return 'NS'; // Not Started
     }
 
@@ -391,7 +391,7 @@ class FootballWebPagesAPI {
     async importSelectedFixtures(fixtures, activeEdition, gameWeek) {
         try {
             console.log(`📥 FootballWebPagesAPI: Importing ${fixtures.length} fixtures for edition ${activeEdition}, gameweek ${gameWeek}`);
-            
+
             if (!this.db) {
                 throw new Error('Database not initialized');
             }
@@ -403,7 +403,7 @@ class FootballWebPagesAPI {
             // Transform API format to database format
             const fixturesToSave = fixtures.map((fixture, index) => {
                 const fixtureId = `fixture_${Date.now()}_${index}`;
-                
+
                 return {
                     fixtureId: fixtureId,
                     homeTeam: fixture.homeTeam,
@@ -426,7 +426,7 @@ class FootballWebPagesAPI {
 
             // Save to Firestore with edition-specific keys
             const editionGameweekKey = `edition${activeEdition}_gw${gameWeek}`;
-            
+
             await this.db.collection('fixtures').doc(editionGameweekKey).set({
                 fixtures: fixturesToSave,
                 gameweek: gameWeek,
@@ -437,7 +437,7 @@ class FootballWebPagesAPI {
             });
 
             console.log(`✅ FootballWebPagesAPI: Successfully imported ${fixturesToSave.length} fixtures to ${editionGameweekKey}`);
-            
+
             // Log audit event if available
             if (window.losApp && window.losApp.managers.superAdmin) {
                 await window.losApp.managers.superAdmin.logAuditEvent(
@@ -465,16 +465,16 @@ class FootballWebPagesAPI {
     async getCompetitions() {
         try {
             console.log('🔍 FootballWebPagesAPI: Fetching available competitions...');
-            
+
             // Check if we're in development mode and should use mock data
             if (window.developmentHelper && window.developmentHelper.isDevMode()) {
                 console.log('🔧 FootballWebPagesAPI: Development mode detected, using mock competitions');
                 return window.developmentHelper.getMockCompetitions();
             }
-            
+
             // Return predefined competitions from config
             const competitions = this.config.LEAGUES || {};
-            
+
             return Object.entries(competitions).map(([key, comp]) => ({
                 id: comp.id,
                 name: comp.name,
@@ -482,7 +482,7 @@ class FootballWebPagesAPI {
                 key: key,
                 seasons: comp.seasons || this.config.DEFAULT_SEASONS
             }));
-            
+
         } catch (error) {
             console.error('❌ FootballWebPagesAPI: Error fetching competitions:', error);
             throw error;
@@ -493,22 +493,22 @@ class FootballWebPagesAPI {
     async testConnection() {
         try {
             console.log('🔍 FootballWebPagesAPI: Testing API connection...');
-            
+
             // Check if we're in development mode first
             if (window.developmentHelper && window.developmentHelper.isDevMode()) {
                 return await window.developmentHelper.testConnection();
             }
-            
+
             // Try to fetch competitions as a connection test
             const competitions = await this.getCompetitions();
-            
+
             console.log('✅ FootballWebPagesAPI: API connection successful');
             return {
                 success: true,
                 message: 'API connection successful',
                 competitionsCount: competitions.length
             };
-            
+
         } catch (error) {
             console.error('❌ FootballWebPagesAPI: API connection failed:', error);
             return {
