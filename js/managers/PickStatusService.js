@@ -413,7 +413,14 @@ export default class PickStatusService {
             console.log('🔧 PickStatusService: Migration completed');
 
         } catch (error) {
-            console.error('PickStatusService: Migration error:', error);
+            // Permission denied usually means the legacy path is blocked, which is expected
+            // in the new security model. We can safely ignore this as picks should exist
+            // in the new structure.
+            if (error.code === 'permission-denied') {
+                console.log('🔧 PickStatusService: Legacy migration skipped (access restriction)');
+            } else {
+                console.warn('PickStatusService: Migration error:', error);
+            }
         }
     }
 
