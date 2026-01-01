@@ -276,8 +276,10 @@ export default class DeadlineService {
                     else if (earliestDateStr instanceof Date) earliestDateStr = earliestDateStr.toISOString().split('T')[0];
                 }
 
-                const fixtureTime = new Date(`${dateStr}T${fixture.kickOffTime}`);
-                const earliestTime = new Date(`${earliestDateStr}T${earliest.kickOffTime}`);
+                const kickOffTime = fixture.kickOffTime || '15:00';
+                const fixtureTime = new Date(`${dateStr}T${kickOffTime}`);
+                const earliestKickoff = earliest.kickOffTime || '15:00';
+                const earliestTime = new Date(`${earliestDateStr}T${earliestKickoff}`);
                 return fixtureTime < earliestTime ? fixture : earliest;
             });
 
@@ -287,7 +289,8 @@ export default class DeadlineService {
                 else if (deadlineDateStr instanceof Date) deadlineDateStr = deadlineDateStr.toISOString().split('T')[0];
             }
 
-            const deadlineTime = new Date(`${deadlineDateStr}T${earliestFixture.kickOffTime}`);
+            const deadlineKickoff = earliestFixture.kickOffTime || '15:00';
+            const deadlineTime = new Date(`${deadlineDateStr}T${deadlineKickoff}`);
             const now = new Date();
 
             // Check if deadline has passed
