@@ -341,8 +341,8 @@ export default class FixturesManager {
     }
 
     getButtonState(teamName, isPickedCurrently, isUsed, isAnyPicked) {
+        if (isPickedCurrently) return 'picked'; // Always show if picked, even if deadline passed
         if (this.deadlinePassed) return 'locked';
-        if (isPickedCurrently) return 'picked'; // This specific team is picked now
         if (isUsed) return 'unavailable'; // Picked in previous week
         if (isAnyPicked) return 'disabled'; // Another team is picked this week
         return 'available';
@@ -357,6 +357,7 @@ export default class FixturesManager {
             case 'picked':
                 btnClass = 'btn-picked';
                 btnText = '<i class="fas fa-check"></i> Picked';
+                if (this.deadlinePassed) disabled = 'disabled';
                 break;
             case 'unavailable':
                 btnClass = 'btn-unavailable';
