@@ -278,7 +278,13 @@ export default class DeadlineService {
                 return fixtureTime < earliestTime ? fixture : earliest;
             });
 
-            const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime}`);
+            let deadlineDateStr = earliestFixture.date;
+            if (deadlineDateStr && typeof deadlineDateStr === 'object') {
+                if (deadlineDateStr.toDate) deadlineDateStr = deadlineDateStr.toDate().toISOString().split('T')[0];
+                else if (deadlineDateStr instanceof Date) deadlineDateStr = deadlineDateStr.toISOString().split('T')[0];
+            }
+
+            const deadlineTime = new Date(`${deadlineDateStr}T${earliestFixture.kickOffTime}`);
             const now = new Date();
 
             // Check if deadline has passed
