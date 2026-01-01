@@ -24,10 +24,11 @@ export default class FixturesManager {
         this.isInitialized = true;
 
         // Listen for deadline events to update UI state immediately
-        window.addEventListener('deadlineExpired', (event) => {
+        // Listen for deadline events to update UI state immediately
+        window.addEventListener('deadlineExpired', async (event) => {
             console.log(`FixturesManager: Received deadlineExpired event for gameweek ${event.detail.gameweek}`);
             if (window.editionService && window.editionService.getCurrentGameweek() == event.detail.gameweek) {
-                this.checkDeadline();
+                await this.checkDeadline();
                 this.displayFixtures();
             }
         });

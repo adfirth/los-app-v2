@@ -306,6 +306,20 @@ export default class DeadlineService {
             if (now >= deadlineTime && !this.deadlinePassed) {
                 this.deadlinePassed = true;
                 await this.handleDeadlinePassed(currentGameweek);
+            } else if (now < deadlineTime) {
+                // Schedule exact check for when deadline passes
+                const timeToWait = deadlineTime.getTime() - now.getTime();
+                // Only schedule if it's within a reasonable timeframe (e.g. 24h) and not already scheduled
+                if (timeToWait < 86400000) {
+                    // clear any existing timeout to avoid duplicates if we re-check
+                    if (this.nextDeadlineTimeout) clearTimeout(this.nextDeadlineTimeout);
+
+                    console.log(`⏰ DeadlineService: Scheduling exact deadline check in ${Math.ceil(timeToWait / 1000)}s`);
+                    this.nextDeadlineTimeout = setTimeout(() => {
+                        console.log('⏰ DeadlineService: Executing scheduled deadline check');
+                        this.checkDeadlines(clubId, editionId, gameweek);
+                    }, timeToWait + 1000); // Add 1s buffer
+                }
             }
 
         } catch (error) {
