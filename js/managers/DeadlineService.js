@@ -583,12 +583,30 @@ export default class DeadlineService {
 
             // Find the earliest kick-off time
             const earliestFixture = fixtures.reduce((earliest, fixture) => {
-                const fixtureTime = new Date(`${fixture.date}T${fixture.kickOffTime}`);
-                const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime}`);
+                let dateStr = fixture.date;
+                if (dateStr && typeof dateStr === 'object') {
+                    if (dateStr.toDate) dateStr = dateStr.toDate().toISOString().split('T')[0];
+                    else if (dateStr instanceof Date) dateStr = dateStr.toISOString().split('T')[0];
+                }
+
+                let earliestDateStr = earliest.date;
+                if (earliestDateStr && typeof earliestDateStr === 'object') {
+                    if (earliestDateStr.toDate) earliestDateStr = earliestDateStr.toDate().toISOString().split('T')[0];
+                    else if (earliestDateStr instanceof Date) earliestDateStr = earliestDateStr.toISOString().split('T')[0];
+                }
+
+                const fixtureTime = new Date(`${dateStr}T${fixture.kickOffTime}`);
+                const earliestTime = new Date(`${earliestDateStr}T${earliest.kickOffTime}`);
                 return fixtureTime < earliestTime ? fixture : earliest;
             });
 
-            const deadlineTime = new Date(`${earliestFixture.date}T${earliestFixture.kickOffTime}`);
+            let deadlineDateStr = earliestFixture.date;
+            if (deadlineDateStr && typeof deadlineDateStr === 'object') {
+                if (deadlineDateStr.toDate) deadlineDateStr = deadlineDateStr.toDate().toISOString().split('T')[0];
+                else if (deadlineDateStr instanceof Date) deadlineDateStr = deadlineDateStr.toISOString().split('T')[0];
+            }
+
+            const deadlineTime = new Date(`${deadlineDateStr}T${earliestFixture.kickOffTime}`);
             const now = new Date();
 
             return {
