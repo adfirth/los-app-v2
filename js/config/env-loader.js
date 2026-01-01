@@ -56,6 +56,14 @@ class EnvironmentLoader {
             if (window.firebase && !window.firebase.apps.length) {
                 window.firebase.initializeApp(window.firebaseConfig);
             }
+
+            // Initialize services
+            if (window.firebase) {
+                window.firebaseDB = window.firebase.firestore();
+                window.firebaseAuth = window.firebase.auth();
+                window.firebaseReady = true;
+                console.log('🔥 Firebase initialized and ready');
+            }
         } catch (error) {
             console.error('❌ EnvironmentLoader: Error initializing Firebase:', error);
         }
