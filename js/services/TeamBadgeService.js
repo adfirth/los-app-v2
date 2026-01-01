@@ -164,7 +164,11 @@ class TeamBadgeService {
 
             // Check if API requests are enabled globally
             if (!(await this.isAPIEnabled())) {
-                console.log('🔌 TeamBadgeService: API requests are disabled globally');
+                // Only log this once to avoid spamming the console
+                if (!this.hasLoggedDisabledMessage) {
+                    console.log('🔌 TeamBadgeService: API requests are disabled globally');
+                    this.hasLoggedDisabledMessage = true;
+                }
                 return null;
             }
 
