@@ -115,18 +115,21 @@ export default class FixturesManager {
 
                 // If we found fixtures, verify deadline from settings
                 await this.checkDeadline();
-                this.displayFixtures();
             } else {
                 console.log(`FixturesManager: No fixtures found for GW${currentGameweek}`);
 
                 // Fallback: Check if we are in "admin mode" or if we should show sample data
                 // For now, just show empty state
                 this.currentFixtures = [];
-                this.displayFixtures();
+
             }
 
             // Also load user picks to show status
             await this.loadUserPicks();
+
+            // Now display everything once
+            this.displayFixtures();
+
 
         } catch (error) {
             console.error('Error loading fixtures:', error);
@@ -147,6 +150,10 @@ export default class FixturesManager {
                     console.log(`FixturesManager: Synced deadline status from DeadlineService: ${this.deadlinePassed}`);
                     return;
                 }
+
+                // If deadline service exists but deadlinePassed is undefined, it might be initializing
+                // We should await its check explicitly
+                console.log('FixturesManager: DeadlineService found but status undefined, awaiting check...');
 
                 // Triger a check if needed, passing explicit context since we have it
                 await window.losApp.managers.deadline.checkDeadlines(
@@ -219,7 +226,7 @@ export default class FixturesManager {
             }
 
             // Refresh display to show picked status
-            this.displayFixtures();
+
 
         } catch (error) {
             console.error('Error loading user picks:', error);
@@ -265,8 +272,8 @@ export default class FixturesManager {
             `;
 
             fixtures.forEach((fixture, index) => {
-                const homeTeamPicked = this.isTeamPicked(fixture.homeTeam);
-                const awayTeamPicked = this.isTeamPicked(fixture.awayTeam);
+                const homeTeamPicked = this.isTeamPickedInCurrentGameweek(fixture.homeTeam);
+                const awayTeamPicked = this.isTeamPickedInCurrentGameweek(fixture.awayTeam);
 
                 // Check if teams were picked in previous gameweeks (unavailable)
                 const homeTeamUsed = this.isTeamPickedInOtherGameweek(fixture.homeTeam);
@@ -600,6 +607,7 @@ export default class FixturesManager {
 
             // Refresh display with updated local state
             this.displayFixtures();
+
 
             // Refresh pick history display if PickStatusService is available
             if (window.losApp?.managers?.pickStatus) {
