@@ -682,6 +682,12 @@ class LOSApp {
         }
 
         try {
+            // Deprecated: This listener uses the old flat '/users' collection structure
+            // and often fails with permission errors. User updates are now handled by
+            // AuthManager responding to its own listeners on appropriate paths.
+            console.log('Lives updates are now handled by AuthManager and ClubService');
+
+            /*
             const currentEdition = this.managers.edition.getCurrentEdition();
 
             // Listen for user updates
@@ -698,6 +704,7 @@ class LOSApp {
                         }
                     });
                 });
+            */
         } catch (e) { console.warn("Error setting up live updates", e); }
     }
 

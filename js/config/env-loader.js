@@ -17,6 +17,7 @@ class EnvironmentLoader {
 
             this.envVars = {
                 FWP_API_KEY: import.meta.env.VITE_FWP_API_KEY,
+                RAPID_API_KEY: import.meta.env.VITE_RAPID_API_KEY,
                 FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
                 FIREBASE_AUTH_DOMAIN: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
                 FIREBASE_PROJECT_ID: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -75,12 +76,19 @@ class EnvironmentLoader {
         // Make environment variables globally available
         window.ENV_CONFIG = this.envVars;
 
+        // Also ensure RAPIDAPI_KEY is directly available on window if generic ENV_CONFIG fails
+        if (this.envVars.RAPID_API_KEY) {
+            window.RAPIDAPI_KEY = this.envVars.RAPID_API_KEY;
+        }
+
         // Set up global API key getters
         window.getEnvVar = (key) => this.envVars[key];
         window.getAPIKey = (service) => {
             switch (service) {
                 case 'football-web-pages':
                     return this.envVars.FWP_API_KEY;
+                case 'rapid-api':
+                    return this.envVars.RAPID_API_KEY;
                 case 'firebase':
                     return this.envVars.FIREBASE_API_KEY;
                 case 'football-data':
@@ -98,7 +106,10 @@ class EnvironmentLoader {
     setupAPIConfig() {
         // Create APIConfig object that the app expects
         window.APIConfig = {
-            rapidAPI: null,
+            rapidAPI: {
+                key: this.envVars.RAPID_API_KEY,
+                host: 'football-web-pages1.p.rapidapi.com'
+            },
             footballWebPages: {
                 key: this.envVars.FWP_API_KEY,
                 baseUrl: 'https://api.footballwebpages.co.uk/v2'
