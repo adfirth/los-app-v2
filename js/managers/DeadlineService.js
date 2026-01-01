@@ -224,18 +224,26 @@ export default class DeadlineService {
         try {
             const currentGameweek = window.editionService.getCurrentGameweek();
             const currentEdition = window.editionService.getCurrentEdition();
+            const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
 
-            // Get fixtures for current gameweek
-            const fixturesDoc = await this.db.collection('fixtures')
-                .doc(`${currentEdition}_gw${currentGameweek}`)
+            if (!currentClubId || !currentEdition) {
+                return;
+            }
+
+            // Get fixtures for current gameweek from nested path
+            const fixturesQuery = await this.db.collection('clubs').doc(currentClubId)
+                .collection('editions').doc(currentEdition)
+                .collection('fixtures')
+                .where('gameWeek', '==', currentGameweek)
                 .get();
 
-            if (!fixturesDoc.exists) {
+            if (fixturesQuery.empty) {
                 return; // No fixtures to check
             }
 
-            const fixturesData = fixturesDoc.data();
-            const fixtures = fixturesData.fixtures || [];
+            // Map query results to array
+            const fixtures = [];
+            fixturesQuery.forEach(doc => fixtures.push(doc.data()));
 
             if (fixtures.length === 0) {
                 return; // No fixtures to check
@@ -524,17 +532,22 @@ export default class DeadlineService {
             }
 
             const currentEdition = window.editionService.getCurrentEdition();
+            const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
 
-            const fixturesDoc = await this.db.collection('fixtures')
-                .doc(`${currentEdition}_gw${gameweek}`)
+            if (!currentClubId || !currentEdition) return null;
+
+            const fixturesQuery = await this.db.collection('clubs').doc(currentClubId)
+                .collection('editions').doc(currentEdition)
+                .collection('fixtures')
+                .where('gameWeek', '==', gameweek)
                 .get();
 
-            if (!fixturesDoc.exists) {
+            if (fixturesQuery.empty) {
                 return null;
             }
 
-            const fixturesData = fixturesDoc.data();
-            const fixtures = fixturesData.fixtures || [];
+            const fixtures = [];
+            fixturesQuery.forEach(doc => fixtures.push(doc.data()));
 
             if (fixtures.length === 0) {
                 return null;
