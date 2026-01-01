@@ -306,7 +306,8 @@ export default class SuperAdminManager {
             let userData = null;
 
             // First, try to find user in the old users collection (for backward compatibility)
-            try {
+            // Commented out to prevent permission errors as we migrate to nested structure
+            /* try {
                 console.log('🔍 SuperAdminManager: Checking old users collection...');
                 const oldUserDoc = await this.db.collection('users').doc(userId).get();
                 if (oldUserDoc.exists) {
@@ -316,7 +317,7 @@ export default class SuperAdminManager {
                 }
             } catch (error) {
                 console.log('🔍 SuperAdminManager: Error checking old users collection:', error);
-            }
+            } */
 
             // If not found in old collection, search in new nested structure
             if (!userFound) {
