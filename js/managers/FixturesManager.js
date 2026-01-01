@@ -242,8 +242,12 @@ export default class FixturesManager {
                 let awayBadge = 'assets/badges/default.png';
 
                 if (window.losApp?.teamBadgeService) {
-                    homeBadge = window.losApp.teamBadgeService.getCachedBadge(fixture.homeTeam) || await window.losApp.teamBadgeService.getTeamBadge(fixture.homeTeam);
-                    awayBadge = window.losApp.teamBadgeService.getCachedBadge(fixture.awayTeam) || await window.losApp.teamBadgeService.getTeamBadge(fixture.awayTeam);
+                    // Try to get cached badge, revert to default if not ready (preload should handle it)
+                    const homeCached = window.losApp.teamBadgeService.getCachedBadge(fixture.homeTeam);
+                    const awayCached = window.losApp.teamBadgeService.getCachedBadge(fixture.awayTeam);
+
+                    if (homeCached) homeBadge = homeCached;
+                    if (awayCached) awayBadge = awayCached;
                 }
 
                 html += `
