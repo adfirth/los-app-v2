@@ -1,7 +1,7 @@
 {
   "name": "los-app-v2",
   "version": "1.0.1",
-  "description": "Last One Standing Football Fundraiser App",
+  "description": "Last One Standing Football Fundraiser App - Vite Version",
   "main": "index.html",
   "scripts": {
     "dev": "vite",
