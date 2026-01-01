@@ -176,6 +176,9 @@ class LOSApp {
 
     onManagersReady() {
         try {
+            // Hide loading screen first to show the app
+            this.hideLoadingScreen();
+
             // Initialize manager connections
             this.initializeManagerConnections();
 
@@ -184,6 +187,26 @@ class LOSApp {
 
         } catch (error) {
             console.error('Error in onManagersReady:', error);
+            // Ensure loading screen is hidden even on error
+            this.hideLoadingScreen();
+        }
+    }
+
+    hideLoadingScreen() {
+        const loadingScreen = document.getElementById('loadingScreen');
+        const authContainer = document.getElementById('authContainer');
+        const appContainer = document.getElementById('appContainer');
+
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500); // Wait for transition
+        }
+
+        // Show auth container by default if not logged in
+        if (authContainer && appContainer && (!this.managers.auth || !this.managers.auth.currentUser)) {
+            authContainer.classList.remove('hidden');
         }
     }
 
