@@ -128,14 +128,30 @@ export default class FixturesManager {
 
     async checkDeadline() {
         try {
-            // Get deadline from settings via EditionService
+            // Use DeadlineService as source of truth if available
+            if (window.losApp?.managers?.deadline) {
+                // If the deadline service has already calculated the status, use it
+                if (window.losApp.managers.deadline.deadlinePassed !== undefined) {
+                    this.deadlinePassed = window.losApp.managers.deadline.deadlinePassed;
+                    console.log(`FixturesManager: Synced deadline status from DeadlineService: ${this.deadlinePassed}`);
+                    return;
+                }
+
+                // Triger a check if needed
+                await window.losApp.managers.deadline.checkDeadlines();
+                this.deadlinePassed = window.losApp.managers.deadline.deadlinePassed;
+                console.log(`FixturesManager: Checked deadline via DeadlineService: ${this.deadlinePassed}`);
+                return;
+            }
+
+            // Fallback to settings if DeadlineService not available (shouldn't happen in normal flow)
             if (window.editionService) {
                 const settings = window.editionService.getSettings();
                 if (settings && settings.gameweekDeadline) {
                     const deadline = new Date(settings.gameweekDeadline);
                     const now = new Date();
                     this.deadlinePassed = now > deadline;
-                    console.log(`Deadline check: ${deadline.toISOString()}, Passed: ${this.deadlinePassed}`);
+                    console.log(`Deadline check (fallback): ${deadline.toISOString()}, Passed: ${this.deadlinePassed}`);
                 }
             }
         } catch (error) {
