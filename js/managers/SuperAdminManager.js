@@ -761,6 +761,12 @@ export default class SuperAdminManager {
         try {
             console.log('🏟️ SuperAdminManager: Creating new club:', clubData);
 
+            // Debug Firebase FieldValue availability
+            console.log('🔍 SuperAdminManager Debug: window.firebase exists?', !!window.firebase);
+            console.log('🔍 SuperAdminManager Debug: window.firebase.firestore exists?', !!(window.firebase && window.firebase.firestore));
+            console.log('🔍 SuperAdminManager Debug: window.firebase.firestore.FieldValue exists?', !!(window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue));
+
+
             const clubId = clubData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
             const clubDataForDB = {
