@@ -2435,3 +2435,63 @@ input:checked + .slider:before {
         justify-content: center;
     }
 }
+
+/* Fixture Pick Button Styles */
+.pick-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.pick-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* Available - Default State */
+.btn-pick {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.btn-pick:hover {
+    background-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+/* Picked - User's Selection */
+.btn-picked {
+    background-color: #10b981;
+    color: white;
+    border: 2px solid #059669;
+}
+
+/* Locked - Deadline Passed */
+.btn-locked {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* Unavailable - Used in previous week */
+.btn-unavailable {
+    background-color: #6b7280;
+    color: white;
+    opacity: 0.7;
+}
+
+/* Disabled - Another team picked in current week */
+.btn-disabled {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    border: 1px solid #d1d5db;
+}
