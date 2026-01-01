@@ -148,7 +148,17 @@ export default class DeadlineService {
                 // Find the earliest kick-off time for this gameweek
                 const earliestFixture = fixtures.reduce((earliest, fixture) => {
                     try {
-                        const fixtureTime = new Date(`${fixture.date}T${fixture.kickOffTime}`);
+                        let dateStr = fixture.date;
+                        if (dateStr && typeof dateStr === 'object') {
+                            // Handle Firestore Timestamp or Date object
+                            if (dateStr.toDate) {
+                                dateStr = dateStr.toDate().toISOString().split('T')[0];
+                            } else if (dateStr instanceof Date) {
+                                dateStr = dateStr.toISOString().split('T')[0];
+                            }
+                        }
+
+                        const fixtureTime = new Date(`${dateStr}T${fixture.kickOffTime}`);
                         const earliestTime = new Date(`${earliest.date}T${earliest.kickOffTime}`);
 
                         // Validate dates
@@ -156,7 +166,7 @@ export default class DeadlineService {
                             console.warn(`⚠️ DeadlineService: Invalid fixture date/time for ${fixture.homeTeam} vs ${fixture.awayTeam}:`, {
                                 date: fixture.date,
                                 kickOffTime: fixture.kickOffTime,
-                                combined: `${fixture.date}T${fixture.kickOffTime}`
+                                dateType: typeof fixture.date
                             });
                             return earliest;
                         }

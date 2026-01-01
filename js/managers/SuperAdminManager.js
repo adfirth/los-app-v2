@@ -266,8 +266,9 @@ export default class SuperAdminManager {
             this.usersListener();
         }
 
-        // For now, we'll load users from the default club
-        // In the future, we can expand this to load users from all clubs
+        // Skip setting up users listener for now to avoid permission errors with 'default-club'
+        console.log('SuperAdminManager: Users listener skipped (waiting for dynamic club selection)');
+        /*
         this.usersListener = this.db.collection('clubs').doc('default-club')
             .collection('editions').doc('default-edition')
             .collection('users')
@@ -284,6 +285,7 @@ export default class SuperAdminManager {
             }, (error) => {
                 console.error('SuperAdminManager: Users listener error:', error);
             });
+        */
     }
 
     // Check if current user is super admin
