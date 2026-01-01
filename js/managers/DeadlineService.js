@@ -233,21 +233,30 @@ export default class DeadlineService {
         }
     }
 
-    async checkDeadlines() {
+    async checkDeadlines(clubId = null, editionId = null, gameweek = null) {
         try {
-            const currentGameweek = window.editionService.getCurrentGameweek();
-            const currentEdition = window.editionService.getCurrentEdition();
-            const currentClubId = window.losApp?.managers?.club?.getCurrentClub();
+            // Get current club and edition from ClubService if not provided
+            const currentClubId = clubId || window.losApp?.managers?.club?.getCurrentClub();
+            const currentEdition = editionId || window.losApp?.managers?.club?.getCurrentEdition();
 
-            if (!currentClubId || !currentEdition) {
+            // Get current gameweek if not provided
+            let currentGameweek = gameweek;
+            if (!currentGameweek && window.editionService) {
+                currentGameweek = window.editionService.getCurrentGameweek();
+            }
+
+            if (!currentClubId || !currentEdition || !currentGameweek) {
+                console.log('DeadlineService: Missing context to check deadlines', { currentClubId, currentEdition, currentGameweek });
                 return;
             }
+
+            console.log(`DeadlineService: Checking deadlines for GW${currentGameweek} in ${currentClubId}/${currentEdition}`);
 
             // Get fixtures for current gameweek from nested path
             const fixturesQuery = await this.db.collection('clubs').doc(currentClubId)
                 .collection('editions').doc(currentEdition)
                 .collection('fixtures')
-                .where('gameWeek', '==', currentGameweek)
+                .where('gameWeek', '==', parseInt(currentGameweek))
                 .get();
 
             if (fixturesQuery.empty) {

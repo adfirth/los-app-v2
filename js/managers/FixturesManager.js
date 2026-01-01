@@ -147,8 +147,12 @@ export default class FixturesManager {
                     return;
                 }
 
-                // Triger a check if needed
-                await window.losApp.managers.deadline.checkDeadlines();
+                // Triger a check if needed, passing explicit context since we have it
+                await window.losApp.managers.deadline.checkDeadlines(
+                    this.currentClubId,
+                    this.currentEditionId,
+                    this.currentGameweek
+                );
                 this.deadlinePassed = window.losApp.managers.deadline.deadlinePassed;
                 console.log(`FixturesManager: Checked deadline via DeadlineService: ${this.deadlinePassed}`);
                 return;
